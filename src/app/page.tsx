@@ -779,14 +779,21 @@ export default function Home() {
                 설치 파일 실행 후 안내에 따라 설치하세요
               </p>
 
-              <div className="mt-8 pt-6 border-t border-white/5">
-                <div className="flex items-center justify-center gap-2 text-sm text-zinc-500">
-                  <iconify-icon icon="solar:info-circle-linear" width="16" />
-                  <span>Windows 전용 프로그램입니다</span>
-                </div>
-                <p className="text-xs text-zinc-600 mt-2">
-                  HWP 수식편집기 연동을 위해 Windows 환경이 필요합니다
+              <div className="mt-6 p-4 rounded-xl bg-zinc-800/50 border border-white/5 text-left">
+                <p className="text-xs text-zinc-400 leading-relaxed">
+                  <span className="text-zinc-300 font-medium">Windows SmartScreen 경고가 뜨나요?</span>
+                  <br />
+                  코드 서명 인증서가 아직 없어 보안 경고가 표시될 수 있습니다.
+                  <br />
+                  <span className="text-zinc-300">&ldquo;추가 정보&rdquo;</span> →{" "}
+                  <span className="text-zinc-300">&ldquo;실행&rdquo;</span>을
+                  클릭하시면 정상적으로 설치됩니다.
                 </p>
+              </div>
+
+              <div className="mt-4 flex items-center justify-center gap-2 text-sm text-zinc-500">
+                <iconify-icon icon="solar:info-circle-linear" width="16" />
+                <span>Windows 전용 — HWP 수식편집기 연동을 위해 Windows 환경이 필요합니다</span>
               </div>
             </div>
           </div>
