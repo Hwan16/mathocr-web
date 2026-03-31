@@ -9,6 +9,7 @@ export default function SignupPage() {
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [error, setError] = useState("");
+  const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -119,13 +120,35 @@ export default function SignupPage() {
               />
             </div>
 
+            {/* 약관 동의 */}
+            <div className="flex items-start gap-3">
+              <input
+                type="checkbox"
+                id="terms"
+                checked={agreed}
+                onChange={(e) => setAgreed(e.target.checked)}
+                className="mt-1 w-4 h-4 rounded border-zinc-600 bg-[#0a0a0a] accent-[var(--accent)] cursor-pointer shrink-0"
+              />
+              <label htmlFor="terms" className="text-xs text-zinc-400 leading-relaxed cursor-pointer">
+                <a
+                  href="/terms"
+                  target="_blank"
+                  className="text-[var(--accent)] hover:underline"
+                >
+                  서비스 이용약관
+                </a>
+                에 동의합니다. 업로드하는 파일의 저작권 책임은 이용자에게 있으며,
+                OCR 변환 결과의 정확성을 보증하지 않음을 확인합니다.
+              </label>
+            </div>
+
             {error && (
               <p className="text-red-400 text-sm">{error}</p>
             )}
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !agreed}
               className="w-full btn-primary py-3 rounded-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? "가입 중..." : "회원가입"}
