@@ -782,10 +782,10 @@ export default function Home() {
               <div className="mt-8 pt-6 border-t border-white/5">
                 <div className="flex items-center justify-center gap-2 text-sm text-zinc-500">
                   <iconify-icon icon="solar:info-circle-linear" width="16" />
-                  <span>현재 Windows 환경에서만 사용 가능합니다</span>
+                  <span>Windows 전용 프로그램입니다</span>
                 </div>
                 <p className="text-xs text-zinc-600 mt-2">
-                  macOS 버전은 추후 지원 예정입니다
+                  HWP 수식편집기 연동을 위해 Windows 환경이 필요합니다
                 </p>
               </div>
             </div>
