@@ -55,6 +55,9 @@ export default function Home() {
           <a href="#pricing" className="hover:text-zinc-100 transition-colors">
             가격
           </a>
+          <a href="#download" className="hover:text-zinc-100 transition-colors">
+            다운로드
+          </a>
         </div>
 
         <div className="flex items-center gap-3 ml-auto">
@@ -730,6 +733,60 @@ export default function Home() {
                 <span className="text-xs text-zinc-500">
                   100문제 = 2,500원 / 1,000문제 = 25,000원
                 </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Download ── */}
+      <section id="download" className="py-20 md:py-32">
+        <div className="max-w-7xl mx-auto px-6 md:px-10">
+          <div className="reveal text-center mb-16">
+            <span className="text-sm text-[var(--accent)] font-medium mb-3 block">
+              다운로드
+            </span>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              지금 바로 설치하세요
+            </h2>
+            <p className="text-zinc-400 text-lg">
+              설치 후 로그인하면 무료 크레딧 5회가 자동 지급됩니다.
+            </p>
+          </div>
+
+          <div className="reveal max-w-lg mx-auto">
+            <div className="bezel-card rounded-2xl p-8 md:p-10 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-sky-500/10 flex items-center justify-center mx-auto mb-6">
+                <iconify-icon
+                  icon="solar:monitor-bold"
+                  className="text-sky-400"
+                  width="32"
+                />
+              </div>
+              <h3 className="text-2xl font-bold mb-2">Windows</h3>
+              <p className="text-zinc-500 text-sm mb-6">
+                Windows 10 / 11 지원
+              </p>
+              <a
+                href="https://github.com/Hwan16/mathocr-web/releases/latest/download/MathOCR-v1.0.0.zip"
+                className="btn-primary inline-flex items-center gap-2 px-8 py-4 text-lg rounded-2xl"
+              >
+                <iconify-icon icon="solar:download-minimalistic-bold" width="20" />
+                다운로드
+                <span className="text-sm opacity-70 ml-1">(.zip, 80MB)</span>
+              </a>
+              <p className="text-xs text-zinc-600 mt-4">
+                압축 해제 후 MathOCR.exe 실행
+              </p>
+
+              <div className="mt-8 pt-6 border-t border-white/5">
+                <div className="flex items-center justify-center gap-2 text-sm text-zinc-500">
+                  <iconify-icon icon="solar:info-circle-linear" width="16" />
+                  <span>현재 Windows 환경에서만 사용 가능합니다</span>
+                </div>
+                <p className="text-xs text-zinc-600 mt-2">
+                  macOS 버전은 추후 지원 예정입니다
+                </p>
               </div>
             </div>
           </div>
