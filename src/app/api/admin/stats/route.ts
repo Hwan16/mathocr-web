@@ -47,6 +47,13 @@ export async function GET() {
         .eq("status", "completed"),
     ]);
 
+  if (usersResult.error || conversionsResult.error || errorsResult.error || paymentsResult.error) {
+    return NextResponse.json(
+      { error: "통계 데이터 조회 실패" },
+      { status: 500 }
+    );
+  }
+
   const conversions = conversionsResult.data ?? [];
   const payments = paymentsResult.data ?? [];
 

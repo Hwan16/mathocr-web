@@ -768,7 +768,7 @@ export default function Home() {
                 Windows 10 / 11 지원
               </p>
               <a
-                href="https://github.com/Hwan16/mathocr-web/releases/latest/download/MathOCR-Setup-v1.0.3.exe"
+                href="https://github.com/Hwan16/mathocr-web/releases/latest/download/MathOCR-Setup-v1.0.4.exe"
                 className="btn-primary inline-flex items-center gap-2 px-8 py-4 text-lg rounded-2xl"
               >
                 <iconify-icon icon="solar:download-minimalistic-bold" width="20" />
