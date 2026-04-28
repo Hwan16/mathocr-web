@@ -768,12 +768,12 @@ export default function Home() {
                 Windows 10 / 11 지원
               </p>
               <a
-                href="https://github.com/Hwan16/mathocr-web/releases/latest/download/MathOCR-Setup-v1.0.4.exe"
+                href="https://github.com/Hwan16/mathocr-web/releases/latest/download/MathOCR-Setup-v1.1.1.exe"
                 className="btn-primary inline-flex items-center gap-2 px-8 py-4 text-lg rounded-2xl"
               >
                 <iconify-icon icon="solar:download-minimalistic-bold" width="20" />
                 다운로드
-                <span className="text-sm opacity-70 ml-1">(76MB)</span>
+                <span className="text-sm opacity-70 ml-1">v1.1.1 (76MB)</span>
               </a>
               <p className="text-xs text-zinc-600 mt-4">
                 설치 파일 실행 후 안내에 따라 설치하세요
