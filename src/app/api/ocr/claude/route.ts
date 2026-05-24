@@ -2,12 +2,8 @@ import { getAuthUser } from "@/lib/supabase/auth-helper";
 import { NextRequest, NextResponse } from "next/server";
 
 const CLAUDE_API_URL = "https://api.anthropic.com/v1/messages";
-const ALLOWED_MODELS = [
-  "claude-sonnet-4-20250514",
-  "claude-opus-4-1-20250805",
-  "claude-opus-4-20250514",
-] as const;
-const DEFAULT_MODEL = "claude-sonnet-4-20250514";
+const ALLOWED_MODELS = ["claude-sonnet-4-6"] as const;
+const DEFAULT_MODEL = "claude-sonnet-4-6";
 
 function resolveClaudeModel(): string {
   const configuredModel = process.env.CLAUDE_MODEL?.trim() || DEFAULT_MODEL;
