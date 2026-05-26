@@ -8,6 +8,7 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [promoCode, setPromoCode] = useState("");
   const [error, setError] = useState("");
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -30,20 +31,39 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      const supabase = createClient();
-      const { error } = await supabase.auth.signUp({ email, password });
+      const response = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          password,
+          promo_code: promoCode,
+        }),
+      });
+      const result = await response.json().catch(() => ({}));
 
-      if (error) {
-        if (error.message.includes("already registered")) {
+      if (!response.ok) {
+        const message = result.error ?? "회원가입 중 오류가 발생했습니다.";
+        if (message.includes("already registered")) {
           setError("이미 가입된 이메일입니다.");
         } else {
-          setError(error.message);
+          setError(message);
         }
         return;
       }
 
+      const supabase = createClient();
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (signInError) {
+        setError("가입은 완료됐지만 자동 로그인에 실패했습니다. 로그인해 주세요.");
+        return;
+      }
+
       // 가입 성공 → 자동 로그인 → 대시보드
-      await supabase.auth.signInWithPassword({ email, password });
       router.push("/dashboard");
       router.refresh();
     } catch {
@@ -118,6 +138,22 @@ export default function SignupPage() {
                 required
                 className="w-full px-4 py-3 rounded-xl bg-[#0a0a0a] border border-[var(--border-light)] text-zinc-100 placeholder-zinc-600 text-sm focus:outline-none focus:border-[var(--accent)] transition-colors"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+                프로모션 코드 (선택)
+              </label>
+              <input
+                type="text"
+                value={promoCode}
+                onChange={(e) => setPromoCode(e.target.value)}
+                placeholder="있다면 입력하세요"
+                className="w-full px-4 py-3 rounded-xl bg-[#0a0a0a] border border-[var(--border-light)] text-zinc-100 placeholder-zinc-600 text-sm focus:outline-none focus:border-[var(--accent)] transition-colors"
+              />
+              <p className="mt-1.5 text-xs text-zinc-500">
+                프로모션 코드를 입력하면 추가 크레딧을 받을 수 있습니다.
+              </p>
             </div>
 
             {/* 약관 동의 */}
