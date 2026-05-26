@@ -9,10 +9,45 @@ export default function SignupPage() {
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [promoCode, setPromoCode] = useState("");
+  const [promoStatus, setPromoStatus] = useState<
+    "idle" | "checking" | "valid" | "invalid" | "error"
+  >("idle");
+  const [promoBonusCredits, setPromoBonusCredits] = useState<number>(0);
   const [error, setError] = useState("");
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  async function handleValidatePromo() {
+    const trimmed = promoCode.trim();
+    if (!trimmed) return;
+
+    setPromoStatus("checking");
+    try {
+      const response = await fetch("/api/auth/validate-promo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: trimmed }),
+      });
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setPromoStatus("error");
+        return;
+      }
+
+      if (result.valid) {
+        setPromoBonusCredits(
+          typeof result.bonus_credits === "number" ? result.bonus_credits : 0
+        );
+        setPromoStatus("valid");
+      } else {
+        setPromoStatus("invalid");
+      }
+    } catch {
+      setPromoStatus("error");
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -144,16 +179,49 @@ export default function SignupPage() {
               <label className="block text-sm font-medium text-zinc-300 mb-1.5">
                 프로모션 코드 (선택)
               </label>
-              <input
-                type="text"
-                value={promoCode}
-                onChange={(e) => setPromoCode(e.target.value)}
-                placeholder="있다면 입력하세요"
-                className="w-full px-4 py-3 rounded-xl bg-[#0a0a0a] border border-[var(--border-light)] text-zinc-100 placeholder-zinc-600 text-sm focus:outline-none focus:border-[var(--accent)] transition-colors"
-              />
-              <p className="mt-1.5 text-xs text-zinc-500">
-                프로모션 코드를 입력하면 추가 크레딧을 받을 수 있습니다.
-              </p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={promoCode}
+                  onChange={(e) => {
+                    setPromoCode(e.target.value);
+                    if (promoStatus !== "idle") setPromoStatus("idle");
+                  }}
+                  placeholder="있다면 입력하세요"
+                  className="flex-1 px-4 py-3 rounded-xl bg-[#0a0a0a] border border-[var(--border-light)] text-zinc-100 placeholder-zinc-600 text-sm focus:outline-none focus:border-[var(--accent)] transition-colors"
+                />
+                <button
+                  type="button"
+                  onClick={handleValidatePromo}
+                  disabled={!promoCode.trim() || promoStatus === "checking"}
+                  className="px-4 py-3 rounded-xl border border-[var(--border-light)] text-zinc-300 text-sm hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  확인
+                </button>
+              </div>
+              {promoStatus === "idle" && (
+                <p className="mt-1.5 text-xs text-zinc-500">
+                  프로모션 코드를 입력하면 추가 크레딧을 받을 수 있습니다.
+                </p>
+              )}
+              {promoStatus === "checking" && (
+                <p className="mt-1.5 text-xs text-zinc-500">확인 중...</p>
+              )}
+              {promoStatus === "valid" && (
+                <p className="mt-1.5 text-xs text-emerald-400">
+                  ✓ 사용 가능한 코드입니다. 가입 시 +{promoBonusCredits}크레딧 보너스가 적용됩니다.
+                </p>
+              )}
+              {promoStatus === "invalid" && (
+                <p className="mt-1.5 text-xs text-red-400">
+                  ✗ 유효하지 않은 코드입니다.
+                </p>
+              )}
+              {promoStatus === "error" && (
+                <p className="mt-1.5 text-xs text-zinc-500">
+                  확인에 실패했습니다. 잠시 후 다시 시도해주세요.
+                </p>
+              )}
             </div>
 
             {/* 약관 동의 */}
@@ -173,8 +241,7 @@ export default function SignupPage() {
                 >
                   서비스 이용약관
                 </a>
-                에 동의합니다. 업로드하는 파일의 저작권 책임은 이용자에게 있으며,
-                OCR 변환 결과의 정확성을 보증하지 않음을 확인합니다.
+                에 동의합니다.
               </label>
             </div>
 

@@ -106,30 +106,17 @@ export function TermsContent() {
         </ol>
       </section>
 
-      {/* 제4조 — 강조 */}
-      <section className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-6">
-        <h2 className="text-lg font-semibold text-amber-400 mb-3 flex items-center gap-2">
-          <svg
-            className="w-5 h-5 shrink-0"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"
-            />
-          </svg>
+      {/* 제4조 */}
+      <section>
+        <h2 className="text-lg font-semibold text-zinc-100 mb-3">
           제4조 (이용자의 의무 및 저작권 준수)
         </h2>
-        <ol className="list-decimal pl-5 space-y-3">
+        <ol className="list-decimal pl-5 space-y-2">
           <li>
             이용자는 본 프로그램을 이용함에 있어 저작권법 등 관련 법령을
             준수해야 합니다.
           </li>
-          <li className="font-medium text-amber-200">
+          <li>
             이용자가 업로드하는 콘텐츠(수학 문제 등)에 대한 저작권 및 그에 따른
             책임은 전적으로 이용자에게 있습니다. 제공자는 이용자가 업로드한
             콘텐츠의 저작권 적법성을 검증하지 않으며, 이에 대한 어떠한 책임도
@@ -205,27 +192,14 @@ export function TermsContent() {
         </ol>
       </section>
 
-      {/* 제8조 — 강조 */}
-      <section className="rounded-xl border border-red-500/30 bg-red-500/5 p-6">
-        <h2 className="text-lg font-semibold text-red-400 mb-3 flex items-center gap-2">
-          <svg
-            className="w-5 h-5 shrink-0"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M12 9v3.75m9.303 3.376c-.866 1.5-2.032 1.5-2.898 0L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374Z M12 15.75h.007v.008H12v-.008Z"
-            />
-          </svg>
+      {/* 제8조 */}
+      <section>
+        <h2 className="text-lg font-semibold text-zinc-100 mb-3">
           제8조 (책임의 제한 및 면책)
         </h2>
-        <ol className="list-decimal pl-5 space-y-3">
-          <li className="font-medium text-red-200">
-            <strong>OCR 인식 오류 면책:</strong> 제공자는 OCR 변환 결과의 정확성,
+        <ol className="list-decimal pl-5 space-y-2">
+          <li>
+            <strong className="text-zinc-100">OCR 인식 오류 면책:</strong> 제공자는 OCR 변환 결과의 정확성,
             완전성, 특정 목적에의 적합성에 대하여 어떠한 보증도 하지 않습니다.
             수식, 기호, 도표 등의 오인식으로 인해 발생하는 모든 손해에 대하여
             제공자는 책임을 지지 않습니다. 이용자는 결과물을 사용하기 전
