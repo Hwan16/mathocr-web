@@ -33,7 +33,14 @@ export default function Home() {
     <>
       {/* ── Floating Navigation ── */}
       <nav className="fixed top-4 left-1/2 -translate-x-1/2 z-50 nav-glass rounded-2xl px-6 py-3 flex items-center gap-8 w-auto">
-        <a href="/" className="flex items-center gap-2.5 shrink-0">
+        <a href="/" className="flex items-center gap-2 shrink-0">
+          <img
+            src="/mathocr-icon.png"
+            alt="MathOCR"
+            width={32}
+            height={32}
+            className="rounded-lg"
+          />
           <span
             className="text-2xl font-bold tracking-tighter"
             style={{ fontFamily: "var(--font-en)" }}
@@ -827,7 +834,14 @@ export default function Home() {
       <footer className="border-t border-white/5 py-12">
         <div className="max-w-7xl mx-auto px-6 md:px-10">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2">
+              <img
+                src="/mathocr-icon.png"
+                alt="MathOCR"
+                width={28}
+                height={28}
+                className="rounded-lg"
+              />
               <span
                 className="text-xl font-bold tracking-tighter"
                 style={{ fontFamily: "var(--font-en)" }}
