@@ -37,7 +37,7 @@ export default function Home() {
           <img
             src="/mathocr-icon.png"
             alt="MathOCR"
-            width={64}
+            width={96}
             height={64}
           />
           <span
@@ -837,7 +837,7 @@ export default function Home() {
               <img
                 src="/mathocr-icon.png"
                 alt="MathOCR"
-                width={56}
+                width={84}
                 height={56}
               />
               <span
