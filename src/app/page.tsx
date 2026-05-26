@@ -37,9 +37,8 @@ export default function Home() {
           <img
             src="/mathocr-icon.png"
             alt="MathOCR"
-            width={32}
-            height={32}
-            className="rounded-lg"
+            width={64}
+            height={64}
           />
           <span
             className="text-2xl font-bold tracking-tighter"
@@ -838,9 +837,8 @@ export default function Home() {
               <img
                 src="/mathocr-icon.png"
                 alt="MathOCR"
-                width={28}
-                height={28}
-                className="rounded-lg"
+                width={56}
+                height={56}
               />
               <span
                 className="text-xl font-bold tracking-tighter"
