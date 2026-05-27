@@ -37,8 +37,8 @@ export default function Home() {
           <img
             src="/mathocr-icon.png"
             alt="MathOCR"
-            width={96}
-            height={64}
+            width={72}
+            height={72}
           />
           <span
             className="text-2xl font-bold tracking-tighter"
@@ -774,12 +774,12 @@ export default function Home() {
                 Windows 10 / 11 지원
               </p>
               <a
-                href="https://github.com/Hwan16/mathocr-web/releases/download/v1.2.1/MathOCR-Setup-v1.2.1.exe"
+                href="https://github.com/Hwan16/mathocr-web/releases/download/v1.2.2/MathOCR-Setup-v1.2.2.exe"
                 className="btn-primary inline-flex items-center gap-2 px-8 py-4 text-lg rounded-2xl"
               >
                 <iconify-icon icon="solar:download-minimalistic-bold" width="20" />
                 다운로드
-                <span className="text-sm opacity-70 ml-1">v1.2.1 (122MB)</span>
+                <span className="text-sm opacity-70 ml-1">v1.2.2 (122MB)</span>
               </a>
               <p className="text-xs text-zinc-600 mt-4">
                 설치 파일 실행 후 안내에 따라 설치하세요
@@ -837,8 +837,8 @@ export default function Home() {
               <img
                 src="/mathocr-icon.png"
                 alt="MathOCR"
-                width={84}
-                height={56}
+                width={64}
+                height={64}
               />
               <span
                 className="text-xl font-bold tracking-tighter"
