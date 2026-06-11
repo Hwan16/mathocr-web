@@ -59,10 +59,10 @@ export default function ResetPasswordPage() {
           {sent ? (
             <div className="text-center space-y-4">
               <div className="text-4xl">✉️</div>
-              <h3 className="text-lg font-semibold text-zinc-100">
+              <h3 className="text-lg font-semibold text-zinc-900">
                 이메일을 확인해주세요
               </h3>
-              <p className="text-sm text-zinc-400">
+              <p className="text-sm text-zinc-600">
                 <span className="text-[var(--accent)]">{email}</span>
                 으로 비밀번호 재설정 링크를 보냈습니다.
               </p>
@@ -78,12 +78,12 @@ export default function ResetPasswordPage() {
             </div>
           ) : (
             <>
-              <p className="text-sm text-zinc-400 mb-6">
+              <p className="text-sm text-zinc-600 mb-6">
                 가입한 이메일을 입력하면 비밀번호 재설정 링크를 보내드립니다.
               </p>
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
-                  <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+                  <label className="block text-sm font-medium text-zinc-700 mb-1.5">
                     이메일
                   </label>
                   <input
@@ -92,11 +92,11 @@ export default function ResetPasswordPage() {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="example@email.com"
                     required
-                    className="w-full px-4 py-3 rounded-xl bg-[#0a0a0a] border border-[var(--border-light)] text-zinc-100 placeholder-zinc-600 text-sm focus:outline-none focus:border-[var(--accent)] transition-colors"
+                    className="w-full px-4 py-3 rounded-xl bg-white border border-[var(--border-light)] text-zinc-900 placeholder-zinc-400 text-sm focus:outline-none focus:border-[var(--accent)] transition-colors"
                   />
                 </div>
 
-                {error && <p className="text-red-400 text-sm">{error}</p>}
+                {error && <p className="text-red-600 text-sm">{error}</p>}
 
                 <button
                   type="submit"

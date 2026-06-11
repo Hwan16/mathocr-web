@@ -105,7 +105,7 @@ export default function DashboardPage() {
             </span>
           </a>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-zinc-400">{user?.email}</span>
+            <span className="text-sm text-zinc-600">{user?.email}</span>
             {profile?.role === "admin" && (
               <a
                 href="/admin"
@@ -116,7 +116,7 @@ export default function DashboardPage() {
             )}
             <button
               onClick={handleLogout}
-              className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
+              className="text-sm text-zinc-500 hover:text-zinc-700 transition-colors"
             >
               로그아웃
             </button>
@@ -144,13 +144,13 @@ export default function DashboardPage() {
           <div className="bezel-card rounded-2xl p-6">
             <div className="text-sm text-zinc-500 mb-1">유효기간</div>
             <div
-              className={`text-xl font-semibold ${isExpired ? "text-red-400" : "text-zinc-100"}`}
+              className={`text-xl font-semibold ${isExpired ? "text-red-600" : "text-zinc-900"}`}
             >
               {profile?.expires_at
                 ? new Date(profile.expires_at).toLocaleDateString("ko-KR")
                 : "무제한"}
               {isExpired && (
-                <span className="text-sm text-red-400 ml-2">만료됨</span>
+                <span className="text-sm text-red-600 ml-2">만료됨</span>
               )}
             </div>
           </div>
@@ -158,7 +158,7 @@ export default function DashboardPage() {
           {/* 총 변환 */}
           <div className="bezel-card rounded-2xl p-6">
             <div className="text-sm text-zinc-500 mb-1">총 변환 횟수</div>
-            <div className="text-3xl font-bold text-zinc-100">
+            <div className="text-3xl font-bold text-zinc-900">
               {totalConversions}
               <span className="text-base font-normal text-zinc-500 ml-1">
                 건
@@ -197,18 +197,18 @@ export default function DashboardPage() {
                   {conversions.map((c) => (
                     <tr
                       key={c.id}
-                      className="border-b border-[var(--border-subtle)] last:border-0 hover:bg-white/[0.02]"
+                      className="border-b border-[var(--border-subtle)] last:border-0 hover:bg-zinc-50"
                     >
-                      <td className="px-6 py-3 text-zinc-400">
+                      <td className="px-6 py-3 text-zinc-600">
                         {new Date(c.created_at).toLocaleDateString("ko-KR")}
                       </td>
-                      <td className="px-6 py-3 text-zinc-200">
+                      <td className="px-6 py-3 text-zinc-800">
                         {c.pdf_name || "—"}
                       </td>
-                      <td className="px-6 py-3 text-center text-zinc-300">
+                      <td className="px-6 py-3 text-center text-zinc-700">
                         {c.problem_count}
                       </td>
-                      <td className="px-6 py-3 text-center text-zinc-300">
+                      <td className="px-6 py-3 text-center text-zinc-700">
                         {c.credits_used}
                       </td>
                       <td className="px-6 py-3 text-center">
@@ -232,14 +232,14 @@ export default function DashboardPage() {
                 <button
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page === 1}
-                  className="px-3 py-1 rounded-lg text-sm border border-[var(--border-light)] text-zinc-400 hover:text-zinc-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  className="px-3 py-1 rounded-lg text-sm border border-[var(--border-light)] text-zinc-600 hover:text-zinc-900 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                 >
                   이전
                 </button>
                 <button
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={page === totalPages}
-                  className="px-3 py-1 rounded-lg text-sm border border-[var(--border-light)] text-zinc-400 hover:text-zinc-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  className="px-3 py-1 rounded-lg text-sm border border-[var(--border-light)] text-zinc-600 hover:text-zinc-900 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                 >
                   다음
                 </button>
@@ -254,9 +254,9 @@ export default function DashboardPage() {
 
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
-    completed: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-    started: "bg-amber-500/10 text-amber-400 border-amber-500/20",
-    failed: "bg-red-500/10 text-red-400 border-red-500/20",
+    completed: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+    started: "bg-amber-500/10 text-amber-600 border-amber-500/20",
+    failed: "bg-red-500/10 text-red-600 border-red-500/20",
   };
   const labels: Record<string, string> = {
     completed: "완료",
@@ -266,7 +266,7 @@ function StatusBadge({ status }: { status: string }) {
 
   return (
     <span
-      className={`inline-block px-2.5 py-0.5 rounded-full text-xs border ${styles[status] ?? "text-zinc-400 border-zinc-700"}`}
+      className={`inline-block px-2.5 py-0.5 rounded-full text-xs border ${styles[status] ?? "text-zinc-600 border-zinc-700"}`}
     >
       {labels[status] ?? status}
     </span>

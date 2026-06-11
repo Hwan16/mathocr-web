@@ -3,10 +3,17 @@
 :root {
   --font-kr: "Pretendard Variable", "Pretendard", -apple-system,
     BlinkMacSystemFont, system-ui, sans-serif;
+  --font-en: var(--font-kr); /* 별도 영문 폰트 미사용 — 로고/영문도 동일 폰트 */
   --accent: #7c3aed; /* violet-600 — 로고 보라 그라데이션과 조화 */
   --accent-hover: #6d28d9; /* violet-700 */
   --accent-soft: #f5f3ff; /* violet-50 */
   --accent-border: #ddd6fe; /* violet-200 */
+
+  /* 앱 페이지(대시보드/관리자/인증) 라이트 테마 토큰.
+     globals는 라이트 테마이므로 패널/구분선도 밝은 값으로 정의한다. */
+  --surface: #fafafa; /* zinc-50 — 카드/입력 패널 배경 */
+  --border-subtle: #f0f0f1; /* 아주 옅은 구분선 (행 사이) */
+  --border-light: #e4e4e7; /* zinc-200 — 일반 테두리 */
 }
 
 * {
@@ -56,6 +63,13 @@ html {
 .card {
   background: #fff;
   border: 1px solid #e4e4e7; /* zinc-200 */
+}
+
+/* 앱 페이지 카드 (대시보드/관리자) — 라이트 테마 카드 */
+.bezel-card {
+  background: #fff;
+  border: 1px solid #e4e4e7; /* zinc-200 */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 /* ── 스크린샷/영상 placeholder 프레임 ── */

@@ -127,7 +127,7 @@ export default function UpdatePasswordPage() {
         <div className="bezel-card rounded-2xl p-8">
           {error && !ready ? (
             <div className="text-center space-y-4">
-              <p className="text-red-400 text-sm">{error}</p>
+              <p className="text-red-600 text-sm">{error}</p>
               <a
                 href="/auth/reset-password"
                 className="inline-block text-sm text-[var(--accent)] hover:underline"
@@ -138,7 +138,7 @@ export default function UpdatePasswordPage() {
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+                <label className="block text-sm font-medium text-zinc-700 mb-1.5">
                   새 비밀번호
                 </label>
                 <input
@@ -147,12 +147,12 @@ export default function UpdatePasswordPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="6자 이상"
                   required
-                  className="w-full px-4 py-3 rounded-xl bg-[#0a0a0a] border border-[var(--border-light)] text-zinc-100 placeholder-zinc-600 text-sm focus:outline-none focus:border-[var(--accent)] transition-colors"
+                  className="w-full px-4 py-3 rounded-xl bg-white border border-[var(--border-light)] text-zinc-900 placeholder-zinc-400 text-sm focus:outline-none focus:border-[var(--accent)] transition-colors"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+                <label className="block text-sm font-medium text-zinc-700 mb-1.5">
                   새 비밀번호 확인
                 </label>
                 <input
@@ -161,11 +161,11 @@ export default function UpdatePasswordPage() {
                   onChange={(e) => setPasswordConfirm(e.target.value)}
                   placeholder="비밀번호 재입력"
                   required
-                  className="w-full px-4 py-3 rounded-xl bg-[#0a0a0a] border border-[var(--border-light)] text-zinc-100 placeholder-zinc-600 text-sm focus:outline-none focus:border-[var(--accent)] transition-colors"
+                  className="w-full px-4 py-3 rounded-xl bg-white border border-[var(--border-light)] text-zinc-900 placeholder-zinc-400 text-sm focus:outline-none focus:border-[var(--accent)] transition-colors"
                 />
               </div>
 
-              {error && <p className="text-red-400 text-sm">{error}</p>}
+              {error && <p className="text-red-600 text-sm">{error}</p>}
 
               <button
                 type="submit"
