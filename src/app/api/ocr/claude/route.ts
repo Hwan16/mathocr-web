@@ -1,4 +1,5 @@
 import { getAuthUser } from "@/lib/supabase/auth-helper";
+import { ensureUsableCredits } from "@/lib/supabase/credit-guard";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -120,6 +121,12 @@ export async function POST(request: NextRequest) {
       429,
       { "Retry-After": String(rateLimit.retryAfter) }
     );
+  }
+
+  // 크레딧 게이트: 잔액 0 / 만료 사용자의 공짜 OCR 차단
+  const creditCheck = await ensureUsableCredits(user.id);
+  if (!creditCheck.ok) {
+    return errorResponse(creditCheck.message, creditCheck.status);
   }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;

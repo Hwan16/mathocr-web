@@ -28,11 +28,18 @@ export async function POST(
   }
 
   const { id: targetUserId } = await params;
-  const { credits, reason } = await request.json();
 
-  if (!credits || credits < 1) {
+  let credits: unknown;
+  let reason: unknown;
+  try {
+    ({ credits, reason } = await request.json());
+  } catch {
+    return NextResponse.json({ error: "요청 JSON을 읽을 수 없습니다." }, { status: 400 });
+  }
+
+  if (typeof credits !== "number" || !Number.isInteger(credits) || credits < 1 || credits > 100000) {
     return NextResponse.json(
-      { error: "부여할 크레딧 수를 입력해주세요." },
+      { error: "부여할 크레딧 수가 올바르지 않습니다." },
       { status: 400 }
     );
   }
@@ -52,15 +59,15 @@ export async function POST(
     );
   }
 
-  const newCredits = current.credits + credits;
+  // 원자적 증가 (read-modify-write 경쟁으로 인한 lost update 방지)
+  const { error: rpcError } = await adminClient.rpc("add_credits_raw", {
+    p_user_id: targetUserId,
+    p_credits: credits,
+  });
 
-  const { error: updateError } = await adminClient
-    .from("profiles")
-    .update({ credits: newCredits })
-    .eq("id", targetUserId);
-
-  if (updateError) {
-    return NextResponse.json({ error: updateError.message }, { status: 500 });
+  if (rpcError) {
+    console.error("[admin/credits:POST] add_credits_raw failed", rpcError);
+    return NextResponse.json({ error: "크레딧 부여에 실패했습니다." }, { status: 500 });
   }
 
   await adminClient.from("payments").insert({
@@ -76,7 +83,7 @@ export async function POST(
     user_email: current.email,
     previous_credits: current.credits,
     added_credits: credits,
-    new_credits: newCredits,
-    reason: reason ?? null,
+    new_credits: current.credits + credits,
+    reason: typeof reason === "string" ? reason.slice(0, 500) : null,
   });
 }

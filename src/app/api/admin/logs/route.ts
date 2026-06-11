@@ -1,5 +1,6 @@
 import { getAuthUser } from "@/lib/supabase/auth-helper";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { clampInt } from "@/lib/pagination";
 import { NextRequest, NextResponse } from "next/server";
 
 async function requireAdmin() {
@@ -25,8 +26,8 @@ export async function GET(request: NextRequest) {
   }
 
   const searchParams = request.nextUrl.searchParams;
-  const page = parseInt(searchParams.get("page") ?? "1");
-  const limit = parseInt(searchParams.get("limit") ?? "50");
+  const page = clampInt(searchParams.get("page"), 1, 1, 1_000_000);
+  const limit = clampInt(searchParams.get("limit"), 50, 1, 100);
   const userId = searchParams.get("user_id");
   const errorType = searchParams.get("error_type");
   const dateFrom = searchParams.get("date_from");
@@ -48,7 +49,8 @@ export async function GET(request: NextRequest) {
   const { data, error, count } = await query;
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[admin/logs:GET] query failed", error);
+    return NextResponse.json({ error: "오류 로그를 불러오지 못했습니다." }, { status: 500 });
   }
 
   return NextResponse.json({ logs: data, total: count, page, limit });

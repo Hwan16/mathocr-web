@@ -1,5 +1,6 @@
 import { getAuthUser } from "@/lib/supabase/auth-helper";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { clampInt } from "@/lib/pagination";
 import { NextRequest, NextResponse } from "next/server";
 
 // 변환 이력 조회
@@ -11,8 +12,8 @@ export async function GET(request: NextRequest) {
   }
 
   const searchParams = request.nextUrl.searchParams;
-  const page = parseInt(searchParams.get("page") ?? "1");
-  const limit = parseInt(searchParams.get("limit") ?? "20");
+  const page = clampInt(searchParams.get("page"), 1, 1, 1_000_000);
+  const limit = clampInt(searchParams.get("limit"), 20, 1, 100);
   const offset = (page - 1) * limit;
 
   const admin = createAdminClient();
@@ -24,7 +25,8 @@ export async function GET(request: NextRequest) {
     .range(offset, offset + limit - 1);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[conversions:GET] query failed", error);
+    return NextResponse.json({ error: "변환 이력을 불러오지 못했습니다." }, { status: 500 });
   }
 
   return NextResponse.json({

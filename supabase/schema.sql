@@ -22,7 +22,7 @@ begin
   values (new.id, new.email);
   return new;
 end;
-$$ language plpgsql security definer;
+$$ language plpgsql security definer set search_path = public, pg_temp;
 
 create trigger on_auth_user_created
   after insert on auth.users
@@ -98,14 +98,12 @@ create index idx_error_logs_error_type on public.error_logs(error_type);
 -- profiles
 alter table public.profiles enable row level security;
 
+-- profiles: 본인 행 "조회"만 허용. 쓰기(role/credits 변경 포함)는 전부
+-- 서버(service_role) 라우트를 거친다. 클라이언트 UPDATE를 허용하면 본인을
+-- admin 으로 승격하거나 크레딧을 자가 지급할 수 있으므로 UPDATE 정책은 두지 않는다.
 create policy "본인 프로필 조회"
   on public.profiles for select
   using (auth.uid() = id);
-
-create policy "본인 프로필 수정"
-  on public.profiles for update
-  using (auth.uid() = id)
-  with check (auth.uid() = id);
 
 -- payments
 alter table public.payments enable row level security;
@@ -114,27 +112,16 @@ create policy "본인 결제 이력 조회"
   on public.payments for select
   using (auth.uid() = user_id);
 
--- conversions
+-- conversions: 본인 행 "조회"만 허용. 생성/상태변경은 서버(service_role)에서만.
 alter table public.conversions enable row level security;
 
 create policy "본인 변환 이력 조회"
   on public.conversions for select
   using (auth.uid() = user_id);
 
-create policy "본인 변환 생성"
-  on public.conversions for insert
-  with check (auth.uid() = user_id);
-
-create policy "본인 변환 상태 수정"
-  on public.conversions for update
-  using (auth.uid() = user_id);
-
--- error_logs
+-- error_logs: 클라이언트 직접 접근 없음. 적재는 /api/logs(service_role)에서만,
+-- 조회는 관리자 API(/api/admin/logs)에서만. 따라서 클라이언트 정책을 두지 않는다.
 alter table public.error_logs enable row level security;
-
-create policy "본인 에러 로그 생성"
-  on public.error_logs for insert
-  with check (auth.uid() = user_id);
 
 -- ============================================
 -- 6. 크레딧 차감 함수 (원자적 트랜잭션)
@@ -186,7 +173,7 @@ begin
     'remaining_credits', v_credits - p_amount
   );
 end;
-$$ language plpgsql security definer;
+$$ language plpgsql security definer set search_path = public, pg_temp;
 
 -- ============================================
 -- 7. 크레딧 추가 함수 (결제 완료 시)
@@ -219,7 +206,7 @@ begin
     'new_credits', v_new_credits
   );
 end;
-$$ language plpgsql security definer;
+$$ language plpgsql security definer set search_path = public, pg_temp;
 
 -- ============================================
 -- 8. 크레딧 직접 추가 함수 (관리자/환불용)
@@ -234,4 +221,65 @@ begin
   set credits = credits + p_credits
   where id = p_user_id;
 end;
-$$ language plpgsql security definer;
+$$ language plpgsql security definer set search_path = public, pg_temp;
+
+-- ============================================
+-- 9. 변환 종료(완료/실패) 원자적 처리 + 실패 1회 환불
+-- ============================================
+-- started → completed/failed 전환을 조건부 UPDATE로 처리하여 동시 요청 중
+-- 1건만 통과시킨다. 실패 전환에 성공한 호출만 환불 → 이중 환불 불가.
+create or replace function public.finalize_conversion(
+  p_conversion_id uuid,
+  p_user_id uuid,
+  p_status text
+)
+returns jsonb as $$
+declare
+  v_credits_used integer;
+  v_updated integer;
+begin
+  if p_status not in ('completed', 'failed') then
+    return jsonb_build_object('success', false, 'error', 'invalid_status');
+  end if;
+
+  update public.conversions
+  set status = p_status
+  where id = p_conversion_id
+    and user_id = p_user_id
+    and status = 'started'
+  returning credits_used into v_credits_used;
+
+  get diagnostics v_updated = row_count;
+
+  if v_updated = 0 then
+    return jsonb_build_object('success', false, 'error', 'not_pending');
+  end if;
+
+  if p_status = 'failed' and v_credits_used > 0 then
+    update public.profiles
+    set credits = credits + v_credits_used
+    where id = p_user_id;
+  end if;
+
+  return jsonb_build_object(
+    'success', true,
+    'status', p_status,
+    'refunded', case when p_status = 'failed' then coalesce(v_credits_used, 0) else 0 end
+  );
+end;
+$$ language plpgsql security definer set search_path = public, pg_temp;
+
+-- ============================================
+-- 10. 함수 실행 권한 (서버 service_role 전용)
+-- ============================================
+-- PostgREST는 public 함수를 RPC로 노출하므로, 크레딧/환불 함수는 반드시
+-- PUBLIC 권한을 회수하고 service_role 에게만 부여한다.
+revoke execute on function public.deduct_credits(uuid, integer, text) from public, anon, authenticated;
+revoke execute on function public.add_credits(uuid, integer, integer, text) from public, anon, authenticated;
+revoke execute on function public.add_credits_raw(uuid, integer) from public, anon, authenticated;
+revoke execute on function public.finalize_conversion(uuid, uuid, text) from public, anon, authenticated;
+
+grant execute on function public.deduct_credits(uuid, integer, text) to service_role;
+grant execute on function public.add_credits(uuid, integer, integer, text) to service_role;
+grant execute on function public.add_credits_raw(uuid, integer) to service_role;
+grant execute on function public.finalize_conversion(uuid, uuid, text) to service_role;

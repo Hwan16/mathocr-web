@@ -14,9 +14,14 @@ export async function PATCH(
     return NextResponse.json({ error: "인증되지 않았습니다." }, { status: 401 });
   }
 
-  const { status } = await request.json();
+  let status: unknown;
+  try {
+    ({ status } = await request.json());
+  } catch {
+    return NextResponse.json({ error: "요청 JSON을 읽을 수 없습니다." }, { status: 400 });
+  }
 
-  if (!["completed", "failed"].includes(status)) {
+  if (typeof status !== "string" || !["completed", "failed"].includes(status)) {
     return NextResponse.json(
       { error: "유효하지 않은 상태입니다. (completed 또는 failed)" },
       { status: 400 }
@@ -25,45 +30,28 @@ export async function PATCH(
 
   const adminClient = createAdminClient();
 
-  // 현재 변환 정보 조회
-  const { data: conversion } = await adminClient
-    .from("conversions")
-    .select("credits_used, status")
-    .eq("id", id)
-    .eq("user_id", user.id)
-    .single();
-
-  if (!conversion) {
-    return NextResponse.json(
-      { error: "변환 기록을 찾을 수 없습니다." },
-      { status: 404 }
-    );
-  }
-
-  if (conversion.status !== "started") {
-    return NextResponse.json(
-      { error: "이미 처리된 변환입니다." },
-      { status: 409 }
-    );
-  }
-
-  // 상태 업데이트
-  const { error } = await adminClient
-    .from("conversions")
-    .update({ status })
-    .eq("id", id)
-    .eq("user_id", user.id);
+  // 상태 전환 + (실패 시) 환불을 단일 트랜잭션·원자적으로 처리.
+  // started 행 1건만 전환되므로 동시 요청에 의한 이중 환불이 불가능하다.
+  const { data, error } = await adminClient.rpc("finalize_conversion", {
+    p_conversion_id: id,
+    p_user_id: user.id,
+    p_status: status,
+  });
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[conversions:PATCH] finalize_conversion failed", error);
+    return NextResponse.json(
+      { error: "변환 상태를 업데이트하지 못했습니다." },
+      { status: 500 }
+    );
   }
 
-  // 실패 시 크레딧 환불
-  if (status === "failed" && conversion.credits_used > 0) {
-    await adminClient.rpc("add_credits_raw", {
-      p_user_id: user.id,
-      p_credits: conversion.credits_used,
-    });
+  if (!data?.success) {
+    // not_pending: 이미 처리됐거나(중복) 소유자 행이 아니거나 존재하지 않음
+    return NextResponse.json(
+      { error: "이미 처리되었거나 찾을 수 없는 변환입니다." },
+      { status: 409 }
+    );
   }
 
   return NextResponse.json({ success: true, status });

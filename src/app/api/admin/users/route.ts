@@ -1,5 +1,6 @@
 import { getAuthUser } from "@/lib/supabase/auth-helper";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { clampInt } from "@/lib/pagination";
 import { NextRequest, NextResponse } from "next/server";
 
 async function requireAdmin() {
@@ -25,8 +26,8 @@ export async function GET(request: NextRequest) {
   }
 
   const searchParams = request.nextUrl.searchParams;
-  const page = parseInt(searchParams.get("page") ?? "1");
-  const limit = parseInt(searchParams.get("limit") ?? "50");
+  const page = clampInt(searchParams.get("page"), 1, 1, 1_000_000);
+  const limit = clampInt(searchParams.get("limit"), 50, 1, 100);
   const search = searchParams.get("search") ?? "";
   const offset = (page - 1) * limit;
 
@@ -44,7 +45,8 @@ export async function GET(request: NextRequest) {
   const { data, error, count } = await query;
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[admin/users:GET] query failed", error);
+    return NextResponse.json({ error: "사용자 목록을 불러오지 못했습니다." }, { status: 500 });
   }
 
   return NextResponse.json({ users: data, total: count, page, limit });

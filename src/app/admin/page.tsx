@@ -147,23 +147,26 @@ function UsersTab() {
   const [creditModal, setCreditModal] = useState<AdminUser | null>(null);
   const [creditAmount, setCreditAmount] = useState("");
   const limit = 20;
-  const supabase = createClient();
 
   const loadUsers = useCallback(async () => {
-    let query = supabase
-      .from("profiles")
-      .select("*", { count: "exact" })
-      .order("created_at", { ascending: false })
-      .range((page - 1) * limit, page * limit - 1);
+    // service_role 권한이 필요한 조회는 서버 API(/api/admin/*)를 통해서만 한다.
+    // 브라우저 anon 클라이언트로 직접 profiles 전체를 읽으면 RLS에 막힌다.
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+    });
+    if (search) params.set("search", search);
 
-    if (search) {
-      query = query.ilike("email", `%${search}%`);
+    const res = await fetch(`/api/admin/users?${params.toString()}`);
+    if (!res.ok) {
+      setUsers([]);
+      setTotal(0);
+      return;
     }
-
-    const { data, count } = await query;
-    setUsers(data ?? []);
-    setTotal(count ?? 0);
-  }, [page, search, supabase]);
+    const data = await res.json();
+    setUsers(data.users ?? []);
+    setTotal(data.total ?? 0);
+  }, [page, search]);
 
   useEffect(() => {
     loadUsers();
@@ -174,12 +177,13 @@ function UsersTab() {
     const amount = parseInt(creditAmount);
     if (isNaN(amount) || amount <= 0) return;
 
-    const { error } = await supabase.rpc("add_credits_raw", {
-      p_user_id: creditModal.id,
-      p_credits: amount,
+    const res = await fetch(`/api/admin/users/${creditModal.id}/credits`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ credits: amount }),
     });
 
-    if (!error) {
+    if (res.ok) {
       setCreditModal(null);
       setCreditAmount("");
       loadUsers();
@@ -328,24 +332,24 @@ function LogsTab() {
   const [filterUserId, setFilterUserId] = useState<string | null>(null);
   const [filterEmail, setFilterEmail] = useState<string | null>(null);
   const limit = 20;
-  const supabase = createClient();
 
   const loadLogs = useCallback(async () => {
-    const from = (page - 1) * limit;
-    let query = supabase
-      .from("error_logs")
-      .select("*, profiles(email)", { count: "exact" })
-      .order("created_at", { ascending: false })
-      .range(from, from + limit - 1);
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+    });
+    if (filterUserId) params.set("user_id", filterUserId);
 
-    if (filterUserId) {
-      query = query.eq("user_id", filterUserId);
+    const res = await fetch(`/api/admin/logs?${params.toString()}`);
+    if (!res.ok) {
+      setLogs([]);
+      setTotal(0);
+      return;
     }
-
-    const { data, count } = await query;
-    setLogs((data as ErrorLogEntry[]) ?? []);
-    setTotal(count ?? 0);
-  }, [page, filterUserId, supabase]);
+    const data = await res.json();
+    setLogs((data.logs as ErrorLogEntry[]) ?? []);
+    setTotal(data.total ?? 0);
+  }, [page, filterUserId]);
 
   useEffect(() => {
     loadLogs();
@@ -469,45 +473,21 @@ function LogsTab() {
 /* ── 통계 탭 ── */
 function StatsTab() {
   const [stats, setStats] = useState<Stats | null>(null);
-  const supabase = createClient();
 
   useEffect(() => {
     async function loadStats() {
-      // 유저 수
-      const { count: userCount } = await supabase
-        .from("profiles")
-        .select("*", { count: "exact", head: true });
-
-      // 변환 통계
-      const { count: totalConv } = await supabase
-        .from("conversions")
-        .select("*", { count: "exact", head: true });
-
-      const { count: successConv } = await supabase
-        .from("conversions")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "completed");
-
-      // 총 크레딧 사용
-      const { data: creditData } = await supabase
-        .from("conversions")
-        .select("credits_used")
-        .eq("status", "completed");
-      const totalCredits =
-        creditData?.reduce((sum, c) => sum + c.credits_used, 0) ?? 0;
-
+      const res = await fetch("/api/admin/stats");
+      if (!res.ok) return;
+      const data = await res.json();
       setStats({
-        total_users: userCount ?? 0,
-        total_conversions: totalConv ?? 0,
-        success_rate:
-          totalConv && totalConv > 0
-            ? Math.round(((successConv ?? 0) / totalConv) * 100)
-            : 0,
-        total_credits_used: totalCredits,
+        total_users: data.users?.total ?? 0,
+        total_conversions: data.conversions?.total ?? 0,
+        success_rate: Math.round(data.conversions?.success_rate ?? 0),
+        total_credits_used: data.conversions?.total_problems ?? 0,
       });
     }
     loadStats();
-  }, [supabase]);
+  }, []);
 
   if (!stats) {
     return <div className="text-zinc-500">통계 로딩 중...</div>;

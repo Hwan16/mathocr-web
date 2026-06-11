@@ -1,7 +1,19 @@
+import { checkRateLimit } from "@/lib/rate-limit";
 import { NextRequest, NextResponse } from "next/server";
 
 const PROMO_BONUS_CREDITS = 100;
 const VALIDATION_DELAY_MS = 200;
+// 무차별 대입 방지: IP당 분당 시도 횟수 제한 (인증 없는 공개 엔드포인트)
+const PROMO_RATE_LIMIT = 10;
+const PROMO_RATE_LIMIT_WINDOW_MS = 60_000;
+
+function clientIp(request: NextRequest): string {
+  const forwarded = request.headers.get("x-forwarded-for");
+  if (forwarded) {
+    return forwarded.split(",")[0]?.trim() || "unknown";
+  }
+  return request.headers.get("x-real-ip") ?? "unknown";
+}
 
 type ValidateBody = {
   code?: string;
@@ -23,6 +35,18 @@ function sleep(ms: number): Promise<void> {
 }
 
 export async function POST(request: NextRequest) {
+  const rate = checkRateLimit(
+    `promo:${clientIp(request)}`,
+    PROMO_RATE_LIMIT,
+    PROMO_RATE_LIMIT_WINDOW_MS
+  );
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: "잠시 후 다시 시도해주세요." },
+      { status: 429, headers: { "Retry-After": String(rate.retryAfter) } }
+    );
+  }
+
   let body: ValidateBody;
   try {
     body = await request.json();

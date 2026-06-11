@@ -39,11 +39,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "인증되지 않았습니다." }, { status: 401 });
   }
 
-  const { problem_count, pdf_name } = await request.json();
+  let problem_count: unknown;
+  let pdf_name: unknown;
+  try {
+    ({ problem_count, pdf_name } = await request.json());
+  } catch {
+    return NextResponse.json({ error: "요청 JSON을 읽을 수 없습니다." }, { status: 400 });
+  }
 
-  if (!problem_count || problem_count < 1) {
+  if (
+    typeof problem_count !== "number" ||
+    !Number.isInteger(problem_count) ||
+    problem_count < 1 ||
+    problem_count > 1000
+  ) {
     return NextResponse.json(
-      { error: "문제 수를 입력해주세요." },
+      { error: "문제 수가 올바르지 않습니다." },
       { status: 400 }
     );
   }
@@ -53,11 +64,12 @@ export async function POST(request: NextRequest) {
   const { data, error } = await admin.rpc("deduct_credits", {
     p_user_id: user.id,
     p_amount: problem_count,
-    p_pdf_name: pdf_name ?? null,
+    p_pdf_name: typeof pdf_name === "string" ? pdf_name.slice(0, 255) : null,
   });
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[credits:POST] deduct_credits failed", error);
+    return NextResponse.json({ error: "크레딧 차감에 실패했습니다." }, { status: 500 });
   }
 
   if (!data.success) {
