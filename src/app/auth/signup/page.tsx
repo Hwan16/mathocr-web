@@ -109,32 +109,24 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
+    <div className="min-h-screen flex items-center justify-center px-4 bg-zinc-50">
       <div className="w-full max-w-[400px]">
         {/* Logo */}
-        <div className="text-center mb-10">
-          <a href="/" className="inline-flex items-center gap-2">
-            <span
-              className="text-3xl font-bold tracking-tighter"
-              style={{ fontFamily: "var(--font-en)" }}
-            >
-              Math
-            </span>
-            <span
-              className="text-3xl font-bold text-[var(--accent)]"
-              style={{ fontFamily: "var(--font-en)" }}
-            >
-              OCR
+        <div className="text-center mb-8">
+          <a href="/" className="inline-flex flex-col items-center gap-3">
+            <img src="/mathocr-icon.png" alt="MathOCR" width={56} height={56} />
+            <span className="text-2xl font-bold tracking-tight">
+              Math<span className="text-[var(--accent)]">OCR</span>
             </span>
           </a>
           <p className="text-zinc-500 text-sm mt-2">새 계정을 만드세요</p>
         </div>
 
         {/* Form Card */}
-        <div className="bezel-card rounded-2xl p-8">
+        <div className="card rounded-xl p-8 shadow-sm">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+              <label className="block text-sm font-medium text-zinc-700 mb-1.5">
                 이메일
               </label>
               <input
@@ -143,12 +135,12 @@ export default function SignupPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="example@email.com"
                 required
-                className="w-full px-4 py-3 rounded-xl bg-[#0a0a0a] border border-[var(--border-light)] text-zinc-100 placeholder-zinc-600 text-sm focus:outline-none focus:border-[var(--accent)] transition-colors"
+                className="w-full px-4 py-3 rounded-lg bg-white border border-zinc-300 text-zinc-900 placeholder-zinc-400 text-sm focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-border)] transition-colors"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+              <label className="block text-sm font-medium text-zinc-700 mb-1.5">
                 비밀번호
               </label>
               <input
@@ -157,12 +149,12 @@ export default function SignupPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="6자 이상"
                 required
-                className="w-full px-4 py-3 rounded-xl bg-[#0a0a0a] border border-[var(--border-light)] text-zinc-100 placeholder-zinc-600 text-sm focus:outline-none focus:border-[var(--accent)] transition-colors"
+                className="w-full px-4 py-3 rounded-lg bg-white border border-zinc-300 text-zinc-900 placeholder-zinc-400 text-sm focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-border)] transition-colors"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+              <label className="block text-sm font-medium text-zinc-700 mb-1.5">
                 비밀번호 확인
               </label>
               <input
@@ -171,12 +163,12 @@ export default function SignupPage() {
                 onChange={(e) => setPasswordConfirm(e.target.value)}
                 placeholder="비밀번호 재입력"
                 required
-                className="w-full px-4 py-3 rounded-xl bg-[#0a0a0a] border border-[var(--border-light)] text-zinc-100 placeholder-zinc-600 text-sm focus:outline-none focus:border-[var(--accent)] transition-colors"
+                className="w-full px-4 py-3 rounded-lg bg-white border border-zinc-300 text-zinc-900 placeholder-zinc-400 text-sm focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-border)] transition-colors"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+              <label className="block text-sm font-medium text-zinc-700 mb-1.5">
                 프로모션 코드 (선택)
               </label>
               <div className="flex gap-2">
@@ -188,13 +180,13 @@ export default function SignupPage() {
                     if (promoStatus !== "idle") setPromoStatus("idle");
                   }}
                   placeholder="있다면 입력하세요"
-                  className="flex-1 px-4 py-3 rounded-xl bg-[#0a0a0a] border border-[var(--border-light)] text-zinc-100 placeholder-zinc-600 text-sm focus:outline-none focus:border-[var(--accent)] transition-colors"
+                  className="flex-1 px-4 py-3 rounded-lg bg-white border border-zinc-300 text-zinc-900 placeholder-zinc-400 text-sm focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-border)] transition-colors"
                 />
                 <button
                   type="button"
                   onClick={handleValidatePromo}
                   disabled={!promoCode.trim() || promoStatus === "checking"}
-                  className="px-4 py-3 rounded-xl border border-[var(--border-light)] text-zinc-300 text-sm hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="px-4 py-3 rounded-lg border border-zinc-300 text-zinc-600 text-sm hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                   확인
                 </button>
@@ -208,12 +200,12 @@ export default function SignupPage() {
                 <p className="mt-1.5 text-xs text-zinc-500">확인 중...</p>
               )}
               {promoStatus === "valid" && (
-                <p className="mt-1.5 text-xs text-emerald-400">
+                <p className="mt-1.5 text-xs text-emerald-600">
                   ✓ 사용 가능한 코드입니다. 가입 시 +{promoBonusCredits}크레딧 보너스가 적용됩니다.
                 </p>
               )}
               {promoStatus === "invalid" && (
-                <p className="mt-1.5 text-xs text-red-400">
+                <p className="mt-1.5 text-xs text-red-600">
                   ✗ 유효하지 않은 코드입니다.
                 </p>
               )}
@@ -231,9 +223,9 @@ export default function SignupPage() {
                 id="terms"
                 checked={agreed}
                 onChange={(e) => setAgreed(e.target.checked)}
-                className="mt-1 w-4 h-4 rounded border-zinc-600 bg-[#0a0a0a] accent-[var(--accent)] cursor-pointer shrink-0"
+                className="mt-1 w-4 h-4 rounded border-zinc-300 accent-[var(--accent)] cursor-pointer shrink-0"
               />
-              <label htmlFor="terms" className="text-xs text-zinc-400 leading-relaxed cursor-pointer">
+              <label htmlFor="terms" className="text-xs text-zinc-600 leading-relaxed cursor-pointer">
                 <a
                   href="/terms"
                   target="_blank"
@@ -246,13 +238,13 @@ export default function SignupPage() {
             </div>
 
             {error && (
-              <p className="text-red-400 text-sm">{error}</p>
+              <p className="text-red-600 text-sm">{error}</p>
             )}
 
             <button
               type="submit"
               disabled={loading || !agreed}
-              className="w-full btn-primary py-3 rounded-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full btn-primary py-3 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? "가입 중..." : "회원가입"}
             </button>
@@ -270,7 +262,7 @@ export default function SignupPage() {
         </div>
 
         {/* Benefits */}
-        <div className="mt-6 text-center text-xs text-zinc-600">
+        <div className="mt-6 text-center text-xs text-zinc-500">
           가입 시 무료 체험 크레딧 5회가 제공됩니다
         </div>
       </div>

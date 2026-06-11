@@ -61,29 +61,21 @@ function LoginForm() {
   return (
     <div className="w-full max-w-[400px]">
       {/* Logo */}
-      <div className="text-center mb-10">
-        <a href="/" className="inline-flex items-center gap-2">
-          <span
-            className="text-3xl font-bold tracking-tighter"
-            style={{ fontFamily: "var(--font-en)" }}
-          >
-            Math
-          </span>
-          <span
-            className="text-3xl font-bold text-[var(--accent)]"
-            style={{ fontFamily: "var(--font-en)" }}
-          >
-            OCR
+      <div className="text-center mb-8">
+        <a href="/" className="inline-flex flex-col items-center gap-3">
+          <img src="/mathocr-icon.png" alt="MathOCR" width={56} height={56} />
+          <span className="text-2xl font-bold tracking-tight">
+            Math<span className="text-[var(--accent)]">OCR</span>
           </span>
         </a>
         <p className="text-zinc-500 text-sm mt-2">계정에 로그인하세요</p>
       </div>
 
       {/* Form Card */}
-      <div className="bezel-card rounded-2xl p-8">
+      <div className="card rounded-xl p-8 shadow-sm">
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+            <label className="block text-sm font-medium text-zinc-700 mb-1.5">
               이메일
             </label>
             <input
@@ -92,12 +84,12 @@ function LoginForm() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="example@email.com"
               required
-              className="w-full px-4 py-3 rounded-xl bg-[#0a0a0a] border border-[var(--border-light)] text-zinc-100 placeholder-zinc-600 text-sm focus:outline-none focus:border-[var(--accent)] transition-colors"
+              className="w-full px-4 py-3 rounded-lg bg-white border border-zinc-300 text-zinc-900 placeholder-zinc-400 text-sm focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-border)] transition-colors"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+            <label className="block text-sm font-medium text-zinc-700 mb-1.5">
               비밀번호
             </label>
             <input
@@ -106,7 +98,7 @@ function LoginForm() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="비밀번호 입력"
               required
-              className="w-full px-4 py-3 rounded-xl bg-[#0a0a0a] border border-[var(--border-light)] text-zinc-100 placeholder-zinc-600 text-sm focus:outline-none focus:border-[var(--accent)] transition-colors"
+              className="w-full px-4 py-3 rounded-lg bg-white border border-zinc-300 text-zinc-900 placeholder-zinc-400 text-sm focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-border)] transition-colors"
             />
           </div>
 
@@ -116,9 +108,9 @@ function LoginForm() {
                 type="checkbox"
                 checked={rememberEmail}
                 onChange={(e) => setRememberEmail(e.target.checked)}
-                className="w-4 h-4 rounded border-zinc-600 bg-[#0a0a0a] accent-[var(--accent)]"
+                className="w-4 h-4 rounded border-zinc-300 accent-[var(--accent)]"
               />
-              <span className="text-sm text-zinc-400">아이디 기억하기</span>
+              <span className="text-sm text-zinc-600">아이디 기억하기</span>
             </label>
             <a
               href="/auth/reset-password"
@@ -128,12 +120,12 @@ function LoginForm() {
             </a>
           </div>
 
-          {error && <p className="text-red-400 text-sm">{error}</p>}
+          {error && <p className="text-red-600 text-sm">{error}</p>}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full btn-primary py-3 rounded-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full btn-primary py-3 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "로그인 중..." : "로그인"}
           </button>
@@ -155,7 +147,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
+    <div className="min-h-screen flex items-center justify-center px-4 bg-zinc-50">
       <Suspense
         fallback={<div className="text-zinc-500">로딩 중...</div>}
       >

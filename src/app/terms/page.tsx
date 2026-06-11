@@ -2,22 +2,14 @@
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-20">
+    <div className="min-h-screen flex items-center justify-center px-4 py-20 bg-zinc-50">
       <div className="w-full max-w-3xl">
         {/* Header */}
         <div className="text-center mb-10">
-          <a href="/" className="inline-flex items-center gap-2">
-            <span
-              className="text-3xl font-bold tracking-tighter"
-              style={{ fontFamily: "var(--font-en)" }}
-            >
-              Math
-            </span>
-            <span
-              className="text-3xl font-bold text-[var(--accent)]"
-              style={{ fontFamily: "var(--font-en)" }}
-            >
-              OCR
+          <a href="/" className="inline-flex flex-col items-center gap-3">
+            <img src="/mathocr-icon.png" alt="MathOCR" width={48} height={48} />
+            <span className="text-2xl font-bold tracking-tight">
+              Math<span className="text-[var(--accent)]">OCR</span>
             </span>
           </a>
           <h1 className="text-2xl font-bold mt-4">서비스 이용약관</h1>
@@ -27,14 +19,14 @@ export default function TermsPage() {
         </div>
 
         {/* Terms Content */}
-        <div className="bezel-card rounded-2xl p-8 md:p-10">
+        <div className="card rounded-xl p-8 md:p-10 shadow-sm">
           <TermsContent />
         </div>
 
         <div className="mt-6 text-center">
           <a
             href="/"
-            className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
+            className="text-sm text-zinc-500 hover:text-zinc-900 transition-colors"
           >
             홈으로 돌아가기
           </a>
@@ -46,10 +38,10 @@ export default function TermsPage() {
 
 export function TermsContent() {
   return (
-    <div className="space-y-8 text-sm text-zinc-300 leading-relaxed">
+    <div className="space-y-8 text-sm text-zinc-600 leading-relaxed">
       {/* 제1조 */}
       <section>
-        <h2 className="text-lg font-semibold text-zinc-100 mb-3">
+        <h2 className="text-lg font-semibold text-zinc-900 mb-3">
           제1조 (목적)
         </h2>
         <p>
@@ -62,23 +54,23 @@ export function TermsContent() {
 
       {/* 제2조 */}
       <section>
-        <h2 className="text-lg font-semibold text-zinc-100 mb-3">
+        <h2 className="text-lg font-semibold text-zinc-900 mb-3">
           제2조 (용어의 정의)
         </h2>
         <ul className="list-disc pl-5 space-y-2">
           <li>
-            <strong className="text-zinc-100">서비스:</strong> 이용자가 업로드한
+            <strong className="text-zinc-900">서비스:</strong> 이용자가 업로드한
             PDF 또는 이미지 파일 내의 수학 문제를 OCR(광학 문자 인식) 기술을
             통해 추출하고, 이를 HWP(아래아한글) 형식으로 변환하여 제공하는
             소프트웨어 및 관련 부가 서비스를 의미합니다.
           </li>
           <li>
-            <strong className="text-zinc-100">콘텐츠:</strong> 이용자가 서비스
+            <strong className="text-zinc-900">콘텐츠:</strong> 이용자가 서비스
             이용을 위해 업로드하는 PDF, 이미지 파일 및 이를 통해 생성된 결과물을
             의미합니다.
           </li>
           <li>
-            <strong className="text-zinc-100">크레딧:</strong> 서비스 이용을 위해
+            <strong className="text-zinc-900">크레딧:</strong> 서비스 이용을 위해
             사전에 충전하는 유료 이용권으로, 문제 1건 변환 시 1크레딧이
             차감됩니다.
           </li>
@@ -87,7 +79,7 @@ export function TermsContent() {
 
       {/* 제3조 */}
       <section>
-        <h2 className="text-lg font-semibold text-zinc-100 mb-3">
+        <h2 className="text-lg font-semibold text-zinc-900 mb-3">
           제3조 (서비스의 제공 및 제한)
         </h2>
         <ol className="list-decimal pl-5 space-y-2">
@@ -108,7 +100,7 @@ export function TermsContent() {
 
       {/* 제4조 */}
       <section>
-        <h2 className="text-lg font-semibold text-zinc-100 mb-3">
+        <h2 className="text-lg font-semibold text-zinc-900 mb-3">
           제4조 (이용자의 의무 및 저작권 준수)
         </h2>
         <ol className="list-decimal pl-5 space-y-2">
@@ -133,7 +125,7 @@ export function TermsContent() {
 
       {/* 제5조 */}
       <section>
-        <h2 className="text-lg font-semibold text-zinc-100 mb-3">
+        <h2 className="text-lg font-semibold text-zinc-900 mb-3">
           제5조 (지식재산권의 귀속)
         </h2>
         <ol className="list-decimal pl-5 space-y-2">
@@ -151,7 +143,7 @@ export function TermsContent() {
 
       {/* 제6조 */}
       <section>
-        <h2 className="text-lg font-semibold text-zinc-100 mb-3">
+        <h2 className="text-lg font-semibold text-zinc-900 mb-3">
           제6조 (크레딧 및 결제)
         </h2>
         <ol className="list-decimal pl-5 space-y-2">
@@ -176,7 +168,7 @@ export function TermsContent() {
 
       {/* 제7조 */}
       <section>
-        <h2 className="text-lg font-semibold text-zinc-100 mb-3">
+        <h2 className="text-lg font-semibold text-zinc-900 mb-3">
           제7조 (개인정보 및 데이터 보호)
         </h2>
         <ol className="list-decimal pl-5 space-y-2">
@@ -194,24 +186,24 @@ export function TermsContent() {
 
       {/* 제8조 */}
       <section>
-        <h2 className="text-lg font-semibold text-zinc-100 mb-3">
+        <h2 className="text-lg font-semibold text-zinc-900 mb-3">
           제8조 (책임의 제한 및 면책)
         </h2>
         <ol className="list-decimal pl-5 space-y-2">
           <li>
-            <strong className="text-zinc-100">OCR 인식 오류 면책:</strong> 제공자는 OCR 변환 결과의 정확성,
+            <strong className="text-zinc-900">OCR 인식 오류 면책:</strong> 제공자는 OCR 변환 결과의 정확성,
             완전성, 특정 목적에의 적합성에 대하여 어떠한 보증도 하지 않습니다.
             수식, 기호, 도표 등의 오인식으로 인해 발생하는 모든 손해에 대하여
             제공자는 책임을 지지 않습니다. 이용자는 결과물을 사용하기 전
             반드시 원본과 대조하여 검토해야 합니다.
           </li>
           <li>
-            <strong className="text-zinc-100">서비스 중단:</strong> 천재지변,
+            <strong className="text-zinc-900">서비스 중단:</strong> 천재지변,
             서버 점검, 통신 장애 등 불가항력적인 사유로 서비스가 중단되어 발생한
             손해에 대하여 제공자는 책임을 면제받습니다.
           </li>
           <li>
-            <strong className="text-zinc-100">제3자 서비스:</strong> 본 프로그램이
+            <strong className="text-zinc-900">제3자 서비스:</strong> 본 프로그램이
             연동하여 사용하는 제3자 서비스(Mathpix, Anthropic Claude 등)의
             장애로 인한 서비스 불능에 대해서는 책임을 지지 않습니다.
           </li>
@@ -220,7 +212,7 @@ export function TermsContent() {
 
       {/* 제9조 */}
       <section>
-        <h2 className="text-lg font-semibold text-zinc-100 mb-3">
+        <h2 className="text-lg font-semibold text-zinc-900 mb-3">
           제9조 (금지행위)
         </h2>
         <p className="mb-2">
@@ -245,7 +237,7 @@ export function TermsContent() {
 
       {/* 제10조 */}
       <section>
-        <h2 className="text-lg font-semibold text-zinc-100 mb-3">
+        <h2 className="text-lg font-semibold text-zinc-900 mb-3">
           제10조 (약관의 변경)
         </h2>
         <ol className="list-decimal pl-5 space-y-2">
@@ -262,7 +254,7 @@ export function TermsContent() {
 
       {/* 제11조 */}
       <section>
-        <h2 className="text-lg font-semibold text-zinc-100 mb-3">
+        <h2 className="text-lg font-semibold text-zinc-900 mb-3">
           제11조 (준거법 및 재판관할)
         </h2>
         <ol className="list-decimal pl-5 space-y-2">
