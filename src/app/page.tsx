@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 const DOWNLOAD_URL =
-  "https://github.com/Hwan16/mathocr-web/releases/download/v1.3.1/MathOCR-Setup-v1.3.1.exe";
-const DOWNLOAD_LABEL = "v1.3.1 (124MB)";
+  "https://github.com/Hwan16/mathocr-web/releases/download/v1.4.0/MathOCR-Setup-v1.4.0.exe";
+const DOWNLOAD_LABEL = "v1.4.0 (124MB)";
 
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
