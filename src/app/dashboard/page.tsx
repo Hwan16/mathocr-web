@@ -210,8 +210,14 @@ export default function DashboardPage() {
                       <td className="px-6 py-3 text-center text-zinc-700">
                         {c.problem_count}
                       </td>
-                      <td className="px-6 py-3 text-center text-zinc-700">
-                        {c.credits_used}
+                      <td className="px-6 py-3 text-center">
+                        {c.credits_used > 0 ? (
+                          <span className="text-red-600 font-medium">
+                            -{c.credits_used}
+                          </span>
+                        ) : (
+                          <span className="text-zinc-300">—</span>
+                        )}
                       </td>
                       <td className="px-6 py-3 text-center">
                         {c.refunded_credits > 0 ? (
