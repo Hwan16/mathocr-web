@@ -152,9 +152,9 @@ export default function ReportPage() {
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-zinc-200">
         <div className="max-w-screen-lg mx-auto px-6 h-16 flex items-center justify-between">
           <a href="/" className="flex items-center gap-2.5">
-            <img src="/mathocr-icon.png" alt="MathOCR" width={36} height={36} />
+            <img src="/mathocr-icon.png" alt="AI MathOCR" width={36} height={36} />
             <span className="text-lg font-bold tracking-tight">
-              Math<span className="text-[var(--accent)]">OCR</span>
+              AI Math<span className="text-[var(--accent)]">OCR</span>
             </span>
           </a>
           <a href="/" className="text-sm text-zinc-500 hover:text-zinc-900 transition-colors">

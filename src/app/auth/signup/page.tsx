@@ -114,9 +114,9 @@ export default function SignupPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <a href="/" className="inline-flex flex-col items-center gap-3">
-            <img src="/mathocr-icon.png" alt="MathOCR" width={56} height={56} />
+            <img src="/mathocr-icon.png" alt="AI MathOCR" width={56} height={56} />
             <span className="text-2xl font-bold tracking-tight">
-              Math<span className="text-[var(--accent)]">OCR</span>
+              AI Math<span className="text-[var(--accent)]">OCR</span>
             </span>
           </a>
           <p className="text-zinc-500 text-sm mt-2">새 계정을 만드세요</p>

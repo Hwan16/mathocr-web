@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 const DOWNLOAD_URL =
-  "https://github.com/Hwan16/mathocr-web/releases/download/v1.4.2/MathOCR-Setup-v1.4.2.exe";
-const DOWNLOAD_LABEL = "v1.4.2 (124MB)";
+  "https://github.com/Hwan16/mathocr-web/releases/download/v1.5.0/MathOCR-Setup-v1.5.0.exe";
+const DOWNLOAD_LABEL = "v1.5.0 (124MB)";
 
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -23,9 +23,9 @@ export default function Home() {
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-zinc-200">
         <div className="max-w-screen-2xl mx-auto px-6 lg:px-12 h-16 flex items-center gap-10">
           <a href="/" className="flex items-center gap-2.5 shrink-0">
-            <img src="/mathocr-icon.png" alt="MathOCR" width={40} height={40} />
+            <img src="/mathocr-icon.png" alt="AI MathOCR" width={40} height={40} />
             <span className="text-xl font-bold tracking-tight">
-              Math<span className="text-[var(--accent)]">OCR</span>
+              AI Math<span className="text-[var(--accent)]">OCR</span>
             </span>
           </a>
 
@@ -125,7 +125,7 @@ export default function Home() {
                 <div className="flex items-center gap-2 px-4 h-9 bg-zinc-100 border-b border-zinc-200">
                   <img src="/mathocr-icon.png" alt="" width={16} height={16} />
                   <span className="text-[11px] text-zinc-600">
-                    MathOCR — 수학문제 PDF/이미지 → HWP 변환
+                    AI MathOCR — 수학문제 PDF/이미지 → HWP 변환
                   </span>
                   <div className="ml-auto flex gap-3 text-zinc-400 text-[10px]">
                     <span>─</span><span>□</span><span>✕</span>
@@ -489,7 +489,7 @@ export default function Home() {
                   <h3 className="font-bold text-lg">Windows PC 전용 프로그램입니다</h3>
                 </div>
                 <p className="text-zinc-600 leading-relaxed mb-5">
-                  MathOCR은 한글(HWP)과 연동되는 Windows 데스크톱 프로그램이라
+                  AI MathOCR은 한글(HWP)과 연동되는 Windows 데스크톱 프로그램이라
                   모바일에서는 설치할 수 없습니다.
                 </p>
                 <div className="bg-zinc-50 border border-zinc-200 rounded-lg p-4 text-sm text-zinc-700 leading-relaxed">
@@ -584,9 +584,9 @@ export default function Home() {
       <footer className="border-t border-zinc-200 py-10 bg-white">
         <div className="max-w-screen-2xl mx-auto px-6 lg:px-12 flex flex-col md:flex-row md:items-center justify-between gap-5">
           <div className="flex items-center gap-2">
-            <img src="/mathocr-icon.png" alt="MathOCR" width={28} height={28} />
+            <img src="/mathocr-icon.png" alt="AI MathOCR" width={28} height={28} />
             <span className="font-bold">
-              Math<span className="text-[var(--accent)]">OCR</span>
+              AI Math<span className="text-[var(--accent)]">OCR</span>
             </span>
           </div>
           <div className="flex items-center gap-6 text-sm text-zinc-500">
@@ -601,7 +601,7 @@ export default function Home() {
             </a>
           </div>
           <div className="text-sm text-zinc-400">
-            &copy; 2026 MathOCR. All rights reserved.
+            &copy; 2026 AI MathOCR. All rights reserved.
           </div>
         </div>
       </footer>

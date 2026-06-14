@@ -7,9 +7,9 @@ export default function TermsPage() {
         {/* Header */}
         <div className="text-center mb-10">
           <a href="/" className="inline-flex flex-col items-center gap-3">
-            <img src="/mathocr-icon.png" alt="MathOCR" width={48} height={48} />
+            <img src="/mathocr-icon.png" alt="AI MathOCR" width={48} height={48} />
             <span className="text-2xl font-bold tracking-tight">
-              Math<span className="text-[var(--accent)]">OCR</span>
+              AI Math<span className="text-[var(--accent)]">OCR</span>
             </span>
           </a>
           <h1 className="text-2xl font-bold mt-4">서비스 이용약관</h1>
@@ -45,7 +45,7 @@ export function TermsContent() {
           제1조 (목적)
         </h2>
         <p>
-          본 약관은 MathOCR(이하 &ldquo;본 프로그램&rdquo;)을 제공함에 있어,
+          본 약관은 AI MathOCR(이하 &ldquo;본 프로그램&rdquo;)을 제공함에 있어,
           개발자(이하 &ldquo;제공자&rdquo;)와 서비스를 이용하는
           이용자(이하 &ldquo;이용자&rdquo;) 간의 권리, 의무 및 책임 사항,
           서비스 이용 조건 및 절차 등 기본적인 사항을 규정함을 목적으로 합니다.

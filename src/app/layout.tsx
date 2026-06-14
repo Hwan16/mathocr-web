@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "MathOCR — 수학문제 PDF를 편집 가능한 HWP로",
+  title: "AI MathOCR — 수학문제 PDF를 편집 가능한 HWP로",
   description:
     "수식을 이미지가 아닌 수식편집기 객체로 변환합니다. 교재, 시험지를 몇 번의 클릭만으로 HWP 문서로.",
 };
