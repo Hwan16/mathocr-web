@@ -37,6 +37,14 @@ export default function Home() {
           </nav>
 
           <div className="flex items-center gap-3 ml-auto">
+            <a
+              href="/report"
+              className="inline-flex items-center gap-1.5 text-sm font-semibold px-4 py-2.5 rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-colors"
+            >
+              <span aria-hidden>⚠</span>
+              <span className="hidden sm:inline">변환이 실패했어요</span>
+              <span className="sm:hidden">변환 실패</span>
+            </a>
             {isLoggedIn ? (
               <a href="/dashboard" className="btn-primary text-sm px-5 py-2.5 rounded-lg">
                 마이페이지
@@ -57,6 +65,14 @@ export default function Home() {
           </div>
         </div>
       </header>
+
+      {/* ── 변환 실패 신고: 우하단 플로팅 버튼 (스크롤 따라다님) ── */}
+      <a
+        href="/report"
+        className="fixed bottom-6 right-6 z-50 inline-flex items-center gap-2 px-5 py-3.5 rounded-full bg-red-600 text-white text-sm font-semibold shadow-lg shadow-red-600/30 hover:bg-red-700 transition-colors"
+      >
+        <span aria-hidden>⚠</span> 변환이 안됐나요?
+      </a>
 
       {/* ── Hero ── */}
       <section className="border-b border-zinc-200 bg-gradient-to-b from-[var(--accent-soft)] to-white">

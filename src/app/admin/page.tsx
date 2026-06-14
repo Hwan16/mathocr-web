@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 
-type Tab = "users" | "logs" | "stats";
+type Tab = "users" | "logs" | "stats" | "reports";
 
 interface AdminUser {
   id: string;
@@ -73,6 +73,7 @@ export default function AdminPage() {
 
   const tabs: { key: Tab; label: string }[] = [
     { key: "users", label: "유저 관리" },
+    { key: "reports", label: "변환 리포트" },
     { key: "logs", label: "오류 로그" },
     { key: "stats", label: "통계" },
   ];
@@ -131,6 +132,7 @@ export default function AdminPage() {
         </div>
 
         {tab === "users" && <UsersTab />}
+        {tab === "reports" && <ReportsTab />}
         {tab === "logs" && <LogsTab />}
         {tab === "stats" && <StatsTab />}
       </div>
@@ -538,6 +540,260 @@ function StatsTab() {
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+/* ── 변환 리포트 탭 ── */
+interface ReportEntry {
+  id: string;
+  user_id: string;
+  email: string | null;
+  comment: string;
+  status: "received" | "reviewed" | "accepted" | "rejected";
+  rewarded: boolean;
+  rewarded_at: string | null;
+  created_at: string;
+  original_url: string | null;
+  converted_url: string | null;
+}
+
+const STATUS_META: Record<
+  ReportEntry["status"],
+  { label: string; cls: string }
+> = {
+  received: { label: "접수", cls: "bg-zinc-100 text-zinc-600 border-zinc-200" },
+  reviewed: { label: "확인", cls: "bg-blue-500/10 text-blue-600 border-blue-500/20" },
+  accepted: { label: "채택", cls: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" },
+  rejected: { label: "반려", cls: "bg-red-500/10 text-red-600 border-red-500/20" },
+};
+
+// 수동 상태 토글에서는 '채택'을 빼고 접수/확인/반려만. 채택은 보상 지급 버튼 전용.
+const TOGGLE_STATUSES: ReportEntry["status"][] = ["received", "reviewed", "rejected"];
+
+function ReportsTab() {
+  const [reports, setReports] = useState<ReportEntry[]>([]);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [statusFilter, setStatusFilter] = useState("");
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [lightbox, setLightbox] = useState<string | null>(null);
+  const limit = 10;
+
+  const load = useCallback(async () => {
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+    if (statusFilter) params.set("status", statusFilter);
+    const res = await fetch(`/api/admin/reports?${params.toString()}`);
+    if (!res.ok) {
+      setReports([]);
+      setTotal(0);
+      return;
+    }
+    const data = await res.json();
+    setReports((data.reports as ReportEntry[]) ?? []);
+    setTotal(data.total ?? 0);
+  }, [page, statusFilter]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function setStatus(id: string, status: string) {
+    setBusyId(id);
+    const res = await fetch(`/api/admin/reports/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    setBusyId(null);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error ?? "상태 변경에 실패했습니다.");
+    }
+    load();
+  }
+
+  async function reward(id: string) {
+    if (!confirm("이 신고자에게 50크레딧을 지급할까요? (신고가 '채택' 처리됩니다)")) return;
+    setBusyId(id);
+    const res = await fetch(`/api/admin/reports/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reward: true }),
+    });
+    const data = await res.json().catch(() => ({}));
+    setBusyId(null);
+    if (!res.ok) alert(data.error ?? "지급에 실패했습니다.");
+    load();
+  }
+
+  const totalPages = Math.ceil(total / limit);
+  const filters: [string, string][] = [
+    ["", "전체"],
+    ["received", "접수"],
+    ["reviewed", "확인"],
+    ["accepted", "채택"],
+    ["rejected", "반려"],
+  ];
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-2 flex-wrap items-center">
+        {filters.map(([v, label]) => (
+          <button
+            key={v || "all"}
+            onClick={() => {
+              setStatusFilter(v);
+              setPage(1);
+            }}
+            className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+              statusFilter === v
+                ? "bg-[var(--accent)] text-white"
+                : "text-zinc-600 hover:text-zinc-800 border border-[var(--border-light)]"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+        <span className="ml-auto text-sm text-zinc-500">총 {total}건</span>
+      </div>
+
+      {reports.length === 0 ? (
+        <div className="bezel-card rounded-2xl px-6 py-12 text-center text-zinc-500">
+          신고가 없습니다.
+        </div>
+      ) : (
+        reports.map((r) => (
+          <div key={r.id} className="bezel-card rounded-2xl p-5">
+            <div className="flex items-center gap-3 mb-4 flex-wrap">
+              <span
+                className={`text-xs px-2 py-0.5 rounded-full border ${STATUS_META[r.status].cls}`}
+              >
+                {STATUS_META[r.status].label}
+              </span>
+              <span className="text-sm font-medium text-zinc-800">
+                {r.email ?? "(이메일 없음)"}
+              </span>
+              <span className="text-xs text-zinc-400 font-mono">
+                {r.user_id.slice(0, 8)}
+              </span>
+              <span className="text-xs text-zinc-500 ml-auto">
+                {new Date(r.created_at).toLocaleString("ko-KR")}
+              </span>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4 mb-4">
+              <ReportImage label="원본 시험지" url={r.original_url} onOpen={setLightbox} />
+              <ReportImage label="변환 결과" url={r.converted_url} onOpen={setLightbox} />
+            </div>
+
+            <div className="rounded-xl bg-zinc-50 border border-[var(--border-subtle)] px-4 py-3 mb-4">
+              <div className="text-xs text-zinc-400 mb-1">신고 내용</div>
+              <p className="text-sm text-zinc-700 whitespace-pre-wrap break-words">
+                {r.comment}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              {TOGGLE_STATUSES.map((s) => (
+                <button
+                  key={s}
+                  disabled={busyId === r.id}
+                  onClick={() => setStatus(r.id, s)}
+                  className={`px-3 py-1.5 rounded-lg text-xs border transition-colors disabled:opacity-50 ${
+                    r.status === s
+                      ? "bg-zinc-900 text-white border-zinc-900"
+                      : "text-zinc-600 border-[var(--border-light)] hover:bg-zinc-50"
+                  }`}
+                >
+                  {STATUS_META[s].label}
+                </button>
+              ))}
+              <div className="ml-auto">
+                {r.rewarded ? (
+                  <span className="text-xs px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                    ✓ 50크레딧 지급됨
+                  </span>
+                ) : (
+                  <button
+                    disabled={busyId === r.id}
+                    onClick={() => reward(r.id)}
+                    className="btn-primary text-xs px-4 py-1.5 rounded-lg disabled:opacity-50"
+                  >
+                    채택 + 50크레딧 지급
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        ))
+      )}
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-2">
+          <span className="text-sm text-zinc-500">총 {total}건</span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="px-3 py-1 rounded-lg text-sm border border-[var(--border-light)] text-zinc-600 disabled:opacity-30"
+            >
+              이전
+            </button>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="px-3 py-1 rounded-lg text-sm border border-[var(--border-light)] text-zinc-600 disabled:opacity-30"
+            >
+              다음
+            </button>
+          </div>
+        </div>
+      )}
+
+      {lightbox && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-8 cursor-zoom-out"
+          onClick={() => setLightbox(null)}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={lightbox}
+            alt="신고 이미지 원본"
+            className="max-w-full max-h-full object-contain rounded-lg"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ReportImage({
+  label,
+  url,
+  onOpen,
+}: {
+  label: string;
+  url: string | null;
+  onOpen: (u: string) => void;
+}) {
+  return (
+    <div>
+      <div className="text-xs text-zinc-500 mb-1.5">{label}</div>
+      {url ? (
+        <button
+          type="button"
+          onClick={() => onOpen(url)}
+          className="block w-full aspect-[4/3] rounded-xl overflow-hidden border border-[var(--border-light)] bg-zinc-50 hover:border-[var(--accent)] transition-colors"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={url} alt={label} className="w-full h-full object-contain" />
+        </button>
+      ) : (
+        <div className="w-full aspect-[4/3] rounded-xl border border-[var(--border-light)] bg-zinc-50 flex items-center justify-center text-xs text-zinc-400">
+          이미지 없음
+        </div>
+      )}
     </div>
   );
 }

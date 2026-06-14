@@ -283,3 +283,76 @@ grant execute on function public.deduct_credits(uuid, integer, text) to service_
 grant execute on function public.add_credits(uuid, integer, integer, text) to service_role;
 grant execute on function public.add_credits_raw(uuid, integer) to service_role;
 grant execute on function public.finalize_conversion(uuid, uuid, text) to service_role;
+
+-- ============================================
+-- 11. conversion_reports 테이블 (변환 실패/오변환 사용자 신고)
+-- ============================================
+-- 상세는 migrations/0002_conversion_reports.sql 참고. 이미지는 Storage
+-- 'reports'(비공개) 버킷에 저장하고 경로만 여기에 기록한다.
+create table if not exists public.conversion_reports (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  comment text not null,
+  original_image_path text,
+  converted_image_path text,
+  status text not null default 'received'
+    check (status in ('received', 'reviewed', 'accepted', 'rejected')),
+  rewarded boolean not null default false,
+  rewarded_at timestamptz,
+  created_at timestamptz not null default now(),
+  -- '채택'은 보상 지급된 신고에만 허용(채택은 reward_report() 경로로만). 0003 동기화.
+  constraint conversion_reports_accepted_requires_reward
+    check (status <> 'accepted' or rewarded = true)
+);
+
+create index if not exists idx_conversion_reports_user_id on public.conversion_reports(user_id);
+create index if not exists idx_conversion_reports_created_at on public.conversion_reports(created_at);
+create index if not exists idx_conversion_reports_status on public.conversion_reports(status);
+
+-- RLS: 본인 신고 조회만. 생성/상태변경/보상은 서버(service_role)에서만.
+alter table public.conversion_reports enable row level security;
+
+create policy "본인 신고 조회"
+  on public.conversion_reports for select
+  using (auth.uid() = user_id);
+
+-- Storage 버킷 'reports' (비공개)
+insert into storage.buckets (id, name, public)
+values ('reports', 'reports', false)
+on conflict (id) do nothing;
+
+-- 신고 채택 보상 함수 (원자적 50크레딧 지급 + 중복 방지)
+create or replace function public.reward_report(
+  p_report_id uuid,
+  p_credits integer
+)
+returns jsonb as $$
+declare
+  v_user_id uuid;
+  v_updated integer;
+  v_new_credits integer;
+begin
+  update public.conversion_reports
+  set rewarded = true, rewarded_at = now(), status = 'accepted'
+  where id = p_report_id and rewarded = false
+  returning user_id into v_user_id;
+
+  get diagnostics v_updated = row_count;
+  if v_updated = 0 then
+    return jsonb_build_object('success', false, 'error', 'already_rewarded_or_not_found');
+  end if;
+
+  update public.profiles
+  set credits = credits + p_credits
+  where id = v_user_id
+  returning credits into v_new_credits;
+
+  insert into public.payments (user_id, amount, credits_added, pg_transaction_id, status)
+  values (v_user_id, 0, p_credits, 'report_reward_' || p_report_id::text, 'completed');
+
+  return jsonb_build_object('success', true, 'user_id', v_user_id, 'new_credits', v_new_credits);
+end;
+$$ language plpgsql security definer set search_path = public, pg_temp;
+
+revoke execute on function public.reward_report(uuid, integer) from public, anon, authenticated;
+grant execute on function public.reward_report(uuid, integer) to service_role;
