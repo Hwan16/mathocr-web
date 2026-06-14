@@ -15,8 +15,9 @@ export async function PATCH(
   }
 
   let status: unknown;
+  let failedCount: unknown;
   try {
-    ({ status } = await request.json());
+    ({ status, failed_count: failedCount } = await request.json());
   } catch {
     return NextResponse.json({ error: "요청 JSON을 읽을 수 없습니다." }, { status: 400 });
   }
@@ -30,16 +31,28 @@ export async function PATCH(
 
   const adminClient = createAdminClient();
 
-  // 상태 전환 + (실패 시) 환불을 단일 트랜잭션·원자적으로 처리.
-  // started 행 1건만 전환되므로 동시 요청에 의한 이중 환불이 불가능하다.
-  const { data, error } = await adminClient.rpc("finalize_conversion", {
-    p_conversion_id: id,
-    p_user_id: user.id,
-    p_status: status,
-  });
+  // 완료 + 실패 개수가 있으면 부분 환불 경로로 처리한다.
+  // (started 행 1건만 전환되므로 동시 요청에 의한 이중 환불이 불가능하다.)
+  const isPartialRefund =
+    status === "completed" &&
+    typeof failedCount === "number" &&
+    Number.isFinite(failedCount) &&
+    failedCount > 0;
+
+  const { data, error } = isPartialRefund
+    ? await adminClient.rpc("complete_conversion_with_refund", {
+        p_conversion_id: id,
+        p_user_id: user.id,
+        p_failed_count: Math.floor(failedCount as number),
+      })
+    : await adminClient.rpc("finalize_conversion", {
+        p_conversion_id: id,
+        p_user_id: user.id,
+        p_status: status,
+      });
 
   if (error) {
-    console.error("[conversions:PATCH] finalize_conversion failed", error);
+    console.error("[conversions:PATCH] finalize failed", error);
     return NextResponse.json(
       { error: "변환 상태를 업데이트하지 못했습니다." },
       { status: 500 }
@@ -54,5 +67,9 @@ export async function PATCH(
     );
   }
 
-  return NextResponse.json({ success: true, status });
+  return NextResponse.json({
+    success: true,
+    status,
+    refunded: data.refunded ?? 0,
+  });
 }

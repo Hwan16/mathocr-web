@@ -16,6 +16,7 @@ interface Conversion {
   pdf_name: string | null;
   problem_count: number;
   credits_used: number;
+  refunded_credits: number;
   status: string;
   created_at: string;
 }
@@ -190,6 +191,7 @@ export default function DashboardPage() {
                     <th className="px-6 py-3 font-medium text-center">
                       크레딧
                     </th>
+                    <th className="px-6 py-3 font-medium text-center">반환</th>
                     <th className="px-6 py-3 font-medium text-center">상태</th>
                   </tr>
                 </thead>
@@ -210,6 +212,18 @@ export default function DashboardPage() {
                       </td>
                       <td className="px-6 py-3 text-center text-zinc-700">
                         {c.credits_used}
+                      </td>
+                      <td className="px-6 py-3 text-center">
+                        {c.refunded_credits > 0 ? (
+                          <span
+                            className="text-emerald-600 font-medium"
+                            title="변환에 실패한 문제만큼 자동 반환된 크레딧입니다."
+                          >
+                            +{c.refunded_credits}
+                          </span>
+                        ) : (
+                          <span className="text-zinc-300">—</span>
+                        )}
                       </td>
                       <td className="px-6 py-3 text-center">
                         <StatusBadge status={c.status} />

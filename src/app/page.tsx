@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 const DOWNLOAD_URL =
-  "https://github.com/Hwan16/mathocr-web/releases/download/v1.4.0/MathOCR-Setup-v1.4.0.exe";
-const DOWNLOAD_LABEL = "v1.4.0 (124MB)";
+  "https://github.com/Hwan16/mathocr-web/releases/download/v1.4.1/MathOCR-Setup-v1.4.1.exe";
+const DOWNLOAD_LABEL = "v1.4.1 (124MB)";
 
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -37,13 +37,13 @@ export default function Home() {
           </nav>
 
           <div className="flex items-center gap-3 ml-auto">
+            {/* PC 전용 기능이라 모바일(md 미만)에서는 숨긴다 */}
             <a
               href="/report"
-              className="inline-flex items-center gap-1.5 text-sm font-semibold px-4 py-2.5 rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-colors"
+              className="hidden md:inline-flex items-center gap-1.5 text-sm font-semibold px-4 py-2.5 rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-colors"
             >
               <span aria-hidden>⚠</span>
-              <span className="hidden sm:inline">변환이 실패했어요</span>
-              <span className="sm:hidden">변환 실패</span>
+              변환이 안됐나요?
             </a>
             {isLoggedIn ? (
               <a href="/dashboard" className="btn-primary text-sm px-5 py-2.5 rounded-lg">
@@ -66,10 +66,10 @@ export default function Home() {
         </div>
       </header>
 
-      {/* ── 변환 실패 신고: 우하단 플로팅 버튼 (스크롤 따라다님) ── */}
+      {/* ── 변환 실패 신고: 우하단 플로팅 버튼 (스크롤 따라다님, PC 전용이라 모바일 숨김) ── */}
       <a
         href="/report"
-        className="fixed bottom-6 right-6 z-50 inline-flex items-center gap-2 px-5 py-3.5 rounded-full bg-red-600 text-white text-sm font-semibold shadow-lg shadow-red-600/30 hover:bg-red-700 transition-colors"
+        className="fixed bottom-6 right-6 z-50 hidden md:inline-flex items-center gap-2 px-5 py-3.5 rounded-full bg-red-600 text-white text-sm font-semibold shadow-lg shadow-red-600/30 hover:bg-red-700 transition-colors"
       >
         <span aria-hidden>⚠</span> 변환이 안됐나요?
       </a>
@@ -419,7 +419,7 @@ export default function Home() {
               <ul className="space-y-3 mb-8 text-[15px] text-zinc-600">
                 {[
                   "100문제 2,500원 · 1,000문제 25,000원",
-                  "실패한 문제는 자동 환불",
+                  "실패한 문제는 크레딧 자동 반환",
                   "변환 이력 대시보드 제공",
                 ].map((t) => (
                   <li key={t} className="flex items-center gap-2.5">
@@ -520,7 +520,7 @@ export default function Home() {
                 },
                 {
                   q: "인식이 틀리면 크레딧은 어떻게 되나요?",
-                  a: "변환에 실패한 문제는 원본 이미지로 대체 삽입되고, 해당 문제의 크레딧은 환불됩니다. 변환 결과 요약에서 실패한 문제 번호를 확인할 수 있습니다.",
+                  a: "변환에 실패한 문제는 원본 이미지로 대체 삽입되고, 해당 문제의 크레딧은 자동으로 반환됩니다. 변환 결과 요약에서 실패한 문제 번호를 확인할 수 있습니다.",
                 },
                 {
                   q: "설치할 때 Windows 보안 경고가 떠요.",

@@ -66,6 +66,7 @@ create table public.conversions (
   pdf_name text,
   problem_count integer not null default 0,
   credits_used integer not null default 0,
+  refunded_credits integer not null default 0,  -- 이 변환에서 환불된 크레딧(부분/전액 공통)
   status text not null default 'started' check (status in ('started', 'completed', 'failed')),
   created_at timestamptz not null default now()
 );
@@ -243,7 +244,8 @@ begin
   end if;
 
   update public.conversions
-  set status = p_status
+  set status = p_status,
+      refunded_credits = case when p_status = 'failed' then credits_used else refunded_credits end
   where id = p_conversion_id
     and user_id = p_user_id
     and status = 'started'
@@ -269,6 +271,42 @@ begin
 end;
 $$ language plpgsql security definer set search_path = public, pg_temp;
 
+-- 완료 + 부분 환불: 변환 완료 시 실패 개수만큼(credits_used 이하) 환불. 0004 동기화.
+create or replace function public.complete_conversion_with_refund(
+  p_conversion_id uuid,
+  p_user_id uuid,
+  p_failed_count integer
+)
+returns jsonb as $$
+declare
+  v_refund integer;
+  v_updated integer;
+  v_new_credits integer;
+begin
+  update public.conversions
+  set status = 'completed',
+      refunded_credits = least(greatest(coalesce(p_failed_count, 0), 0), credits_used)
+  where id = p_conversion_id
+    and user_id = p_user_id
+    and status = 'started'
+  returning refunded_credits into v_refund;
+
+  get diagnostics v_updated = row_count;
+  if v_updated = 0 then
+    return jsonb_build_object('success', false, 'error', 'not_pending');
+  end if;
+
+  if v_refund > 0 then
+    update public.profiles
+    set credits = credits + v_refund
+    where id = p_user_id
+    returning credits into v_new_credits;
+  end if;
+
+  return jsonb_build_object('success', true, 'status', 'completed', 'refunded', coalesce(v_refund, 0), 'new_credits', v_new_credits);
+end;
+$$ language plpgsql security definer set search_path = public, pg_temp;
+
 -- ============================================
 -- 10. 함수 실행 권한 (서버 service_role 전용)
 -- ============================================
@@ -283,6 +321,9 @@ grant execute on function public.deduct_credits(uuid, integer, text) to service_
 grant execute on function public.add_credits(uuid, integer, integer, text) to service_role;
 grant execute on function public.add_credits_raw(uuid, integer) to service_role;
 grant execute on function public.finalize_conversion(uuid, uuid, text) to service_role;
+
+revoke execute on function public.complete_conversion_with_refund(uuid, uuid, integer) from public, anon, authenticated;
+grant execute on function public.complete_conversion_with_refund(uuid, uuid, integer) to service_role;
 
 -- ============================================
 -- 11. conversion_reports 테이블 (변환 실패/오변환 사용자 신고)

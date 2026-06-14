@@ -26,6 +26,7 @@ export interface Conversion {
   pdf_name: string | null;
   problem_count: number;
   credits_used: number;
+  refunded_credits: number;
   status: "started" | "completed" | "failed";
   created_at: string;
 }

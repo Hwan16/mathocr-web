@@ -190,11 +190,13 @@ export default function ReportPage() {
           </div>
           <div className="card rounded-xl p-6">
             <div className="text-2xl mb-3">↩️</div>
-            <h3 className="font-semibold mb-2">실패하면 자동 환불돼요</h3>
+            <h3 className="font-semibold mb-2">실패하면 크레딧이 자동 반환돼요</h3>
             <p className="text-sm text-zinc-600 leading-relaxed">
-              변환에 실패하면 프로그램에 알림창이 뜨고, 해당 문제에 쓰인 크레딧은{" "}
-              <span className="font-semibold text-zinc-800">자동으로 환불</span>
-              되니 안심하세요.
+              변환이 끝나면 프로그램에 완료 창이 뜨는데, 일부 문제가 인식에 실패했다면{" "}
+              <span className="font-semibold text-zinc-800">
+                “N개 문제 실패 → N크레딧 자동 반환”
+              </span>{" "}
+              이라고 함께 안내돼요. 반환된 크레딧은 마이페이지 변환 이력에서도 확인할 수 있어요.
             </p>
           </div>
           <div className="card rounded-xl p-6 !border-[var(--accent)]">
@@ -213,9 +215,14 @@ export default function ReportPage() {
         {/* 신고 폼 */}
         <section className="mt-14">
           <h2 className="text-2xl font-bold tracking-tight mb-2">신고하기</h2>
-          <p className="text-zinc-600 mb-8">
-            특히 <span className="font-medium text-zinc-800">수학 수식이 잘못 변환된 경우</span>처럼
-            결과가 명백히 틀렸을 때 알려주시면 큰 도움이 됩니다.
+          <p className="text-zinc-600 mb-8 leading-relaxed">
+            모든 변환을 신고하실 필요는 없어요. 다만{" "}
+            <span className="font-medium text-zinc-800">
+              화질이 좋은 원본인데도 결과가 이상하게 나왔다면
+            </span>
+            {" "}— 특히 수학 수식이 잘못 변환된 경우처럼 명백히 틀렸다면 — 아래{" "}
+            <span className="font-medium text-zinc-800">[신고 보내기]</span>로
+            어떤 부분이 잘못됐는지 알려주세요. 큰 도움이 됩니다.
           </p>
 
           {loggedIn === false ? (

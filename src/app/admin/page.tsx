@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 
-type Tab = "users" | "logs" | "stats" | "reports";
+type Tab = "users" | "logs" | "stats" | "reports" | "refunds";
 
 interface AdminUser {
   id: string;
@@ -74,6 +74,7 @@ export default function AdminPage() {
   const tabs: { key: Tab; label: string }[] = [
     { key: "users", label: "유저 관리" },
     { key: "reports", label: "변환 리포트" },
+    { key: "refunds", label: "크레딧 반환" },
     { key: "logs", label: "오류 로그" },
     { key: "stats", label: "통계" },
   ];
@@ -133,6 +134,7 @@ export default function AdminPage() {
 
         {tab === "users" && <UsersTab />}
         {tab === "reports" && <ReportsTab />}
+        {tab === "refunds" && <RefundsTab />}
         {tab === "logs" && <LogsTab />}
         {tab === "stats" && <StatsTab />}
       </div>
@@ -792,6 +794,170 @@ function ReportImage({
       ) : (
         <div className="w-full aspect-[4/3] rounded-xl border border-[var(--border-light)] bg-zinc-50 flex items-center justify-center text-xs text-zinc-400">
           이미지 없음
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── 크레딧 반환 내역 탭 ── */
+interface RefundEntry {
+  id: string;
+  user_id: string;
+  email: string | null;
+  pdf_name: string | null;
+  problem_count: number;
+  credits_used: number;
+  refunded_credits: number;
+  status: string;
+  created_at: string;
+}
+
+function RefundsTab() {
+  const [refunds, setRefunds] = useState<RefundEntry[]>([]);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [filterUserId, setFilterUserId] = useState<string | null>(null);
+  const [filterEmail, setFilterEmail] = useState<string | null>(null);
+  const limit = 20;
+
+  const load = useCallback(async () => {
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+    if (filterUserId) params.set("user_id", filterUserId);
+    const res = await fetch(`/api/admin/refunds?${params.toString()}`);
+    if (!res.ok) {
+      setRefunds([]);
+      setTotal(0);
+      return;
+    }
+    const data = await res.json();
+    setRefunds((data.refunds as RefundEntry[]) ?? []);
+    setTotal(data.total ?? 0);
+  }, [page, filterUserId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  function toggleUser(userId: string, email: string | null) {
+    if (filterUserId === userId) {
+      setFilterUserId(null);
+      setFilterEmail(null);
+    } else {
+      setFilterUserId(userId);
+      setFilterEmail(email);
+    }
+    setPage(1);
+  }
+
+  const totalPages = Math.ceil(total / limit);
+
+  return (
+    <div className="bezel-card rounded-2xl overflow-hidden">
+      <div className="px-6 py-4 border-b border-[var(--border-subtle)] flex items-center justify-between">
+        <h2 className="text-lg font-semibold">
+          크레딧 반환 내역{" "}
+          <span className="text-sm font-normal text-zinc-500">({total}건)</span>
+        </h2>
+        {filterEmail && (
+          <button
+            onClick={() => {
+              setFilterUserId(null);
+              setFilterEmail(null);
+              setPage(1);
+            }}
+            className="flex items-center gap-2 text-xs px-3 py-1 rounded-full bg-[var(--accent)]/10 text-[var(--accent)] border border-[var(--accent)]/20 hover:opacity-80 transition-opacity"
+          >
+            {filterEmail}
+            <span>✕</span>
+          </button>
+        )}
+      </div>
+
+      {refunds.length === 0 ? (
+        <div className="px-6 py-12 text-center text-zinc-500">
+          {filterEmail
+            ? `${filterEmail}의 반환 내역이 없습니다.`
+            : "반환 내역이 없습니다."}
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-zinc-500 border-b border-[var(--border-subtle)]">
+                <th className="px-6 py-3 font-medium">날짜</th>
+                <th className="px-6 py-3 font-medium">유저</th>
+                <th className="px-6 py-3 font-medium">파일</th>
+                <th className="px-6 py-3 font-medium text-center">사용</th>
+                <th className="px-6 py-3 font-medium text-center">반환</th>
+                <th className="px-6 py-3 font-medium text-center">사유</th>
+              </tr>
+            </thead>
+            <tbody>
+              {refunds.map((r) => (
+                <tr
+                  key={r.id}
+                  className="border-b border-[var(--border-subtle)] last:border-0 hover:bg-zinc-50"
+                >
+                  <td className="px-6 py-3 text-zinc-600">
+                    {new Date(r.created_at).toLocaleString("ko-KR")}
+                  </td>
+                  <td className="px-6 py-3">
+                    <button
+                      onClick={() => toggleUser(r.user_id, r.email)}
+                      className={`hover:text-[var(--accent)] transition-colors ${
+                        filterUserId === r.user_id
+                          ? "text-[var(--accent)] font-semibold"
+                          : "text-zinc-700"
+                      }`}
+                    >
+                      {r.email ?? r.user_id.slice(0, 8)}
+                    </button>
+                  </td>
+                  <td className="px-6 py-3 text-zinc-700">{r.pdf_name || "—"}</td>
+                  <td className="px-6 py-3 text-center text-zinc-600">
+                    {r.credits_used}
+                  </td>
+                  <td className="px-6 py-3 text-center text-emerald-600 font-medium">
+                    +{r.refunded_credits}
+                  </td>
+                  <td className="px-6 py-3 text-center">
+                    <span
+                      className={`text-xs px-2 py-0.5 rounded-full border ${
+                        r.status === "failed"
+                          ? "bg-red-500/10 text-red-600 border-red-500/20"
+                          : "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                      }`}
+                    >
+                      {r.status === "failed" ? "전체 실패" : "일부 실패"}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="px-6 py-4 border-t border-[var(--border-subtle)] flex items-center justify-between">
+          <span className="text-sm text-zinc-500">{total}건</span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="px-3 py-1 rounded-lg text-sm border border-[var(--border-light)] text-zinc-600 disabled:opacity-30"
+            >
+              이전
+            </button>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="px-3 py-1 rounded-lg text-sm border border-[var(--border-light)] text-zinc-600 disabled:opacity-30"
+            >
+              다음
+            </button>
+          </div>
         </div>
       )}
     </div>
