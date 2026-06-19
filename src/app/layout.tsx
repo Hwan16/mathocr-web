@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { GoogleAnalytics } from "@next/third-parties/google";
+import StructuredData from "./structured-data";
 import "./globals.css";
 
 // GA4 측정 ID (공개 값 — 모든 페이지 HTML에 노출되는 값이라 비밀 아님)
@@ -100,6 +101,7 @@ export default function RootLayout({
       </head>
       <body className="antialiased bg-white text-zinc-900" suppressHydrationWarning>
         {children}
+        <StructuredData />
       </body>
       {/* GA4: 실제 배포(production)에서만 로드 — 로컬/개발 접속은 추적하지 않음 */}
       {process.env.NODE_ENV === "production" && (
