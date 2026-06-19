@@ -3,6 +3,7 @@
 import { Suspense, useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
+import { trackEvent } from "@/lib/analytics";
 
 const SAVED_EMAIL_KEY = "mathocr_saved_email";
 
@@ -49,6 +50,7 @@ function LoginForm() {
         localStorage.removeItem(SAVED_EMAIL_KEY);
       }
 
+      trackEvent("login", { method: "password" });
       router.push(redirect);
       router.refresh();
     } catch {

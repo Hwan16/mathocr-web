@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { trackEvent } from "@/lib/analytics";
 
 const DOWNLOAD_URL =
   "https://github.com/Hwan16/mathocr-web/releases/download/v1.5.0/MathOCR-Setup-v1.5.0.exe";
@@ -30,16 +31,17 @@ export default function Home() {
           </a>
 
           <nav className="hidden md:flex items-center gap-8 text-[15px] text-zinc-600">
-            <a href="#features" className="hover:text-zinc-900 transition-colors">기능</a>
-            <a href="#guide" className="hover:text-zinc-900 transition-colors">사용법</a>
-            <a href="#pricing" className="hover:text-zinc-900 transition-colors">가격</a>
-            <a href="#download" className="hover:text-zinc-900 transition-colors">다운로드</a>
+            <a href="#features" onClick={() => trackEvent("nav_click", { label: "features" })} className="hover:text-zinc-900 transition-colors">기능</a>
+            <a href="#guide" onClick={() => trackEvent("nav_click", { label: "guide" })} className="hover:text-zinc-900 transition-colors">사용법</a>
+            <a href="#pricing" onClick={() => trackEvent("nav_click", { label: "pricing" })} className="hover:text-zinc-900 transition-colors">가격</a>
+            <a href="#download" onClick={() => trackEvent("nav_click", { label: "download" })} className="hover:text-zinc-900 transition-colors">다운로드</a>
           </nav>
 
           <div className="flex items-center gap-3 ml-auto">
             {/* PC 전용 기능이라 모바일(md 미만)에서는 숨긴다 */}
             <a
               href="/report"
+              onClick={() => trackEvent("nav_click", { label: "report_header" })}
               className="hidden md:inline-flex items-center gap-1.5 text-sm font-semibold px-4 py-2.5 rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-colors"
             >
               <span aria-hidden>⚠</span>
@@ -53,11 +55,12 @@ export default function Home() {
               <>
                 <a
                   href="/auth/login"
+                  onClick={() => trackEvent("cta_click", { label: "login", location: "header" })}
                   className="text-sm text-zinc-600 hover:text-zinc-900 transition-colors px-2"
                 >
                   로그인
                 </a>
-                <a href="/auth/signup" className="btn-primary text-sm px-5 py-2.5 rounded-lg">
+                <a href="/auth/signup" onClick={() => trackEvent("cta_click", { label: "sign_up", location: "header" })} className="btn-primary text-sm px-5 py-2.5 rounded-lg">
                   회원가입
                 </a>
               </>
@@ -69,6 +72,7 @@ export default function Home() {
       {/* ── 변환 실패 신고: 우하단 플로팅 버튼 (스크롤 따라다님, PC 전용이라 모바일 숨김) ── */}
       <a
         href="/report"
+        onClick={() => trackEvent("nav_click", { label: "report_floating" })}
         className="fixed bottom-6 right-6 z-50 hidden md:inline-flex items-center gap-2 px-5 py-3.5 rounded-full bg-red-600 text-white text-sm font-semibold shadow-lg shadow-red-600/30 hover:bg-red-700 transition-colors"
       >
         <span aria-hidden>⚠</span> 변환이 안됐나요?
@@ -99,6 +103,7 @@ export default function Home() {
               <div className="flex flex-col sm:flex-row gap-3">
                 <a
                   href="#download"
+                  onClick={() => trackEvent("nav_click", { label: "download_hero" })}
                   className="btn-primary px-8 py-4 text-base rounded-lg text-center inline-flex items-center justify-center gap-2"
                 >
                   <iconify-icon icon="solar:download-minimalistic-linear" width="20" />
@@ -106,6 +111,7 @@ export default function Home() {
                 </a>
                 <a
                   href="#guide"
+                  onClick={() => trackEvent("nav_click", { label: "guide_hero" })}
                   className="btn-outline px-8 py-4 text-base rounded-lg text-center"
                 >
                   사용법 보기
@@ -399,6 +405,7 @@ export default function Home() {
               </ul>
               <a
                 href="/auth/signup"
+                onClick={() => trackEvent("cta_click", { label: "sign_up", location: "pricing_free" })}
                 className="btn-outline block text-center px-6 py-3.5 rounded-lg text-[15px]"
               >
                 무료로 시작
@@ -434,6 +441,7 @@ export default function Home() {
               </ul>
               <a
                 href="/auth/signup"
+                onClick={() => trackEvent("cta_click", { label: "sign_up", location: "pricing_paid" })}
                 className="btn-primary block text-center px-6 py-3.5 rounded-lg text-[15px]"
               >
                 회원가입
@@ -459,6 +467,7 @@ export default function Home() {
               </p>
               <a
                 href={DOWNLOAD_URL}
+                onClick={() => trackEvent("app_download", { version: DOWNLOAD_LABEL })}
                 className="btn-primary inline-flex items-center gap-2.5 px-10 py-4 text-lg rounded-lg"
               >
                 <iconify-icon icon="solar:download-minimalistic-linear" width="22" />
@@ -566,12 +575,14 @@ export default function Home() {
           <div className="flex gap-3 shrink-0">
             <a
               href="/auth/signup"
+              onClick={() => trackEvent("cta_click", { label: "sign_up", location: "bottom" })}
               className="bg-white text-[var(--accent)] font-semibold px-8 py-4 rounded-lg hover:bg-violet-50 transition-colors"
             >
               무료 회원가입
             </a>
             <a
               href="#download"
+              onClick={() => trackEvent("nav_click", { label: "download_bottom" })}
               className="border border-white/40 text-white font-medium px-8 py-4 rounded-lg hover:bg-white/10 transition-colors"
             >
               다운로드

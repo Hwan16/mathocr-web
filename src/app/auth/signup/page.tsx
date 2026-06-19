@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { trackEvent } from "@/lib/analytics";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
@@ -99,6 +100,7 @@ export default function SignupPage() {
       }
 
       // 가입 성공 → 자동 로그인 → 대시보드
+      trackEvent("sign_up", { method: "password" });
       router.push("/dashboard");
       router.refresh();
     } catch {

@@ -58,6 +58,20 @@
 | 확인법 | GA4 → 보고서 → **실시간(Realtime)**. 배포 후 사이트 접속 시 본인 방문이 뜨면 정상. (※ 로컬에선 안 뜨는 게 정상) |
 | 사이트 변경 영향 | **없음.** 추적 스크립트라 페이지가 바뀌거나 늘어나도 자동 추적. |
 
+### 커스텀 이벤트 (사용자 행동 추적)
+`src/lib/analytics.ts` 의 `trackEvent(name, params)` 로 전송. **production에서만** 기록(로컬/개발은 자동 무시).
+
+| 이벤트 | 언제 | 위치 |
+|---|---|---|
+| `sign_up` | 회원가입 성공 | `auth/signup` |
+| `login` | 로그인 성공 | `auth/login` |
+| `submit_report` | 신고(변환오류) 제출 성공 | `report` |
+| `nav_click` `{label}` | 네비·다운로드 섹션·신고 링크 클릭 | 홈 |
+| `cta_click` `{label, location}` | 회원가입/로그인 버튼 클릭 | 홈 |
+| `app_download` `{version}` | 실제 프로그램(.exe) 다운로드 | 홈 |
+
+> GA4 → 보고서 → 실시간(또는 참여도 → 이벤트)에서 이 이름들로 확인. 표준 보고서는 처리에 하루 정도 걸릴 수 있음.
+
 ---
 
 ## 4. 유지보수 가이드 ⭐ (사이트 바뀌면 여기 먼저)
@@ -74,6 +88,7 @@
 | 서비스 이름/슬로건 변경 | `layout.tsx` 상단 `SITE_TITLE` / `SITE_DESCRIPTION` / `keywords` | 작음 |
 | **도메인 변경** | `SITE_URL` 상수 (현재 `layout.tsx`·`robots.ts`·`sitemap.ts` **3곳**에 있음 → [6. TODO] 참고) | 작음 |
 | FAQ 질문/답 변경 | (3번 GEO 적용 후) FAQ 구조화 데이터도 같이 수정 | 작음 |
+| 추적할 새 버튼/행동 추가 | 해당 요소에 `onClick={() => trackEvent("이름", {...})}` 추가 (`src/lib/analytics.ts`) | 작음 |
 
 > 핵심: ⚠️ 표시도 전부 **"다시 만들기"가 아니라 "한 줄 추가/수정"** 수준이다.
 
@@ -93,6 +108,7 @@
 ## 6. 남은 작업 (TODO)
 
 - [x] **GA4 삽입** (2번) — `G-N5B03EJ16V` (production 전용, `@next/third-parties` 사용)
+- [x] **GA 커스텀 이벤트** — 회원가입·로그인·네비·다운로드·신고 클릭 추적 (`src/lib/analytics.ts`)
 - [ ] **GEO** (3번) — JSON-LD 구조화 데이터: `Organization`, `SoftwareApplication`(가격·플랫폼), `FAQPage`(홈 FAQ 5개 기반). ※ FAQ 내용 확정 후 권장.
 - [ ] **검색엔진 등록** (4번) — 구글 서치콘솔 + 네이버 웹마스터도구에 사이트 등록·소유확인·사이트맵 제출. (소유확인 메타태그는 `layout.tsx`의 `verification` 필드에 추가)
 - [ ] **OG 이미지 개선** — 현재 공유 카드 이미지는 정사각 아이콘(`/mathocr-icon.png`, 600×600). 전용 **1200×630** 이미지를 만들면 카톡/SNS 카드가 더 보기 좋음.
