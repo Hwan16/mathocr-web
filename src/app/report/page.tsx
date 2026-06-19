@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { trackEvent } from "@/lib/analytics";
 
 type SubmitState = "idle" | "submitting" | "success" | "error";
 
@@ -135,6 +136,7 @@ export default function ReportPage() {
         return;
       }
       setState("success");
+      trackEvent("submit_report");
       if (original.preview) URL.revokeObjectURL(original.preview);
       if (converted.preview) URL.revokeObjectURL(converted.preview);
       setOriginal(EMPTY);
