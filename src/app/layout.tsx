@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
+import { GoogleAnalytics } from "@next/third-parties/google";
 import "./globals.css";
+
+// GA4 측정 ID (공개 값 — 모든 페이지 HTML에 노출되는 값이라 비밀 아님)
+const GA_MEASUREMENT_ID = "G-N5B03EJ16V";
 
 const SITE_URL = "https://mathocr.ai.kr";
 const SITE_NAME = "AI MathOCR";
@@ -97,6 +101,10 @@ export default function RootLayout({
       <body className="antialiased bg-white text-zinc-900" suppressHydrationWarning>
         {children}
       </body>
+      {/* GA4: 실제 배포(production)에서만 로드 — 로컬/개발 접속은 추적하지 않음 */}
+      {process.env.NODE_ENV === "production" && (
+        <GoogleAnalytics gaId={GA_MEASUREMENT_ID} />
+      )}
     </html>
   );
 }

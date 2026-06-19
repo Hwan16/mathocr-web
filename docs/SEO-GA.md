@@ -12,7 +12,7 @@
 | 단계 | 내용 | 상태 |
 |---|---|---|
 | 1 | **SEO 기반** (메타데이터·robots·sitemap) | ✅ 완료 (커밋 `39012be`) |
-| 2 | **GA4 분석** | 🔜 진행 예정 (측정 ID: `G-N5B03EJ16V`) |
+| 2 | **GA4 분석** | ✅ 완료 (측정 ID: `G-N5B03EJ16V`, production 전용) |
 | 3 | **GEO** (AI 검색용 구조화 데이터 JSON-LD) | ⬜ 예정 |
 | 4 | **검색엔진 등록** (구글 서치콘솔 · 네이버 웹마스터) | ⬜ 예정 |
 | 5 | **마무리** (middleware→proxy 등) | ⬜ 예정 |
@@ -47,15 +47,15 @@
 
 ---
 
-## 3. GA4 — 분석 (🔜 예정)
+## 3. GA4 — 분석 (✅ 완료)
 
 | 항목 | 값 / 위치 |
 |---|---|
 | 측정 ID | **`G-N5B03EJ16V`** |
 | 비밀인가? | ❌ 아님. GA 측정 ID는 모든 페이지 HTML에 노출되는 **공개 값**이라 문서/코드에 둬도 안전. (API 키와 다름) |
-| 삽입 위치 | `src/app/layout.tsx` (전 페이지 공통 추적) — *구현 시 업데이트* |
-| 구현 방식 | Next.js 공식 `@next/third-parties`의 `GoogleAnalytics` 컴포넌트 사용 예정 |
-| 확인법 | GA4 → 보고서 → **실시간(Realtime)**. 사이트 접속 후 본인 방문이 뜨면 정상. |
+| 삽입 위치 | `src/app/layout.tsx` — `</body>` 뒤에 `<GoogleAnalytics>` (전 페이지 공통 추적). ID는 상단 `GA_MEASUREMENT_ID` 상수. |
+| 구현 방식 | `@next/third-parties`의 `GoogleAnalytics` 컴포넌트. **production에서만 로드** (`process.env.NODE_ENV === "production"`) → 로컬·개발·`npm run dev` 접속은 추적 안 함. |
+| 확인법 | GA4 → 보고서 → **실시간(Realtime)**. 배포 후 사이트 접속 시 본인 방문이 뜨면 정상. (※ 로컬에선 안 뜨는 게 정상) |
 | 사이트 변경 영향 | **없음.** 추적 스크립트라 페이지가 바뀌거나 늘어나도 자동 추적. |
 
 ---
@@ -92,7 +92,7 @@
 
 ## 6. 남은 작업 (TODO)
 
-- [ ] **GA4 삽입** (2번) — `G-N5B03EJ16V`
+- [x] **GA4 삽입** (2번) — `G-N5B03EJ16V` (production 전용, `@next/third-parties` 사용)
 - [ ] **GEO** (3번) — JSON-LD 구조화 데이터: `Organization`, `SoftwareApplication`(가격·플랫폼), `FAQPage`(홈 FAQ 5개 기반). ※ FAQ 내용 확정 후 권장.
 - [ ] **검색엔진 등록** (4번) — 구글 서치콘솔 + 네이버 웹마스터도구에 사이트 등록·소유확인·사이트맵 제출. (소유확인 메타태그는 `layout.tsx`의 `verification` 필드에 추가)
 - [ ] **OG 이미지 개선** — 현재 공유 카드 이미지는 정사각 아이콘(`/mathocr-icon.png`, 600×600). 전용 **1200×630** 이미지를 만들면 카톡/SNS 카드가 더 보기 좋음.
