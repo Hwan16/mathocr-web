@@ -86,7 +86,7 @@
 - **왜 FAQ만 홈 전용?** 구글 가이드상 FAQ 구조화 데이터는 **실제 FAQ가 화면에 보이는 페이지에만** 넣어야 한다(`/terms` 등에 넣으면 위반). 그래서 전역 `StructuredData`가 아닌 별도 `FaqStructuredData`로 분리해 홈에서만 렌더.
 - **단일 출처:** FAQ 질문/답은 `src/lib/faqs.ts`의 `FAQS` 한 곳에서 화면(`page.tsx`)과 구조화 데이터가 **함께** 읽는다 → 둘이 어긋날 일이 없다(구글은 JSON-LD와 화면 내용 일치를 요구).
 - ⚠️ **가격 주의:** `SoftwareApplication`의 `offers`는 현재 실사이트와 동일한 **종량제(문제당 25원)·5문제 무료** 기준. 추후 *요금제 3종*이 실제 적용되면 `structured-data.tsx`의 `offers`도 같이 갱신.
-- **검증:** 배포 후 [구글 Rich Results Test](https://search.google.com/test/rich-results)에 `https://mathocr.ai.kr` 입력 → `FAQPage`·`SoftwareApplication` 인식 확인.
+- **검증:** `SoftwareApplication`은 [구글 Rich Results Test](https://search.google.com/test/rich-results), `FAQPage`는 [schema.org 검증기](https://validator.schema.org)로 확인. ⚠️ **FAQPage는 더 이상 구글 검색 리치결과(FAQ 박스)로 노출되지 않는다**(2023년 이후 정부·의료 등 일부 사이트 한정). 그래도 AI 검색·LLM이 읽는 GEO 목적과 schema 유효성 측면에서 유지 가치가 있어 넣어둔다.
 
 ---
 

@@ -1,5 +1,5 @@
 // 홈 FAQ — 화면(page.tsx)과 FAQPage 구조화 데이터(structured-data.tsx)가 함께 쓰는 단일 출처.
-// 여기 내용을 바꾸면 화면 FAQ와 구글 FAQ 리치결과(JSON-LD)가 자동으로 같이 갱신된다.
+// 여기 내용을 바꾸면 화면 FAQ와 FAQPage 구조화 데이터(JSON-LD)가 자동으로 같이 갱신된다.
 // ⚠️ 구글 가이드: FAQ 구조화 데이터의 질문/답은 페이지에 "보이는 내용과 동일"해야 한다.
 //    → 그래서 화면도 반드시 이 배열로 렌더해 둘이 어긋나지 않게 한다.
 export const FAQS = [
