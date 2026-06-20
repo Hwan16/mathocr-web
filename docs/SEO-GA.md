@@ -14,10 +14,10 @@
 | 1 | **SEO 기반** (메타데이터·robots·sitemap) | ✅ 완료 (커밋 `39012be`) |
 | 2 | **GA4 분석** | ✅ 완료 (측정 ID: `G-N5B03EJ16V`, production 전용) |
 | 3 | **GEO** (AI 검색용 구조화 데이터 JSON-LD) | ✅ 완료 (`Organization`·`WebSite`·`SoftwareApplication`·`FAQPage`) |
-| 4 | **검색엔진 등록** (구글 서치콘솔 · 네이버 웹마스터) | ⬜ 예정 |
+| 4 | **검색엔진 등록** (구글 서치콘솔 · 네이버 웹마스터) | ✅ 완료 (소유확인 + 사이트맵 제출, 양쪽 다) |
 | 5 | **마무리** (middleware→proxy 등) | ⬜ 예정 |
 
-> ⚠️ 아직 `master`에 머지 전이라 **실서비스(mathocr.ai.kr)에는 미반영**. 머지 시 Vercel이 자동 배포한다.
+> ✅ 1~4단계는 `master` 머지·실서비스(mathocr.ai.kr) 배포 완료. 남은 건 5번(마무리)과 OG 이미지 개선뿐.
 
 ---
 
@@ -126,7 +126,7 @@
 - [x] **GA4 삽입** (2번) — `G-N5B03EJ16V` (production 전용, `@next/third-parties` 사용)
 - [x] **GA 커스텀 이벤트** — 회원가입·로그인·네비·다운로드·신고 클릭 추적 (`src/lib/analytics.ts`)
 - [x] **GEO** (3번) — JSON-LD 구조화 데이터: `Organization`·`WebSite`·`SoftwareApplication`(가격·플랫폼) 전역 + `FAQPage`(홈 FAQ 5개, 단일 출처 `src/lib/faqs.ts`). 상세는 [3-2. GEO](#3-2-geo--구조화-데이터-json-ld-완료).
-- [ ] **검색엔진 등록** (4번) — 구글 서치콘솔 + 네이버 웹마스터도구에 사이트 등록·소유확인·사이트맵 제출. (소유확인 메타태그는 `layout.tsx`의 `verification` 필드에 추가)
+- [x] **검색엔진 등록** (4번) — 구글 서치콘솔 + 네이버 웹마스터 양쪽 **소유확인 + 사이트맵(`sitemap.xml`) 제출 완료** (2026-06-20). 소유확인 메타태그는 `layout.tsx`의 `verification` 필드(`google` + `other["naver-site-verification"]`)에 있음. ⚠️ **삭제 금지**(재확인 시 필요).
 - [ ] **OG 이미지 개선** — 현재 공유 카드 이미지는 정사각 아이콘(`/mathocr-icon.png`, 600×600). 전용 **1200×630** 이미지를 만들면 카톡/SNS 카드가 더 보기 좋음.
 - [ ] **middleware→proxy** — Next.js 16 경고. `src/middleware.ts`를 `proxy` 규칙으로 정리 (기능엔 지장 없음).
 - [ ] **SITE_URL 중복 제거** — 현재 3개 파일에 같은 상수. `src/lib/site.ts` 한 곳으로 모으면 도메인 변경 시 한 군데만 고치면 됨.
