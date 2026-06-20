@@ -73,6 +73,11 @@ export const metadata: Metadata = {
       "max-video-preview": -1,
     },
   },
+  // 검색엔진 소유확인 (구글 서치콘솔 등). ⚠️ 확인 후에도 메타태그 삭제 금지(재확인 시 필요).
+  // 네이버는 추후 other["naver-site-verification"]에 추가.
+  verification: {
+    google: "K6mQzqoBBovnv8ZiY5eTg25m-kKDiVHLM9J_R471IV4",
+  },
   icons: {
     icon: "/mathocr-icon.png",
     shortcut: "/mathocr-icon.png",
