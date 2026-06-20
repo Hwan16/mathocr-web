@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { trackEvent } from "@/lib/analytics";
+import { FAQS } from "@/lib/faqs";
+import { FaqStructuredData } from "./structured-data";
 
 const DOWNLOAD_URL =
   "https://github.com/Hwan16/mathocr-web/releases/download/v1.5.0/MathOCR-Setup-v1.5.0.exe";
@@ -513,6 +515,8 @@ export default function Home() {
 
       {/* ── FAQ ── */}
       <section className="py-20 lg:py-28">
+        {/* 홈 전용 FAQPage 구조화 데이터 (질문/답은 아래 화면과 동일한 @/lib/faqs 출처) */}
+        <FaqStructuredData />
         <div className="max-w-screen-2xl mx-auto px-6 lg:px-12">
           <div className="grid lg:grid-cols-[1fr_2fr] gap-10 lg:gap-20">
             <div>
@@ -522,28 +526,7 @@ export default function Home() {
               </h2>
             </div>
             <div className="divide-y divide-zinc-200">
-              {[
-                {
-                  q: "수식이 정말 편집 가능한 상태로 들어오나요?",
-                  a: "네. 수식은 이미지가 아니라 한글 수식편집기 객체로 삽입됩니다. HWP에서 수식을 더블클릭하면 수식편집기가 열리고 자유롭게 수정할 수 있습니다.",
-                },
-                {
-                  q: "인식이 틀리면 크레딧은 어떻게 되나요?",
-                  a: "변환에 실패한 문제는 원본 이미지로 대체 삽입되고, 해당 문제의 크레딧은 자동으로 반환됩니다. 변환 결과 요약에서 실패한 문제 번호를 확인할 수 있습니다.",
-                },
-                {
-                  q: "설치할 때 Windows 보안 경고가 떠요.",
-                  a: "아직 코드 서명 인증서를 적용하기 전이라 나타나는 표준 경고입니다. \"추가 정보\" → \"실행\"을 누르면 정상 설치됩니다.",
-                },
-                {
-                  q: "핸드폰으로 찍은 사진도 변환되나요?",
-                  a: "네. JPG/PNG 사진을 최대 10장까지 한 번에 올릴 수 있습니다. 다만 화질이 좋을수록 인식 정확도가 올라가니, 가급적 밝은 곳에서 정면으로 찍어주세요.",
-                },
-                {
-                  q: "한글(HWP) 프로그램이 꼭 필요한가요?",
-                  a: "네. 변환 결과를 한글 수식편집기 객체로 만들기 위해 PC에 한글(HWP 2014 이상 권장)이 설치되어 있어야 합니다.",
-                },
-              ].map((item) => (
+              {FAQS.map((item) => (
                 <details key={item.q} className="group py-5">
                   <summary className="flex items-center justify-between cursor-pointer list-none font-semibold text-lg text-zinc-900">
                     {item.q}
