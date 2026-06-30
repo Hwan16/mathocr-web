@@ -7,8 +7,8 @@ import { FAQS } from "@/lib/faqs";
 import { FaqStructuredData } from "./structured-data";
 
 const DOWNLOAD_URL =
-  "https://github.com/Hwan16/mathocr-web/releases/download/v1.5.2/MathOCR-Setup-v1.5.2.exe";
-const DOWNLOAD_LABEL = "v1.5.2 (125MB)";
+  "https://github.com/Hwan16/mathocr-web/releases/download/v1.5.3/MathOCR-Setup-v1.5.3.exe";
+const DOWNLOAD_LABEL = "v1.5.3 (125MB)";
 
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
