@@ -487,7 +487,7 @@ function StatsTab() {
         total_users: data.users?.total ?? 0,
         total_conversions: data.conversions?.total ?? 0,
         success_rate: Math.round(data.conversions?.success_rate ?? 0),
-        total_credits_used: data.conversions?.total_problems ?? 0,
+        total_credits_used: data.conversions?.total_credits_used ?? 0,
       });
     }
     loadStats();

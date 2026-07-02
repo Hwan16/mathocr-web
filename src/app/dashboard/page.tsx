@@ -15,6 +15,7 @@ interface Conversion {
   id: string;
   pdf_name: string | null;
   problem_count: number;
+  solution_count?: number; // 해설 수(0005 마이그레이션 이후). 없으면 0으로 간주.
   credits_used: number;
   refunded_credits: number;
   status: string;
@@ -184,9 +185,9 @@ export default function DashboardPage() {
                 <thead>
                   <tr className="text-left text-zinc-500 border-b border-[var(--border-subtle)]">
                     <th className="px-6 py-3 font-medium">날짜</th>
-                    <th className="px-6 py-3 font-medium">PDF 파일</th>
+                    <th className="px-6 py-3 font-medium">시험지명</th>
                     <th className="px-6 py-3 font-medium text-center">
-                      문제 수
+                      문제(해설) 수
                     </th>
                     <th className="px-6 py-3 font-medium text-center">
                       크레딧
@@ -209,6 +210,9 @@ export default function DashboardPage() {
                       </td>
                       <td className="px-6 py-3 text-center text-zinc-700">
                         {c.problem_count}
+                        {(c.solution_count ?? 0) > 0 && (
+                          <span className="text-zinc-400">(+{c.solution_count})</span>
+                        )}
                       </td>
                       <td className="px-6 py-3 text-center">
                         {c.credits_used > 0 ? (

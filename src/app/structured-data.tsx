@@ -30,18 +30,18 @@ const softwareApplication = {
   url: SITE_URL,
   inLanguage: "ko-KR",
   description:
-    "수학 시험지·교재의 수식을 이미지가 아닌 한글(HWP) 수식편집기 객체로 변환하는 Windows 프로그램. Mathpix와 Claude AI 이중 검증.",
+    "수학 시험지·교재의 수식을 이미지가 아닌 한글(HWP) 수식편집기 객체로 변환하는 Windows 프로그램. 프론티어 AI 이중 검증으로 정확도를 높입니다.",
   featureList: [
     "PDF·이미지 수식 OCR",
     "한글(HWP) 수식편집기 객체 변환",
-    "Mathpix + Claude AI 이중 검증",
+    "프론티어 AI 이중 검증",
     "시험지 레이아웃·답안 자동 생성",
   ],
   offers: {
     "@type": "Offer",
     price: "0",
     priceCurrency: "KRW",
-    description: "가입 시 5문제 무료 제공, 이후 종량제(문제당 25원). 월 구독 없음.",
+    description: "가입 시 5문제 무료 제공. 100문제 19,900원부터 · 월 구독 없음.",
   },
 };
 

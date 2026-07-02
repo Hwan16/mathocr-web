@@ -65,6 +65,7 @@ create table public.conversions (
   user_id uuid not null references public.profiles(id) on delete cascade,
   pdf_name text,
   problem_count integer not null default 0,
+  solution_count integer not null default 0,  -- 해설 수(표시용). credits_used = problem_count + solution_count
   credits_used integer not null default 0,
   refunded_credits integer not null default 0,  -- 이 변환에서 환불된 크레딧(부분/전액 공통)
   status text not null default 'started' check (status in ('started', 'completed', 'failed')),
@@ -127,17 +128,24 @@ alter table public.error_logs enable row level security;
 -- ============================================
 -- 6. 크레딧 차감 함수 (원자적 트랜잭션)
 -- ============================================
+-- p_amount = 총 차감분(문제+해설). p_solution_count = 해설 수(표시용, default 0).
+-- credits_used 는 총액(변경 없음), problem_count 는 문제만(= 총액 - 해설).
 create or replace function public.deduct_credits(
   p_user_id uuid,
   p_amount integer,
-  p_pdf_name text default null
+  p_pdf_name text default null,
+  p_solution_count integer default 0
 )
 returns jsonb as $$
 declare
   v_credits integer;
   v_expires_at timestamptz;
   v_conversion_id uuid;
+  v_solution integer;
 begin
+  -- 해설 수는 0 이상, 총 차감분 이하로 제한(문제 수가 음수가 되지 않도록)
+  v_solution := least(greatest(coalesce(p_solution_count, 0), 0), p_amount);
+
   -- 현재 크레딧/유효기간 조회 (행 잠금)
   select credits, expires_at into v_credits, v_expires_at
   from public.profiles
@@ -158,14 +166,14 @@ begin
     return jsonb_build_object('success', false, 'error', 'insufficient_credits', 'credits', v_credits, 'required', p_amount);
   end if;
 
-  -- 크레딧 차감
+  -- 크레딧 차감 (총 차감분)
   update public.profiles
   set credits = credits - p_amount
   where id = p_user_id;
 
-  -- 변환 기록 생성
-  insert into public.conversions (user_id, pdf_name, problem_count, credits_used, status)
-  values (p_user_id, p_pdf_name, p_amount, p_amount, 'started')
+  -- 변환 기록 생성 (문제/해설 분리 저장, credits_used 는 총액)
+  insert into public.conversions (user_id, pdf_name, problem_count, solution_count, credits_used, status)
+  values (p_user_id, p_pdf_name, p_amount - v_solution, v_solution, p_amount, 'started')
   returning id into v_conversion_id;
 
   return jsonb_build_object(
@@ -312,12 +320,12 @@ $$ language plpgsql security definer set search_path = public, pg_temp;
 -- ============================================
 -- PostgREST는 public 함수를 RPC로 노출하므로, 크레딧/환불 함수는 반드시
 -- PUBLIC 권한을 회수하고 service_role 에게만 부여한다.
-revoke execute on function public.deduct_credits(uuid, integer, text) from public, anon, authenticated;
+revoke execute on function public.deduct_credits(uuid, integer, text, integer) from public, anon, authenticated;
 revoke execute on function public.add_credits(uuid, integer, integer, text) from public, anon, authenticated;
 revoke execute on function public.add_credits_raw(uuid, integer) from public, anon, authenticated;
 revoke execute on function public.finalize_conversion(uuid, uuid, text) from public, anon, authenticated;
 
-grant execute on function public.deduct_credits(uuid, integer, text) to service_role;
+grant execute on function public.deduct_credits(uuid, integer, text, integer) to service_role;
 grant execute on function public.add_credits(uuid, integer, integer, text) to service_role;
 grant execute on function public.add_credits_raw(uuid, integer) to service_role;
 grant execute on function public.finalize_conversion(uuid, uuid, text) to service_role;

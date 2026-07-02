@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { trackEvent } from "@/lib/analytics";
 import { FAQS } from "@/lib/faqs";
 import { FaqStructuredData } from "./structured-data";
+import { PLANS, SIGNUP_FREE_CREDITS, CREDIT_RULE } from "@/lib/plans";
 
 const DOWNLOAD_URL =
   "https://github.com/Hwan16/mathocr-web/releases/download/v1.5.7/MathOCR-Setup-v1.5.7.exe";
@@ -12,6 +13,8 @@ const DOWNLOAD_LABEL = "v1.5.7 (125MB)";
 
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  // 구매 버튼 placeholder 안내(결제 연동 전). 클릭 시 잠깐 토스트로 안내한다.
+  const [purchaseNotice, setPurchaseNotice] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -19,6 +22,12 @@ export default function Home() {
       setIsLoggedIn(!!user);
     });
   }, []);
+
+  useEffect(() => {
+    if (!purchaseNotice) return;
+    const t = setTimeout(() => setPurchaseNotice(false), 5000);
+    return () => clearTimeout(t);
+  }, [purchaseNotice]);
 
   return (
     <>
@@ -121,7 +130,7 @@ export default function Home() {
               </div>
 
               <p className="text-sm text-zinc-500 mt-5">
-                회원가입 시 5문제 무료 · 월 구독 없음 · Windows 10/11
+                Windows 10/11 전용 · 문제 속 그림은 크레딧 차감 없이
               </p>
             </div>
 
@@ -223,9 +232,9 @@ export default function Home() {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
             {[
               ["수식편집기 객체", "이미지가 아닌 편집 가능한 한글 수식"],
-              ["AI 이중 검증", "Mathpix 인식 + Claude 구조 교정"],
-              ["시험지 레이아웃", "2단 구성·답안 미주 자동 생성"],
-              ["종량제 과금", "월 구독 없이 문제당 25원"],
+              ["AI 교차 검증", "프론티어 AI가 인식부터 구조까지 검증"],
+              ["그림은 무료", "문제 속 그래프·도형은 크레딧 차감 없이"],
+              ["필요한 만큼 충전", "월 구독 없이 · 문제당 최저 140원"],
             ].map(([title, desc]) => (
               <div key={title}>
                 <div className="font-semibold text-zinc-900 mb-1">{title}</div>
@@ -242,31 +251,31 @@ export default function Home() {
           <div className="max-w-3xl mb-14">
             <div className="text-sm font-semibold text-[var(--accent)] mb-3">기능</div>
             <h2 className="text-3xl lg:text-4xl font-bold tracking-tight mb-4">
-              수식 입력을 다시 할 필요가 없습니다
+              지저분한 원본도, 편집 가능한 HWP 시험지로
             </h2>
             <p className="text-lg text-zinc-600 leading-relaxed">
-              드래그로 문제를 지정하면, 텍스트·수식·그림을 분리해
-              완성된 HWP 시험지로 만들어 드립니다.
+              AI가 원문만 골라 복원하고, 문제·그림·해설 영역을 원하는 대로
+              지정해 완성된 HWP로 만들어 드립니다.
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-5">
             {[
               {
-                title: "영역 선택 기반 변환",
-                desc: "PDF나 사진을 열고 문제 영역을 드래그하면 끝. 그림은 그림 영역으로 따로 지정하면 원본 그대로 이미지로 삽입되고, 수식 인식을 방해하지 않게 자동 마스킹됩니다.",
+                title: "더러운 원본도, 깔끔한 문제만",
+                desc: "스캔 얼룩·인쇄 잡티·회색 배경이 있어도 프론티어 AI가 원문 수식과 텍스트만 골라 복원합니다. 그림 배경의 음영은 자동으로 흰색 처리하고, 인식을 방해하는 요소는 걸러냅니다.",
               },
               {
-                title: "진짜 수식편집기 객체",
-                desc: "분수·루트·적분·시그마·행렬·case 분기까지 21개 카테고리의 수식이 한글 수식편집기에서 그대로 수정 가능한 객체로 들어갑니다. 더블클릭하면 바로 편집할 수 있습니다.",
+                title: "문제·그림·해설 영역을 내 마음대로",
+                desc: "드래그로 문제 영역을, [그림] 모드로 그래프·도형 영역을 따로 지정하세요. 영역 크기까지 자유롭게 조절되고, 문제 속 그림은 크레딧 차감 없이 원본 그대로 함께 담깁니다.",
               },
               {
-                title: "AI 이중 검증 파이프라인",
-                desc: "Mathpix가 수식을 추출하고 Claude Vision이 원본 이미지와 대조해 구조를 검증합니다. 첨자 오류, 줄바꿈, 띄어쓰기까지 교정한 뒤 HWP 문법으로 변환합니다.",
+                title: "문제뿐 아니라 해설·정답까지",
+                desc: "해설 영역을 지정하면 정답과 풀이 과정도 함께 변환됩니다. 정답은 미주로 문제와 자동 연결돼, 시험지와 해설지를 한 번에 완성할 수 있습니다.",
               },
               {
-                title: "시험지 형식 그대로 출력",
-                desc: "2단 레이아웃, 문제 번호, 객관식 보기 정렬, 답안 미주까지 실제 시험지 형식으로 출력됩니다. 시험지 명을 입력하면 파일명에도 그대로 반영됩니다.",
+                title: "진짜 한글 수식편집기 객체",
+                desc: "분수·루트·적분·시그마·극한·행렬·조건분기까지 21개 유형의 수식이 이미지가 아닌 편집 가능한 객체로 들어갑니다. 첨자 종속, 부등호(≤·≥·≠), 집합·각도(°) 표기까지 한국 시험지 규칙에 맞춰 자동 교정하고, 더블클릭하면 바로 수정됩니다.",
               },
             ].map((f) => (
               <div key={f.title} className="card rounded-xl p-8">
@@ -373,82 +382,101 @@ export default function Home() {
           <div className="max-w-3xl mb-14">
             <div className="text-sm font-semibold text-[var(--accent)] mb-3">가격</div>
             <h2 className="text-3xl lg:text-4xl font-bold tracking-tight mb-4">
-              월 구독 없이, 쓴 만큼만
+              많이 담을수록, 더 저렴하게
             </h2>
             <p className="text-lg text-zinc-600 leading-relaxed">
-              변환한 문제 수만큼만 크레딧이 차감됩니다. 변환에 실패한 문제는
-              과금되지 않습니다.
+              월 구독 없이 필요한 만큼만 충전하세요. 많이 살수록 문제당 단가가
+              낮아지고, 문제 속 그림은 크레딧 차감 없이 함께 넣을 수 있습니다.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-5 max-w-4xl">
-            {/* 무료 체험 */}
-            <div className="card rounded-xl p-8">
-              <div className="text-sm font-medium text-zinc-500 mb-2">무료 체험</div>
-              <div className="flex items-baseline gap-1 mb-1">
-                <span className="text-4xl font-bold">0원</span>
-              </div>
-              <div className="text-sm text-zinc-500 mb-7">가입 즉시 5문제 제공</div>
-              <ul className="space-y-3 mb-8 text-[15px] text-zinc-600">
-                {[
-                  "모든 기능 제한 없이 사용",
-                  "AI 이중 검증 동일 적용",
-                  "PDF + 이미지 업로드",
-                ].map((t) => (
-                  <li key={t} className="flex items-center gap-2.5">
-                    <iconify-icon
-                      icon="solar:check-circle-bold"
-                      width="18"
-                      className="text-zinc-400 shrink-0"
-                    />
-                    {t}
-                  </li>
-                ))}
-              </ul>
-              <a
-                href="/auth/signup"
-                onClick={() => trackEvent("cta_click", { label: "sign_up", location: "pricing_free" })}
-                className="btn-outline block text-center px-6 py-3.5 rounded-lg text-[15px]"
+          <div className="grid md:grid-cols-3 gap-5 max-w-5xl">
+            {PLANS.map((plan) => (
+              <div
+                key={plan.id}
+                className={`card rounded-xl p-8 relative ${
+                  plan.featured ? "!border-[var(--accent)]" : ""
+                }`}
               >
-                무료로 시작
-              </a>
-            </div>
+                {plan.featured && (
+                  <div className="absolute -top-3 left-8 bg-[var(--accent)] text-white text-xs font-semibold px-3 py-1 rounded-full">
+                    가장 인기
+                  </div>
+                )}
+                <div className="text-sm font-medium text-zinc-500 mb-1">
+                  {plan.name}
+                </div>
+                <div className="text-sm text-zinc-500 mb-4">
+                  {plan.credits}문제 · 유효기간 {plan.validityDays}일
+                </div>
 
-            {/* 종량제 */}
-            <div className="card rounded-xl p-8 !border-[var(--accent)] relative">
-              <div className="absolute -top-3 left-8 bg-[var(--accent)] text-white text-xs font-semibold px-3 py-1 rounded-full">
-                기본 요금제
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-sm text-zinc-400 line-through">
+                    {plan.listPrice.toLocaleString()}원
+                  </span>
+                  <span className="text-xs font-semibold text-[var(--accent)] bg-[var(--accent-soft)] px-2 py-0.5 rounded-full">
+                    {plan.discountPct}% 할인
+                  </span>
+                </div>
+                <div className="flex items-baseline gap-1.5 mb-1">
+                  <span className="text-4xl font-bold">
+                    {plan.price.toLocaleString()}원
+                  </span>
+                </div>
+                <div className="text-sm text-zinc-500 mb-7">
+                  문제당 {plan.perUnit}원
+                </div>
+
+                <ul className="space-y-3 mb-8 text-[15px] text-zinc-600">
+                  {[
+                    `${plan.credits}문제 변환 크레딧`,
+                    `유효기간 ${plan.validityDays}일`,
+                    "문제 속 그림은 무료",
+                    "실패한 문제는 차감 안 됨",
+                  ].map((t) => (
+                    <li key={t} className="flex items-center gap-2.5">
+                      <iconify-icon
+                        icon="solar:check-circle-bold"
+                        width="18"
+                        className={
+                          plan.featured
+                            ? "text-[var(--accent)] shrink-0"
+                            : "text-zinc-400 shrink-0"
+                        }
+                      />
+                      {t}
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  type="button"
+                  onClick={() => {
+                    trackEvent("cta_click", {
+                      label: "purchase",
+                      location: `pricing_${plan.id}`,
+                    });
+                    setPurchaseNotice(true);
+                  }}
+                  className={`block w-full text-center px-6 py-3.5 rounded-lg text-[15px] ${
+                    plan.featured ? "btn-primary" : "btn-outline"
+                  }`}
+                >
+                  구매하기
+                </button>
               </div>
-              <div className="text-sm font-medium text-[var(--accent)] mb-2">종량제</div>
-              <div className="flex items-baseline gap-1.5 mb-1">
-                <span className="text-4xl font-bold">25원</span>
-                <span className="text-zinc-500">/ 문제</span>
-              </div>
-              <div className="text-sm text-zinc-500 mb-7">크레딧 충전 방식</div>
-              <ul className="space-y-3 mb-8 text-[15px] text-zinc-600">
-                {[
-                  "100문제 2,500원 · 1,000문제 25,000원",
-                  "실패한 문제는 크레딧 자동 반환",
-                  "변환 이력 대시보드 제공",
-                ].map((t) => (
-                  <li key={t} className="flex items-center gap-2.5">
-                    <iconify-icon
-                      icon="solar:check-circle-bold"
-                      width="18"
-                      className="text-[var(--accent)] shrink-0"
-                    />
-                    {t}
-                  </li>
-                ))}
-              </ul>
-              <a
-                href="/auth/signup"
-                onClick={() => trackEvent("cta_click", { label: "sign_up", location: "pricing_paid" })}
-                className="btn-primary block text-center px-6 py-3.5 rounded-lg text-[15px]"
-              >
-                회원가입
-              </a>
-            </div>
+            ))}
+          </div>
+
+          {/* 크레딧 차감 안내 + 무료 체험 한 줄 안내 */}
+          <div className="max-w-5xl mt-8 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-center">
+            <p className="text-sm text-zinc-500 leading-relaxed">{CREDIT_RULE}</p>
+            <a
+              href="/auth/signup"
+              onClick={() => trackEvent("cta_click", { label: "sign_up", location: "pricing_free" })}
+              className="btn-outline text-center px-6 py-3 rounded-lg text-sm whitespace-nowrap"
+            >
+              가입하고 {SIGNUP_FREE_CREDITS}문제 무료 체험
+            </a>
           </div>
         </div>
       </section>
@@ -588,7 +616,7 @@ export default function Home() {
               이용약관
             </a>
             <a
-              href="mailto:seize.win@gmail.com"
+              href="mailto:aimathocr.official@gmail.com"
               className="hover:text-zinc-900 transition-colors"
             >
               문의하기
@@ -599,6 +627,31 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {/* 구매 버튼 placeholder 안내 토스트 (결제 연동 전) */}
+      {purchaseNotice && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] w-[92vw] max-w-md">
+          <div className="flex items-center gap-3 bg-zinc-900 text-white text-sm px-5 py-3.5 rounded-xl shadow-lg">
+            <iconify-icon
+              icon="solar:info-circle-bold"
+              width="18"
+              className="text-[var(--accent)] shrink-0"
+            />
+            <span className="leading-relaxed">
+              결제 기능은 곧 오픈됩니다. 지금은 가입 후 {SIGNUP_FREE_CREDITS}문제를
+              무료로 체험할 수 있어요.
+            </span>
+            <button
+              type="button"
+              onClick={() => setPurchaseNotice(false)}
+              className="ml-auto text-white/60 hover:text-white shrink-0"
+              aria-label="닫기"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }

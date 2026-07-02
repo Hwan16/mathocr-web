@@ -64,8 +64,10 @@ export async function GET() {
   const failedConversions = conversions.filter(
     (c) => c.status === "failed"
   ).length;
-  const totalProblems = conversions.reduce(
-    (sum, c) => sum + c.problem_count,
+  // 총 사용 크레딧 = credits_used 합계. (problem_count 는 0005 이후 "문제만"이라
+  // 해설분이 빠지므로, 크레딧 총량 집계에는 credits_used 를 써야 정확하다.)
+  const totalCreditsUsed = conversions.reduce(
+    (sum, c) => sum + c.credits_used,
     0
   );
   const successRate =
@@ -85,7 +87,7 @@ export async function GET() {
       total: totalConversions,
       completed: completedConversions,
       failed: failedConversions,
-      total_problems: totalProblems,
+      total_credits_used: totalCreditsUsed,
       success_rate: parseFloat(successRate),
     },
     errors: { last_7_days: errorsResult.count ?? 0 },

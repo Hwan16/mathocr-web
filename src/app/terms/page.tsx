@@ -204,7 +204,7 @@ export function TermsContent() {
           </li>
           <li>
             <strong className="text-zinc-900">제3자 서비스:</strong> 본 프로그램이
-            연동하여 사용하는 제3자 서비스(Mathpix, Anthropic Claude 등)의
+            연동하여 사용하는 제3자 서비스(OCR·AI 분석용 클라우드 서비스 등)의
             장애로 인한 서비스 불능에 대해서는 책임을 지지 않습니다.
           </li>
         </ol>
