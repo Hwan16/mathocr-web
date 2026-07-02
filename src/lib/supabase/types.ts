@@ -43,6 +43,18 @@ export interface ErrorLog {
   created_at: string;
 }
 
+export interface UserConsent {
+  id: string;
+  user_id: string | null; // 탈퇴 시 SET NULL (증적은 보존)
+  email: string | null; // 탈퇴 후 식별용 이메일 스냅샷
+  doc_type: "terms" | "privacy";
+  version: string;
+  agreed: boolean;
+  ip: string | null;
+  user_agent: string | null;
+  created_at: string;
+}
+
 export interface DeductCreditsResult {
   success: boolean;
   error?: string;

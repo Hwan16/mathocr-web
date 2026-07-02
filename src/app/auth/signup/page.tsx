@@ -5,6 +5,9 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { trackEvent } from "@/lib/analytics";
 
+// 동의받은 약관/방침의 버전(시행일). 문서 개정 시 함께 갱신한다.
+const CONSENT_VERSION = "2026-07-03";
+
 export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -15,7 +18,8 @@ export default function SignupPage() {
   >("idle");
   const [promoBonusCredits, setPromoBonusCredits] = useState<number>(0);
   const [error, setError] = useState("");
-  const [agreed, setAgreed] = useState(false);
+  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [agreePrivacy, setAgreePrivacy] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -64,6 +68,11 @@ export default function SignupPage() {
       return;
     }
 
+    if (!agreeTerms || !agreePrivacy) {
+      setError("필수 약관에 동의해주세요.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -74,6 +83,9 @@ export default function SignupPage() {
           email,
           password,
           promo_code: promoCode,
+          agreed_terms: agreeTerms,
+          agreed_privacy: agreePrivacy,
+          consent_version: CONSENT_VERSION,
         }),
       });
       const result = await response.json().catch(() => ({}));
@@ -218,25 +230,48 @@ export default function SignupPage() {
               )}
             </div>
 
-            {/* 약관 동의 */}
-            <div className="flex items-start gap-3">
-              <input
-                type="checkbox"
-                id="terms"
-                checked={agreed}
-                onChange={(e) => setAgreed(e.target.checked)}
-                className="mt-1 w-4 h-4 rounded border-zinc-300 accent-[var(--accent)] cursor-pointer shrink-0"
-              />
-              <label htmlFor="terms" className="text-xs text-zinc-600 leading-relaxed cursor-pointer">
-                <a
-                  href="/terms"
-                  target="_blank"
-                  className="text-[var(--accent)] hover:underline"
-                >
-                  서비스 이용약관
-                </a>
-                에 동의합니다.
-              </label>
+            {/* 약관 동의 (이용약관 / 개인정보 수집·이용을 각각 구분하여 받음) */}
+            <div className="space-y-2.5 rounded-lg border border-zinc-200 p-4">
+              <div className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  id="agree-terms"
+                  checked={agreeTerms}
+                  onChange={(e) => setAgreeTerms(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded border-zinc-300 accent-[var(--accent)] cursor-pointer shrink-0"
+                />
+                <label htmlFor="agree-terms" className="text-xs text-zinc-600 leading-relaxed cursor-pointer">
+                  <span className="text-zinc-400">(필수)</span>{" "}
+                  <a
+                    href="/terms"
+                    target="_blank"
+                    className="text-[var(--accent)] hover:underline"
+                  >
+                    서비스 이용약관
+                  </a>
+                  에 동의합니다.
+                </label>
+              </div>
+              <div className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  id="agree-privacy"
+                  checked={agreePrivacy}
+                  onChange={(e) => setAgreePrivacy(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded border-zinc-300 accent-[var(--accent)] cursor-pointer shrink-0"
+                />
+                <label htmlFor="agree-privacy" className="text-xs text-zinc-600 leading-relaxed cursor-pointer">
+                  <span className="text-zinc-400">(필수)</span>{" "}
+                  <a
+                    href="/privacy"
+                    target="_blank"
+                    className="text-[var(--accent)] hover:underline"
+                  >
+                    개인정보 수집·이용
+                  </a>
+                  에 동의합니다.
+                </label>
+              </div>
             </div>
 
             {error && (
@@ -245,7 +280,7 @@ export default function SignupPage() {
 
             <button
               type="submit"
-              disabled={loading || !agreed}
+              disabled={loading || !agreeTerms || !agreePrivacy}
               className="w-full btn-primary py-3 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? "가입 중..." : "회원가입"}

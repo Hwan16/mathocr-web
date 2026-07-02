@@ -11,6 +11,21 @@ const DOWNLOAD_URL =
   "https://github.com/Hwan16/mathocr-web/releases/download/v1.5.8/MathOCR-Setup-v1.5.8.exe";
 const DOWNLOAD_LABEL = "v1.5.8 (125MB)";
 
+// 사업자 정보 (전자상거래법 제10조 표시 의무).
+// 사업자등록·통신판매업 신고 완료 후 아래 값을 채우고 SHOW_BUSINESS_INFO 를
+// true 로 바꾸면 푸터에 노출된다. (미등록 상태에서는 노출하지 않는다.)
+const SHOW_BUSINESS_INFO = false;
+const BUSINESS_INFO = {
+  company: "", // 상호
+  ceo: "", // 대표자명
+  privacyOfficer: "", // 개인정보 보호책임자
+  bizRegNo: "", // 사업자등록번호
+  mailOrderNo: "", // 통신판매업 신고번호
+  address: "", // 사업장 주소
+  phone: "", // 전화번호
+  email: "aimathocr.official@gmail.com",
+};
+
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   // 구매 버튼 placeholder 안내(결제 연동 전). 클릭 시 잠깐 토스트로 안내한다.
@@ -631,27 +646,57 @@ export default function Home() {
 
       {/* ── Footer ── */}
       <footer className="border-t border-zinc-200 py-10 bg-white">
-        <div className="max-w-screen-2xl mx-auto px-6 lg:px-12 flex flex-col md:flex-row md:items-center justify-between gap-5">
-          <div className="flex items-center gap-2">
-            <img src="/mathocr-icon.png" alt="AI MathOCR" width={28} height={28} />
-            <span className="font-bold">
-              AI Math<span className="text-[var(--accent)]">OCR</span>
-            </span>
+        <div className="max-w-screen-2xl mx-auto px-6 lg:px-12 space-y-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
+            <div className="flex items-center gap-2">
+              <img src="/mathocr-icon.png" alt="AI MathOCR" width={28} height={28} />
+              <span className="font-bold">
+                AI Math<span className="text-[var(--accent)]">OCR</span>
+              </span>
+            </div>
+            <div className="flex items-center gap-6 text-sm text-zinc-500">
+              <a href="/terms" className="hover:text-zinc-900 transition-colors">
+                이용약관
+              </a>
+              <a
+                href="/privacy"
+                className="font-medium text-zinc-600 hover:text-zinc-900 transition-colors"
+              >
+                개인정보처리방침
+              </a>
+              <a
+                href="mailto:aimathocr.official@gmail.com"
+                className="hover:text-zinc-900 transition-colors"
+              >
+                문의하기
+              </a>
+            </div>
           </div>
-          <div className="flex items-center gap-6 text-sm text-zinc-500">
-            <a href="/terms" className="hover:text-zinc-900 transition-colors">
-              이용약관
-            </a>
-            <a
-              href="mailto:aimathocr.official@gmail.com"
-              className="hover:text-zinc-900 transition-colors"
-            >
-              문의하기
-            </a>
-          </div>
-          <div className="text-sm text-zinc-400">
-            &copy; 2026 AI MathOCR. All rights reserved.
-          </div>
+
+          {/* 사업자 정보 (전자상거래법 제10조) — 등록 완료 후 SHOW_BUSINESS_INFO=true */}
+          {SHOW_BUSINESS_INFO ? (
+            <div className="border-t border-zinc-100 pt-5 text-xs text-zinc-400 leading-relaxed space-y-0.5">
+              <p>
+                상호: {BUSINESS_INFO.company} | 대표자: {BUSINESS_INFO.ceo} |
+                개인정보 보호책임자: {BUSINESS_INFO.privacyOfficer}
+              </p>
+              <p>
+                사업자등록번호: {BUSINESS_INFO.bizRegNo} | 통신판매업 신고번호:{" "}
+                {BUSINESS_INFO.mailOrderNo}
+              </p>
+              <p>
+                주소: {BUSINESS_INFO.address} | 전화: {BUSINESS_INFO.phone} |
+                이메일: {BUSINESS_INFO.email}
+              </p>
+              <p className="pt-1.5">
+                &copy; 2026 AI MathOCR. All rights reserved.
+              </p>
+            </div>
+          ) : (
+            <div className="border-t border-zinc-100 pt-5 text-sm text-zinc-400">
+              &copy; 2026 AI MathOCR. All rights reserved.
+            </div>
+          )}
         </div>
       </footer>
 
