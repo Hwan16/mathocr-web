@@ -399,12 +399,20 @@ export default function Home() {
                 }`}
               >
                 {plan.featured && (
-                  <div className="absolute -top-3 left-8 bg-[var(--accent)] text-white text-xs font-semibold px-3 py-1 rounded-full">
+                  <div
+                    className="absolute -top-3 left-8 text-white text-xs font-semibold px-3 py-1 rounded-full"
+                    style={{ backgroundColor: plan.color }}
+                  >
                     가장 인기
                   </div>
                 )}
-                <div className="text-sm font-medium text-zinc-500 mb-1">
-                  {plan.name}
+                <div className="mb-2">
+                  <span
+                    className="inline-block text-base font-bold px-3.5 py-1 rounded-full tracking-wide"
+                    style={{ color: plan.color, backgroundColor: plan.color + "1a" }}
+                  >
+                    {plan.name}
+                  </span>
                 </div>
                 <div className="text-sm text-zinc-500 mb-4">
                   {plan.credits}문제 · 유효기간 {plan.validityDays}일
@@ -414,7 +422,10 @@ export default function Home() {
                   <span className="text-sm text-zinc-400 line-through">
                     {plan.listPrice.toLocaleString()}원
                   </span>
-                  <span className="text-xs font-semibold text-[var(--accent)] bg-[var(--accent-soft)] px-2 py-0.5 rounded-full">
+                  <span
+                    className="text-xs font-semibold px-2 py-0.5 rounded-full"
+                    style={{ color: plan.color, backgroundColor: plan.color + "1a" }}
+                  >
                     {plan.discountPct}% 할인
                   </span>
                 </div>
@@ -438,11 +449,8 @@ export default function Home() {
                       <iconify-icon
                         icon="solar:check-circle-bold"
                         width="18"
-                        className={
-                          plan.featured
-                            ? "text-[var(--accent)] shrink-0"
-                            : "text-zinc-400 shrink-0"
-                        }
+                        className="shrink-0"
+                        style={{ color: plan.color }}
                       />
                       {t}
                     </li>
@@ -467,16 +475,35 @@ export default function Home() {
             ))}
           </div>
 
-          {/* 크레딧 차감 안내 + 무료 체험 한 줄 안내 */}
-          <div className="mt-8 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-center">
-            <p className="text-sm text-zinc-500 leading-relaxed">{CREDIT_RULE}</p>
-            <a
-              href="/auth/signup"
-              onClick={() => trackEvent("cta_click", { label: "sign_up", location: "pricing_free" })}
-              className="btn-outline text-center px-6 py-3 rounded-lg text-sm whitespace-nowrap"
-            >
-              가입하고 {SIGNUP_FREE_CREDITS}문제 무료 체험
-            </a>
+          {/* 크레딧 차감 기준(구조화 표) + 무료 체험 */}
+          <div className="mt-10 rounded-2xl border border-zinc-200 bg-zinc-50 p-6 lg:p-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
+              <h3 className="text-base font-bold text-zinc-900">크레딧 차감 기준</h3>
+              <a
+                href="/auth/signup"
+                onClick={() => trackEvent("cta_click", { label: "sign_up", location: "pricing_free" })}
+                className="btn-outline text-center px-5 py-2.5 rounded-lg text-sm whitespace-nowrap"
+              >
+                가입하고 {SIGNUP_FREE_CREDITS}문제 무료 체험
+              </a>
+            </div>
+            <dl className="grid sm:grid-cols-2 gap-x-10">
+              {CREDIT_RULE.map((row) => (
+                <div
+                  key={row.label}
+                  className="flex items-center justify-between border-b border-zinc-200 py-2.5"
+                >
+                  <dt className="text-sm text-zinc-600">{row.label}</dt>
+                  <dd
+                    className={`text-sm font-semibold ${
+                      row.free ? "text-emerald-600" : "text-zinc-900"
+                    }`}
+                  >
+                    {row.value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
           </div>
         </div>
       </section>
