@@ -619,7 +619,7 @@ export default function Home() {
               href="mailto:aimathocr.official@gmail.com"
               className="hover:text-zinc-900 transition-colors"
             >
-              aimathocr.official@gmail.com
+              문의하기
             </a>
           </div>
           <div className="text-sm text-zinc-400">
