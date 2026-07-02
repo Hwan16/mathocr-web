@@ -275,7 +275,7 @@ export default function Home() {
               },
               {
                 title: "진짜 한글 수식편집기 객체",
-                desc: "분수·루트·적분·시그마·극한·행렬·조건분기까지 21개 유형의 수식이 이미지가 아닌 편집 가능한 객체로 들어갑니다. 첨자 종속, 부등호(≤·≥·≠), 집합·각도(°) 표기까지 한국 시험지 규칙에 맞춰 자동 교정하고, 더블클릭하면 바로 수정됩니다.",
+                desc: "분수·루트·적분·시그마·극한·행렬·조건분기까지 21개 유형의 수식이 이미지가 아닌 편집 가능한 객체로 들어갑니다. 첨자 종속, 부등호(≤·≥·≠), 집합·각도(°) 표기까지 한국 중·고등학교 시험지 규칙에 맞춰 자동 교정하고, 더블클릭하면 바로 수정됩니다.",
               },
             ].map((f) => (
               <div key={f.title} className="card rounded-xl p-8">
@@ -390,7 +390,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-5 max-w-5xl">
+          <div className="grid md:grid-cols-3 gap-5">
             {PLANS.map((plan) => (
               <div
                 key={plan.id}
@@ -468,7 +468,7 @@ export default function Home() {
           </div>
 
           {/* 크레딧 차감 안내 + 무료 체험 한 줄 안내 */}
-          <div className="max-w-5xl mt-8 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-center">
+          <div className="mt-8 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-center">
             <p className="text-sm text-zinc-500 leading-relaxed">{CREDIT_RULE}</p>
             <a
               href="/auth/signup"
@@ -619,7 +619,7 @@ export default function Home() {
               href="mailto:aimathocr.official@gmail.com"
               className="hover:text-zinc-900 transition-colors"
             >
-              문의하기
+              aimathocr.official@gmail.com
             </a>
           </div>
           <div className="text-sm text-zinc-400">
