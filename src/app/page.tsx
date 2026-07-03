@@ -8,8 +8,8 @@ import { FaqStructuredData } from "./structured-data";
 import { PLANS, SIGNUP_FREE_CREDITS, CREDIT_RULE } from "@/lib/plans";
 
 const DOWNLOAD_URL =
-  "https://github.com/Hwan16/mathocr-web/releases/download/v1.5.8/MathOCR-Setup-v1.5.8.exe";
-const DOWNLOAD_LABEL = "v1.5.8 (125MB)";
+  "https://github.com/Hwan16/mathocr-web/releases/download/v1.6.0/MathOCR-Setup-v1.6.0.exe";
+const DOWNLOAD_LABEL = "v1.6.0 (125MB)";
 
 // 사업자 정보 (전자상거래법 제10조 표시 의무).
 // 사업자등록·통신판매업 신고 완료 후 아래 값을 채우고 SHOW_BUSINESS_INFO 를
@@ -58,6 +58,7 @@ export default function Home() {
 
           <nav className="hidden md:flex items-center gap-8 text-[15px] text-zinc-600">
             <a href="#features" onClick={() => trackEvent("nav_click", { label: "features" })} className="hover:text-zinc-900 transition-colors">기능</a>
+            <a href="#showcase" onClick={() => trackEvent("nav_click", { label: "showcase" })} className="hover:text-zinc-900 transition-colors">변환 결과</a>
             <a href="#guide" onClick={() => trackEvent("nav_click", { label: "guide" })} className="hover:text-zinc-900 transition-colors">사용법</a>
             <a href="#pricing" onClick={() => trackEvent("nav_click", { label: "pricing" })} className="hover:text-zinc-900 transition-colors">가격</a>
             <a href="#download" onClick={() => trackEvent("nav_click", { label: "download" })} className="hover:text-zinc-900 transition-colors">다운로드</a>
@@ -298,6 +299,105 @@ export default function Home() {
                 <p className="text-zinc-600 leading-relaxed">{f.desc}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── 변환 결과 쇼케이스 (Before → After) ── */}
+      <section id="showcase" className="py-20 lg:py-28 border-t border-zinc-200">
+        <div className="max-w-screen-2xl mx-auto px-6 lg:px-12">
+          <div className="max-w-3xl mb-14">
+            <div className="text-sm font-semibold text-[var(--accent)] mb-3">변환 결과</div>
+            <h2 className="text-3xl lg:text-4xl font-bold tracking-tight mb-4">
+              결과물로 보여드립니다
+            </h2>
+            <p className="text-lg text-zinc-600 leading-relaxed">
+              말로 하는 설명보다 실제 변환 결과가 정확합니다. 왼쪽이 원본,
+              오른쪽이 AI MathOCR이 만든 HWP입니다.
+            </p>
+          </div>
+
+          <div className="space-y-20">
+            {/* 1. 평가원 스타일 박스·보기 */}
+            <div>
+              <h3 className="text-2xl font-bold mb-3">
+                조건 [박스]와 &lt;보기&gt;까지, 평가원 스타일 그대로
+              </h3>
+              <p className="text-zinc-600 leading-relaxed text-lg mb-7 max-w-3xl">
+                원본에 테두리 상자가 있으면 HWP에서도 똑같이 재현됩니다.
+                (가)·(나) 조건 박스는 물론, <strong className="text-zinc-900 font-semibold">
+                &lt;보 기&gt; 라벨이 박스 윗선 가운데에 얹힌 모양</strong>까지
+                실제 시험지 규격 그대로 만들어 드립니다.
+              </p>
+              <div className="grid md:grid-cols-2 gap-5 items-start">
+                <figure className="card rounded-xl overflow-hidden">
+                  <figcaption className="flex items-center gap-2 px-5 py-3 border-b border-zinc-200 bg-zinc-50 text-sm font-semibold text-zinc-500">
+                    <span className="w-2 h-2 rounded-full bg-zinc-300" aria-hidden />
+                    원본 (PDF·스캔)
+                  </figcaption>
+                  <img
+                    src="/showcase/box-before.png"
+                    alt="조건 박스와 보기 박스가 포함된 수학 시험지 원본"
+                    className="w-full"
+                    loading="lazy"
+                  />
+                </figure>
+                <figure className="card rounded-xl overflow-hidden !border-[var(--accent-border)]">
+                  <figcaption className="flex items-center gap-2 px-5 py-3 border-b border-[var(--accent-border)] bg-[var(--accent-soft)] text-sm font-semibold text-[var(--accent)]">
+                    <span className="w-2 h-2 rounded-full bg-[var(--accent)]" aria-hidden />
+                    변환된 HWP — 박스·수식 모두 편집 가능
+                  </figcaption>
+                  <img
+                    src="/showcase/box-after.png"
+                    alt="박스와 보기가 그대로 재현된 HWP 변환 결과"
+                    className="w-full"
+                    loading="lazy"
+                  />
+                </figure>
+              </div>
+            </div>
+
+            {/* 2. 연필 필기 자동 제거 */}
+            <div>
+              <h3 className="text-2xl font-bold mb-3">
+                연필 필기 자국은 AI가 알아서 지웁니다
+              </h3>
+              <p className="text-zinc-600 leading-relaxed text-lg mb-7 max-w-3xl">
+                학생이 풀어놓은 시험지를 찍어도 괜찮습니다. 필기·낙서·채점 자국은
+                걸러내고 <strong className="text-zinc-900 font-semibold">원래 문제의
+                텍스트와 수식만 골라</strong> 깨끗한 HWP로 복원합니다.
+              </p>
+              <div className="grid md:grid-cols-2 gap-5 items-start">
+                <figure className="card rounded-xl overflow-hidden">
+                  <figcaption className="flex items-center gap-2 px-5 py-3 border-b border-zinc-200 bg-zinc-50 text-sm font-semibold text-zinc-500">
+                    <span className="w-2 h-2 rounded-full bg-zinc-300" aria-hidden />
+                    원본 (필기가 남은 시험지 사진)
+                  </figcaption>
+                  <div className="p-5">
+                    <img
+                      src="/showcase/pencil-before.png"
+                      alt="연필 필기가 가득한 수학 문제 사진"
+                      className="w-full rounded-md"
+                      loading="lazy"
+                    />
+                  </div>
+                </figure>
+                <figure className="card rounded-xl overflow-hidden !border-[var(--accent-border)]">
+                  <figcaption className="flex items-center gap-2 px-5 py-3 border-b border-[var(--accent-border)] bg-[var(--accent-soft)] text-sm font-semibold text-[var(--accent)]">
+                    <span className="w-2 h-2 rounded-full bg-[var(--accent)]" aria-hidden />
+                    변환된 HWP — 문제만 깨끗하게
+                  </figcaption>
+                  <div className="p-5">
+                    <img
+                      src="/showcase/pencil-after.png"
+                      alt="필기가 제거되고 문제만 남은 HWP 변환 결과"
+                      className="w-full rounded-md"
+                      loading="lazy"
+                    />
+                  </div>
+                </figure>
+              </div>
+            </div>
           </div>
         </div>
       </section>
