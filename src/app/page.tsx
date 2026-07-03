@@ -323,11 +323,9 @@ export default function Home() {
               <h3 className="text-2xl font-bold mb-3">
                 조건 [박스]와 &lt;보기&gt;까지, 평가원 스타일 그대로
               </h3>
-              <p className="text-zinc-600 leading-relaxed text-lg mb-7 max-w-3xl">
-                원본에 테두리 상자가 있으면 HWP에서도 똑같이 재현됩니다.
-                (가)·(나) 조건 박스는 물론, <strong className="text-zinc-900 font-semibold">
-                &lt;보 기&gt; 라벨이 박스 윗선 가운데에 얹힌 모양</strong>까지
-                실제 시험지 규격 그대로 만들어 드립니다.
+              <p className="text-zinc-600 leading-relaxed text-lg mb-7">
+                (가)·(나) 조건 박스도, <strong className="text-zinc-900 font-semibold">&lt;보 기&gt; 라벨이
+                윗선에 얹힌 모양</strong>도 실제 시험지 규격 그대로 재현됩니다.
               </p>
               <div className="grid md:grid-cols-2 gap-5 items-start">
                 <figure className="card rounded-xl overflow-hidden">
@@ -362,10 +360,9 @@ export default function Home() {
               <h3 className="text-2xl font-bold mb-3">
                 연필 필기 자국은 AI가 알아서 지웁니다
               </h3>
-              <p className="text-zinc-600 leading-relaxed text-lg mb-7 max-w-3xl">
-                학생이 풀어놓은 시험지를 찍어도 괜찮습니다. 필기·낙서·채점 자국은
-                걸러내고 <strong className="text-zinc-900 font-semibold">원래 문제의
-                텍스트와 수식만 골라</strong> 깨끗한 HWP로 복원합니다.
+              <p className="text-zinc-600 leading-relaxed text-lg mb-7">
+                필기·낙서·채점 자국은 걸러내고 <strong className="text-zinc-900 font-semibold">원래
+                문제의 텍스트와 수식만 골라</strong> 깨끗한 HWP로 복원합니다.
               </p>
               <div className="grid md:grid-cols-2 gap-5 items-start">
                 <figure className="card rounded-xl overflow-hidden">
@@ -500,7 +497,7 @@ export default function Home() {
               많이 담을수록, 더 저렴하게
             </h2>
             <p className="text-lg text-zinc-600 leading-relaxed">
-              월 구독 없이 필요한 만큼만 충전하세요. 많이 살수록 문제당 단가가
+              월 구독 없이 필요한 만큼만 충전하세요. 많이 살수록 크레딧당 단가가
               낮아지고, 문제 속 그림은 크레딧 차감 없이 함께 넣을 수 있습니다.
             </p>
           </div>
@@ -530,7 +527,7 @@ export default function Home() {
                   </span>
                 </div>
                 <div className="text-sm text-zinc-500 mb-4">
-                  {plan.credits}문제 · 유효기간 {plan.validityDays}일
+                  {plan.credits} 크레딧 · 유효기간 {plan.validityDays}일
                 </div>
 
                 <div className="flex items-center gap-2 mb-1">
@@ -550,12 +547,12 @@ export default function Home() {
                   </span>
                 </div>
                 <div className="text-sm text-zinc-500 mb-7">
-                  문제당 {plan.perUnit}원
+                  크레딧당 {plan.perUnit}원
                 </div>
 
                 <ul className="space-y-3 mb-8 text-[15px] text-zinc-600">
                   {[
-                    `${plan.credits}문제 변환 크레딧`,
+                    `${plan.credits} 크레딧 충전`,
                     `유효기간 ${plan.validityDays}일`,
                     "문제 속 그림은 무료",
                     "실패한 문제는 차감 안 됨",
@@ -599,7 +596,7 @@ export default function Home() {
                 onClick={() => trackEvent("cta_click", { label: "sign_up", location: "pricing_free" })}
                 className="btn-outline text-center px-5 py-2.5 rounded-lg text-sm whitespace-nowrap"
               >
-                가입하고 {SIGNUP_FREE_CREDITS}문제 무료 체험
+                가입하고 {SIGNUP_FREE_CREDITS} 크레딧 무료 체험
               </a>
             </div>
             <dl className="grid sm:grid-cols-2 gap-x-10">
@@ -722,7 +719,7 @@ export default function Home() {
               오늘 시험지 작업부터 줄여보세요
             </h2>
             <p className="text-white/85 text-lg">
-              회원가입하면 5문제를 무료로 변환할 수 있습니다.
+              회원가입하면 무료 크레딧 5개로 바로 시작할 수 있습니다.
             </p>
           </div>
           <div className="flex gap-3 shrink-0">
@@ -810,7 +807,7 @@ export default function Home() {
               className="text-[var(--accent)] shrink-0"
             />
             <span className="leading-relaxed">
-              결제 기능은 곧 오픈됩니다. 지금은 가입 후 {SIGNUP_FREE_CREDITS}문제를
+              결제 기능은 곧 오픈됩니다. 지금은 가입 후 {SIGNUP_FREE_CREDITS} 크레딧을
               무료로 체험할 수 있어요.
             </span>
             <button
