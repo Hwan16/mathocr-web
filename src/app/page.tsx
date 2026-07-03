@@ -48,15 +48,21 @@ export default function Home() {
     <>
       {/* ── 상단 네비게이션 (풀폭 sticky) ── */}
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-zinc-200">
-        <div className="max-w-screen-2xl mx-auto px-6 lg:px-12 h-16 flex items-center gap-10">
-          <a href="/" className="flex items-center gap-2.5 shrink-0">
-            <img src="/mathocr-icon.png" alt="AI MathOCR" width={40} height={40} />
-            <span className="text-xl font-bold tracking-tight">
+        <div className="max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-12 h-16 flex items-center gap-4 md:gap-10">
+          <a href="/" className="flex items-center gap-2 md:gap-2.5 shrink-0">
+            <img
+              src="/mathocr-icon.png"
+              alt="AI MathOCR"
+              width={40}
+              height={40}
+              className="w-8 h-8 md:w-10 md:h-10"
+            />
+            <span className="text-lg md:text-xl font-bold tracking-tight">
               AI Math<span className="text-[var(--accent)]">OCR</span>
             </span>
           </a>
 
-          <nav className="hidden md:flex items-center gap-8 text-[15px] text-zinc-600">
+          <nav className="hidden md:flex items-center gap-5 lg:gap-8 text-[15px] text-zinc-600 whitespace-nowrap">
             <a href="#features" onClick={() => trackEvent("nav_click", { label: "features" })} className="hover:text-zinc-900 transition-colors">기능</a>
             <a href="#showcase" onClick={() => trackEvent("nav_click", { label: "showcase" })} className="hover:text-zinc-900 transition-colors">변환 결과</a>
             <a href="#guide" onClick={() => trackEvent("nav_click", { label: "guide" })} className="hover:text-zinc-900 transition-colors">사용법</a>
@@ -64,18 +70,18 @@ export default function Home() {
             <a href="#download" onClick={() => trackEvent("nav_click", { label: "download" })} className="hover:text-zinc-900 transition-colors">다운로드</a>
           </nav>
 
-          <div className="flex items-center gap-3 ml-auto">
+          <div className="flex items-center gap-2 md:gap-3 ml-auto shrink-0">
             {/* PC 전용 기능이라 모바일(md 미만)에서는 숨긴다 */}
             <a
               href="/report"
               onClick={() => trackEvent("nav_click", { label: "report_header" })}
-              className="hidden md:inline-flex items-center gap-1.5 text-sm font-semibold px-4 py-2.5 rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-colors"
+              className="hidden lg:inline-flex items-center gap-1.5 text-sm font-semibold px-4 py-2.5 rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-colors whitespace-nowrap"
             >
               <span aria-hidden>⚠</span>
               변환이 안됐나요?
             </a>
             {isLoggedIn ? (
-              <a href="/dashboard" className="btn-primary text-sm px-5 py-2.5 rounded-lg">
+              <a href="/dashboard" className="btn-primary text-sm px-3.5 py-2 md:px-5 md:py-2.5 rounded-lg whitespace-nowrap">
                 마이페이지
               </a>
             ) : (
@@ -83,11 +89,11 @@ export default function Home() {
                 <a
                   href="/auth/login"
                   onClick={() => trackEvent("cta_click", { label: "login", location: "header" })}
-                  className="text-sm text-zinc-600 hover:text-zinc-900 transition-colors px-2"
+                  className="text-sm text-zinc-600 hover:text-zinc-900 transition-colors px-1.5 md:px-2 whitespace-nowrap"
                 >
                   로그인
                 </a>
-                <a href="/auth/signup" onClick={() => trackEvent("cta_click", { label: "sign_up", location: "header" })} className="btn-primary text-sm px-5 py-2.5 rounded-lg">
+                <a href="/auth/signup" onClick={() => trackEvent("cta_click", { label: "sign_up", location: "header" })} className="btn-primary text-sm px-3.5 py-2 md:px-5 md:py-2.5 rounded-lg whitespace-nowrap">
                   회원가입
                 </a>
               </>
@@ -250,7 +256,7 @@ export default function Home() {
               ["수식편집기 객체", "이미지가 아닌 편집 가능한 한글 수식"],
               ["AI 교차 검증", "프론티어 AI가 인식부터 구조까지 검증"],
               ["그림은 무료", "문제 속 그래프·도형은 크레딧 차감 없이"],
-              ["필요한 만큼 충전", "월 구독 없이 · 문제당 최저 140원"],
+              ["필요한 만큼 충전", "월 구독 없이 · 크레딧당 최저 140원"],
             ].map(([title, desc]) => (
               <div key={title}>
                 <div className="font-semibold text-zinc-900 mb-1">{title}</div>
@@ -327,15 +333,17 @@ export default function Home() {
                 (가)·(나) 조건 박스도, <strong className="text-zinc-900 font-semibold">&lt;보 기&gt; 라벨이
                 윗선에 얹힌 모양</strong>도 실제 시험지 규격 그대로 재현됩니다.
               </p>
-              <div className="grid md:grid-cols-2 gap-5 items-start">
+              {/* 조건 [박스] 쌍 */}
+              <h4 className="text-lg font-bold text-zinc-800 mb-4">조건 [박스]</h4>
+              <div className="grid md:grid-cols-2 gap-5 items-start mb-10">
                 <figure className="card rounded-xl overflow-hidden">
                   <figcaption className="flex items-center gap-2 px-5 py-3 border-b border-zinc-200 bg-zinc-50 text-sm font-semibold text-zinc-500">
                     <span className="w-2 h-2 rounded-full bg-zinc-300" aria-hidden />
-                    원본 (PDF·스캔)
+                    원본 (필기가 남은 시험지)
                   </figcaption>
                   <img
-                    src="/showcase/box-before.png"
-                    alt="조건 박스와 보기 박스가 포함된 수학 시험지 원본"
+                    src="/showcase/box14-before.png"
+                    alt="조건 박스가 포함된 수학 시험지 원본"
                     className="w-full"
                     loading="lazy"
                   />
@@ -346,8 +354,37 @@ export default function Home() {
                     변환된 HWP — 박스·수식 모두 편집 가능
                   </figcaption>
                   <img
-                    src="/showcase/box-after.png"
-                    alt="박스와 보기가 그대로 재현된 HWP 변환 결과"
+                    src="/showcase/box14-after.png"
+                    alt="조건 박스가 그대로 재현된 HWP 변환 결과"
+                    className="w-full"
+                    loading="lazy"
+                  />
+                </figure>
+              </div>
+
+              {/* <보기> 박스 쌍 */}
+              <h4 className="text-lg font-bold text-zinc-800 mb-4">&lt;보기&gt; 박스</h4>
+              <div className="grid md:grid-cols-2 gap-5 items-start">
+                <figure className="card rounded-xl overflow-hidden">
+                  <figcaption className="flex items-center gap-2 px-5 py-3 border-b border-zinc-200 bg-zinc-50 text-sm font-semibold text-zinc-500">
+                    <span className="w-2 h-2 rounded-full bg-zinc-300" aria-hidden />
+                    원본 (필기가 남은 시험지)
+                  </figcaption>
+                  <img
+                    src="/showcase/box7-before.png"
+                    alt="보기 박스가 포함된 수학 시험지 원본"
+                    className="w-full"
+                    loading="lazy"
+                  />
+                </figure>
+                <figure className="card rounded-xl overflow-hidden !border-[var(--accent-border)]">
+                  <figcaption className="flex items-center gap-2 px-5 py-3 border-b border-[var(--accent-border)] bg-[var(--accent-soft)] text-sm font-semibold text-[var(--accent)]">
+                    <span className="w-2 h-2 rounded-full bg-[var(--accent)]" aria-hidden />
+                    변환된 HWP — 박스·수식 모두 편집 가능
+                  </figcaption>
+                  <img
+                    src="/showcase/box7-after.png"
+                    alt="보기 박스가 그대로 재현된 HWP 변환 결과"
                     className="w-full"
                     loading="lazy"
                   />
