@@ -133,7 +133,13 @@ export async function POST(request: NextRequest) {
     const path = `${basePath}/${field}.${ext}`;
     const { error: upErr } = await admin.storage
       .from("reports")
-      .upload(path, buffer, { contentType: CONTENT_TYPE[ext], upsert: false });
+      .upload(path, buffer, {
+        contentType: CONTENT_TYPE[ext],
+        upsert: false,
+        // 미지정 시 no-cache 로 저장되어 관리자 화면에서 볼 때마다 재다운로드된다.
+        // 신고 이미지는 경로가 고유하고 내용이 바뀌지 않으므로 1시간 캐시 허용.
+        cacheControl: "3600",
+      });
 
     if (upErr) {
       console.error("[reports:POST] upload failed", upErr);

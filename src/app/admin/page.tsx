@@ -918,20 +918,26 @@ function ReportsTab() {
   const [statusFilter, setStatusFilter] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const limit = 10;
 
   const load = useCallback(async () => {
+    setLoading(true);
     const params = new URLSearchParams({ page: String(page), limit: String(limit) });
     if (statusFilter) params.set("status", statusFilter);
-    const res = await fetch(`/api/admin/reports?${params.toString()}`);
-    if (!res.ok) {
-      setReports([]);
-      setTotal(0);
-      return;
+    try {
+      const res = await fetch(`/api/admin/reports?${params.toString()}`);
+      if (!res.ok) {
+        setReports([]);
+        setTotal(0);
+        return;
+      }
+      const data = await res.json();
+      setReports((data.reports as ReportEntry[]) ?? []);
+      setTotal(data.total ?? 0);
+    } finally {
+      setLoading(false);
     }
-    const data = await res.json();
-    setReports((data.reports as ReportEntry[]) ?? []);
-    setTotal(data.total ?? 0);
   }, [page, statusFilter]);
 
   useEffect(() => {
@@ -998,7 +1004,11 @@ function ReportsTab() {
         <span className="ml-auto text-sm text-zinc-500">총 {total}건</span>
       </div>
 
-      {reports.length === 0 ? (
+      {loading && reports.length === 0 ? (
+        <div className="bezel-card rounded-2xl px-6 py-12 text-center text-zinc-500">
+          불러오는 중...
+        </div>
+      ) : reports.length === 0 ? (
         <div className="bezel-card rounded-2xl px-6 py-12 text-center text-zinc-500">
           신고가 없습니다.
         </div>
@@ -1127,7 +1137,13 @@ function ReportImage({
           className="block w-full aspect-[4/3] rounded-xl overflow-hidden border border-[var(--border-light)] bg-zinc-50 hover:border-[var(--accent)] transition-colors"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={url} alt={label} className="w-full h-full object-contain" />
+          <img
+            src={url}
+            alt={label}
+            loading="lazy"
+            decoding="async"
+            className="w-full h-full object-contain"
+          />
         </button>
       ) : (
         <div className="w-full aspect-[4/3] rounded-xl border border-[var(--border-light)] bg-zinc-50 flex items-center justify-center text-xs text-zinc-400">
