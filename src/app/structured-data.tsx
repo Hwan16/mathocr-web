@@ -30,7 +30,7 @@ const softwareApplication = {
   url: SITE_URL,
   inLanguage: "ko-KR",
   description:
-    "수학 시험지·교재의 수식을 이미지가 아닌 한글(HWP) 수식편집기 객체로 변환하는 Windows 프로그램. 프론티어 AI 이중 검증으로 정확도를 높입니다.",
+    "수학문제 OCR Windows 프로그램. 수학 시험지·교재의 수식을 이미지가 아닌 한글(HWP) 수식편집기 객체로 변환하며, 프론티어 AI 이중 검증으로 정확도를 높입니다.",
   featureList: [
     "PDF·이미지 수식 OCR",
     "한글(HWP) 수식편집기 객체 변환",

@@ -122,9 +122,9 @@ export default function Home() {
               </div>
 
               <h1 className="text-4xl lg:text-[3.4rem] font-bold leading-[1.2] lg:leading-[1.18] mb-6 tracking-tight">
-                수학문제 PDF를
+                수학문제 OCR,
                 <br />
-                편집 가능한 <span className="text-[var(--accent)]">HWP</span>로
+                PDF를 편집 가능한 <span className="text-[var(--accent)]">HWP</span>로
               </h1>
 
               <p className="text-lg lg:text-xl text-zinc-600 leading-relaxed mb-9">
@@ -276,8 +276,9 @@ export default function Home() {
               지저분한 원본도, 편집 가능한 HWP 시험지로
             </h2>
             <p className="text-lg text-zinc-600 leading-relaxed">
-              AI가 원문만 골라 복원하고, 문제·그림·해설 영역을 원하는 대로
-              지정해 완성된 HWP로 만들어 드립니다.
+              수학문제 OCR의 품질은 원본 처리에서 갈립니다. AI가 원문만 골라
+              복원하고, 문제·그림·해설 영역을 원하는 대로 지정해 완성된
+              HWP로 만들어 드립니다.
             </p>
           </div>
 
@@ -319,12 +320,53 @@ export default function Home() {
             </h2>
             <p className="text-lg text-zinc-600 leading-relaxed">
               말로 하는 설명보다 실제 변환 결과가 정확합니다. 왼쪽이 원본,
-              오른쪽이 AI MathOCR이 만든 HWP입니다.
+              오른쪽이 AI MathOCR의 수학문제 OCR이 만든 HWP입니다.
             </p>
           </div>
 
           <div className="space-y-20">
-            {/* 1. 평가원 스타일 박스·보기 */}
+            {/* 1. 연필 필기 자동 제거 */}
+            <div>
+              <h3 className="text-2xl font-bold mb-3">
+                연필 필기 자국은 AI가 알아서 지웁니다
+              </h3>
+              <p className="text-zinc-600 leading-relaxed text-lg mb-7">
+                필기·낙서·채점 자국은 걸러내고 <strong className="text-zinc-900 font-semibold">원래
+                문제의 텍스트와 수식만 골라</strong> 깨끗한 HWP로 복원합니다.
+              </p>
+              <div className="grid md:grid-cols-2 gap-5 items-start">
+                <figure className="card rounded-xl overflow-hidden">
+                  <figcaption className="flex items-center gap-2 px-5 py-3 border-b border-zinc-200 bg-zinc-50 text-sm font-semibold text-zinc-500">
+                    <span className="w-2 h-2 rounded-full bg-zinc-300" aria-hidden />
+                    원본
+                  </figcaption>
+                  <div className="p-5">
+                    <img
+                      src="/showcase/pencil-before.png"
+                      alt="연필 필기가 가득한 수학 문제 사진"
+                      className="w-full rounded-md"
+                      loading="lazy"
+                    />
+                  </div>
+                </figure>
+                <figure className="card rounded-xl overflow-hidden !border-[var(--accent-border)]">
+                  <figcaption className="flex items-center gap-2 px-5 py-3 border-b border-[var(--accent-border)] bg-[var(--accent-soft)] text-sm font-semibold text-[var(--accent)]">
+                    <span className="w-2 h-2 rounded-full bg-[var(--accent)]" aria-hidden />
+                    변환된 HWP
+                  </figcaption>
+                  <div className="p-5">
+                    <img
+                      src="/showcase/pencil-after.png"
+                      alt="필기가 제거되고 문제만 남은 HWP 변환 결과"
+                      className="w-full rounded-md"
+                      loading="lazy"
+                    />
+                  </div>
+                </figure>
+              </div>
+            </div>
+
+            {/* 2. 평가원 스타일 박스·보기 */}
             <div>
               <h3 className="text-2xl font-bold mb-3">
                 조건 [박스]와 &lt;보기&gt;까지, 평가원 스타일 그대로
@@ -339,7 +381,7 @@ export default function Home() {
                 <figure className="card rounded-xl overflow-hidden">
                   <figcaption className="flex items-center gap-2 px-5 py-3 border-b border-zinc-200 bg-zinc-50 text-sm font-semibold text-zinc-500">
                     <span className="w-2 h-2 rounded-full bg-zinc-300" aria-hidden />
-                    원본 (필기가 남은 시험지)
+                    원본
                   </figcaption>
                   <img
                     src="/showcase/box14-before.png"
@@ -351,7 +393,7 @@ export default function Home() {
                 <figure className="card rounded-xl overflow-hidden !border-[var(--accent-border)]">
                   <figcaption className="flex items-center gap-2 px-5 py-3 border-b border-[var(--accent-border)] bg-[var(--accent-soft)] text-sm font-semibold text-[var(--accent)]">
                     <span className="w-2 h-2 rounded-full bg-[var(--accent)]" aria-hidden />
-                    변환된 HWP — 박스·수식 모두 편집 가능
+                    변환된 HWP
                   </figcaption>
                   <img
                     src="/showcase/box14-after.png"
@@ -368,7 +410,7 @@ export default function Home() {
                 <figure className="card rounded-xl overflow-hidden">
                   <figcaption className="flex items-center gap-2 px-5 py-3 border-b border-zinc-200 bg-zinc-50 text-sm font-semibold text-zinc-500">
                     <span className="w-2 h-2 rounded-full bg-zinc-300" aria-hidden />
-                    원본 (필기가 남은 시험지)
+                    원본
                   </figcaption>
                   <img
                     src="/showcase/box7-before.png"
@@ -380,7 +422,7 @@ export default function Home() {
                 <figure className="card rounded-xl overflow-hidden !border-[var(--accent-border)]">
                   <figcaption className="flex items-center gap-2 px-5 py-3 border-b border-[var(--accent-border)] bg-[var(--accent-soft)] text-sm font-semibold text-[var(--accent)]">
                     <span className="w-2 h-2 rounded-full bg-[var(--accent)]" aria-hidden />
-                    변환된 HWP — 박스·수식 모두 편집 가능
+                    변환된 HWP
                   </figcaption>
                   <img
                     src="/showcase/box7-after.png"
@@ -388,47 +430,6 @@ export default function Home() {
                     className="w-full"
                     loading="lazy"
                   />
-                </figure>
-              </div>
-            </div>
-
-            {/* 2. 연필 필기 자동 제거 */}
-            <div>
-              <h3 className="text-2xl font-bold mb-3">
-                연필 필기 자국은 AI가 알아서 지웁니다
-              </h3>
-              <p className="text-zinc-600 leading-relaxed text-lg mb-7">
-                필기·낙서·채점 자국은 걸러내고 <strong className="text-zinc-900 font-semibold">원래
-                문제의 텍스트와 수식만 골라</strong> 깨끗한 HWP로 복원합니다.
-              </p>
-              <div className="grid md:grid-cols-2 gap-5 items-start">
-                <figure className="card rounded-xl overflow-hidden">
-                  <figcaption className="flex items-center gap-2 px-5 py-3 border-b border-zinc-200 bg-zinc-50 text-sm font-semibold text-zinc-500">
-                    <span className="w-2 h-2 rounded-full bg-zinc-300" aria-hidden />
-                    원본 (필기가 남은 시험지 사진)
-                  </figcaption>
-                  <div className="p-5">
-                    <img
-                      src="/showcase/pencil-before.png"
-                      alt="연필 필기가 가득한 수학 문제 사진"
-                      className="w-full rounded-md"
-                      loading="lazy"
-                    />
-                  </div>
-                </figure>
-                <figure className="card rounded-xl overflow-hidden !border-[var(--accent-border)]">
-                  <figcaption className="flex items-center gap-2 px-5 py-3 border-b border-[var(--accent-border)] bg-[var(--accent-soft)] text-sm font-semibold text-[var(--accent)]">
-                    <span className="w-2 h-2 rounded-full bg-[var(--accent)]" aria-hidden />
-                    변환된 HWP — 문제만 깨끗하게
-                  </figcaption>
-                  <div className="p-5">
-                    <img
-                      src="/showcase/pencil-after.png"
-                      alt="필기가 제거되고 문제만 남은 HWP 변환 결과"
-                      className="w-full rounded-md"
-                      loading="lazy"
-                    />
-                  </div>
                 </figure>
               </div>
             </div>
