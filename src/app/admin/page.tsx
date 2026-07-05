@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 
-type Tab = "users" | "logs" | "stats" | "reports" | "refunds";
+type Tab = "users" | "logs" | "stats" | "reports" | "refunds" | "promos";
 
 interface AdminUser {
   id: string;
@@ -73,6 +73,7 @@ export default function AdminPage() {
 
   const tabs: { key: Tab; label: string }[] = [
     { key: "users", label: "유저 관리" },
+    { key: "promos", label: "프로모션 코드" },
     { key: "reports", label: "변환 리포트" },
     { key: "refunds", label: "크레딧 반환" },
     { key: "logs", label: "오류 로그" },
@@ -133,12 +134,349 @@ export default function AdminPage() {
         </div>
 
         {tab === "users" && <UsersTab />}
+        {tab === "promos" && <PromosTab />}
         {tab === "reports" && <ReportsTab />}
         {tab === "refunds" && <RefundsTab />}
         {tab === "logs" && <LogsTab />}
         {tab === "stats" && <StatsTab />}
       </div>
     </div>
+  );
+}
+
+/* ── 프로모션 코드 탭 ── */
+interface PromoRedemption {
+  id: string;
+  email: string | null;
+  credits_granted: number;
+  source: "mypage" | "signup";
+  created_at: string;
+}
+
+interface PromoCode {
+  id: string;
+  code: string;
+  credits: number;
+  max_uses: number | null;
+  is_active: boolean;
+  memo: string | null;
+  created_at: string;
+  use_count: number;
+  promo_redemptions: PromoRedemption[];
+}
+
+function PromosTab() {
+  const [codes, setCodes] = useState<PromoCode[]>([]);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [formCode, setFormCode] = useState("");
+  const [formCredits, setFormCredits] = useState("");
+  const [formMaxUses, setFormMaxUses] = useState("1");
+  const [formMemo, setFormMemo] = useState("");
+  const [formError, setFormError] = useState("");
+  const [creating, setCreating] = useState(false);
+
+  const loadCodes = useCallback(async () => {
+    const res = await fetch("/api/admin/promo-codes");
+    if (!res.ok) {
+      setCodes([]);
+      return;
+    }
+    const data = await res.json();
+    setCodes(data.codes ?? []);
+  }, []);
+
+  useEffect(() => {
+    loadCodes();
+  }, [loadCodes]);
+
+  async function handleCreate() {
+    if (creating) return;
+    setFormError("");
+
+    const credits = parseInt(formCredits);
+    if (isNaN(credits) || credits <= 0) {
+      setFormError("지급 크레딧을 올바르게 입력해주세요.");
+      return;
+    }
+    // 최대 사용 횟수: 빈칸 = 무제한
+    const maxUsesTrimmed = formMaxUses.trim();
+    let maxUses: number | null = null;
+    if (maxUsesTrimmed) {
+      maxUses = parseInt(maxUsesTrimmed);
+      if (isNaN(maxUses) || maxUses <= 0) {
+        setFormError("최대 사용 횟수를 올바르게 입력해주세요. (빈칸 = 무제한)");
+        return;
+      }
+    }
+
+    setCreating(true);
+    try {
+      const res = await fetch("/api/admin/promo-codes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: formCode.trim(),
+          credits,
+          max_uses: maxUses,
+          memo: formMemo.trim() || null,
+        }),
+      });
+      const result = await res.json().catch(() => ({}));
+
+      if (res.ok && result.success) {
+        setFormCode("");
+        setFormCredits("");
+        setFormMaxUses("1");
+        setFormMemo("");
+        loadCodes();
+      } else {
+        setFormError(result.error ?? "코드 생성에 실패했습니다.");
+      }
+    } catch {
+      setFormError("코드 생성에 실패했습니다. 잠시 후 다시 시도해주세요.");
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  async function handleToggleActive(promo: PromoCode) {
+    const res = await fetch(`/api/admin/promo-codes/${promo.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_active: !promo.is_active }),
+    });
+    if (res.ok) loadCodes();
+  }
+
+  async function handleDelete(promo: PromoCode) {
+    if (!confirm(`코드 "${promo.code}"를 삭제할까요?`)) return;
+    const res = await fetch(`/api/admin/promo-codes/${promo.id}`, {
+      method: "DELETE",
+    });
+    if (res.ok) {
+      loadCodes();
+    } else {
+      const result = await res.json().catch(() => ({}));
+      alert(result.error ?? "코드 삭제에 실패했습니다.");
+    }
+  }
+
+  return (
+    <>
+      {/* 코드 생성 폼 */}
+      <div className="bezel-card rounded-2xl p-6 mb-6">
+        <h3 className="text-lg font-semibold mb-1">새 프로모션 코드</h3>
+        <p className="text-sm text-zinc-500 mb-4">
+          코드와 지급 크레딧을 직접 지정합니다. 같은 코드는 한 계정당 1회만 사용할 수 있습니다.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div>
+            <label className="block text-xs text-zinc-500 mb-1">코드</label>
+            <input
+              type="text"
+              value={formCode}
+              onChange={(e) => setFormCode(e.target.value)}
+              placeholder="예: welcome2026"
+              className="w-full px-3 py-2 rounded-xl bg-white border border-zinc-300 text-zinc-900 placeholder-zinc-400 text-sm focus:outline-none focus:border-[var(--accent)] transition-colors"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-zinc-500 mb-1">지급 크레딧</label>
+            <input
+              type="number"
+              min={1}
+              value={formCredits}
+              onChange={(e) => setFormCredits(e.target.value)}
+              placeholder="예: 100"
+              className="w-full px-3 py-2 rounded-xl bg-white border border-zinc-300 text-zinc-900 placeholder-zinc-400 text-sm focus:outline-none focus:border-[var(--accent)] transition-colors"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-zinc-500 mb-1">
+              최대 사용 횟수 (빈칸 = 무제한)
+            </label>
+            <input
+              type="number"
+              min={1}
+              value={formMaxUses}
+              onChange={(e) => setFormMaxUses(e.target.value)}
+              placeholder="무제한"
+              className="w-full px-3 py-2 rounded-xl bg-white border border-zinc-300 text-zinc-900 placeholder-zinc-400 text-sm focus:outline-none focus:border-[var(--accent)] transition-colors"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-zinc-500 mb-1">메모 (선택)</label>
+            <input
+              type="text"
+              value={formMemo}
+              onChange={(e) => setFormMemo(e.target.value)}
+              placeholder="예: OO학원 배포용"
+              className="w-full px-3 py-2 rounded-xl bg-white border border-zinc-300 text-zinc-900 placeholder-zinc-400 text-sm focus:outline-none focus:border-[var(--accent)] transition-colors"
+            />
+          </div>
+        </div>
+        <div className="mt-4 flex items-center gap-3">
+          <button
+            onClick={handleCreate}
+            disabled={!formCode.trim() || !formCredits.trim() || creating}
+            className="px-5 py-2 rounded-xl bg-[var(--accent)] text-white text-sm font-medium hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+          >
+            {creating ? "생성 중..." : "코드 생성"}
+          </button>
+          {formError && <span className="text-sm text-red-600">{formError}</span>}
+        </div>
+      </div>
+
+      {/* 코드 목록 */}
+      <div className="bezel-card rounded-2xl overflow-hidden">
+        {codes.length === 0 ? (
+          <div className="px-6 py-12 text-center text-zinc-500">
+            아직 생성된 프로모션 코드가 없습니다.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-zinc-500 border-b border-[var(--border-subtle)]">
+                  <th className="px-6 py-3 font-medium">코드</th>
+                  <th className="px-6 py-3 font-medium text-center">지급 크레딧</th>
+                  <th className="px-6 py-3 font-medium text-center">사용 현황</th>
+                  <th className="px-6 py-3 font-medium text-center">상태</th>
+                  <th className="px-6 py-3 font-medium">메모</th>
+                  <th className="px-6 py-3 font-medium">생성일</th>
+                  <th className="px-6 py-3 font-medium text-center">액션</th>
+                </tr>
+              </thead>
+              <tbody>
+                {codes.map((p) => (
+                  <PromoRow
+                    key={p.id}
+                    promo={p}
+                    expanded={expandedId === p.id}
+                    onToggleExpand={() =>
+                      setExpandedId((prev) => (prev === p.id ? null : p.id))
+                    }
+                    onToggleActive={() => handleToggleActive(p)}
+                    onDelete={() => handleDelete(p)}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+function PromoRow({
+  promo,
+  expanded,
+  onToggleExpand,
+  onToggleActive,
+  onDelete,
+}: {
+  promo: PromoCode;
+  expanded: boolean;
+  onToggleExpand: () => void;
+  onToggleActive: () => void;
+  onDelete: () => void;
+}) {
+  const exhausted =
+    promo.max_uses !== null && promo.use_count >= promo.max_uses;
+
+  return (
+    <>
+      <tr className="border-b border-[var(--border-subtle)] last:border-0 hover:bg-zinc-50">
+        <td className="px-6 py-3 font-mono text-zinc-800">{promo.code}</td>
+        <td className="px-6 py-3 text-center text-[var(--accent)] font-medium">
+          {promo.credits}
+        </td>
+        <td className="px-6 py-3 text-center">
+          <button
+            onClick={onToggleExpand}
+            disabled={promo.use_count === 0}
+            className={`text-sm ${
+              promo.use_count > 0
+                ? "text-[var(--accent)] hover:underline"
+                : "text-zinc-400 cursor-default"
+            }`}
+            title={promo.use_count > 0 ? "사용 내역 보기" : undefined}
+          >
+            {promo.use_count} / {promo.max_uses ?? "∞"}
+            {promo.use_count > 0 && (
+              <span className="ml-1 text-xs">{expanded ? "▲" : "▼"}</span>
+            )}
+          </button>
+        </td>
+        <td className="px-6 py-3 text-center">
+          <span
+            className={`inline-block px-2.5 py-0.5 rounded-full text-xs border ${
+              !promo.is_active
+                ? "bg-zinc-100 text-zinc-500 border-zinc-200"
+                : exhausted
+                  ? "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                  : "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+            }`}
+          >
+            {!promo.is_active ? "비활성" : exhausted ? "소진" : "활성"}
+          </span>
+        </td>
+        <td className="px-6 py-3 text-zinc-600 max-w-[200px] truncate" title={promo.memo ?? undefined}>
+          {promo.memo || "—"}
+        </td>
+        <td className="px-6 py-3 text-zinc-500">
+          {new Date(promo.created_at).toLocaleDateString("ko-KR")}
+        </td>
+        <td className="px-6 py-3 text-center whitespace-nowrap">
+          <button
+            onClick={onToggleActive}
+            className="text-xs text-[var(--accent)] hover:underline mr-3"
+          >
+            {promo.is_active ? "비활성화" : "활성화"}
+          </button>
+          <button
+            onClick={onDelete}
+            className="text-xs text-red-600 hover:underline"
+          >
+            삭제
+          </button>
+        </td>
+      </tr>
+      {expanded && promo.use_count > 0 && (
+        <tr className="border-b border-[var(--border-subtle)] bg-zinc-50">
+          <td colSpan={7} className="px-6 py-4">
+            <div className="text-xs font-medium text-zinc-500 mb-2">
+              사용 내역 ({promo.use_count}건)
+            </div>
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-left text-zinc-400">
+                  <th className="py-1.5 pr-4 font-medium">사용자</th>
+                  <th className="py-1.5 pr-4 font-medium text-center">지급 크레딧</th>
+                  <th className="py-1.5 pr-4 font-medium text-center">경로</th>
+                  <th className="py-1.5 font-medium">사용 일시</th>
+                </tr>
+              </thead>
+              <tbody>
+                {promo.promo_redemptions.map((r) => (
+                  <tr key={r.id} className="text-zinc-600">
+                    <td className="py-1.5 pr-4">{r.email ?? "(탈퇴한 사용자)"}</td>
+                    <td className="py-1.5 pr-4 text-center">+{r.credits_granted}</td>
+                    <td className="py-1.5 pr-4 text-center">
+                      {r.source === "signup" ? "회원가입" : "마이페이지"}
+                    </td>
+                    <td className="py-1.5">
+                      {new Date(r.created_at).toLocaleString("ko-KR")}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      )}
+    </>
   );
 }
 

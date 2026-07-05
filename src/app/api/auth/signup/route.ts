@@ -139,10 +139,11 @@ export async function POST(request: NextRequest) {
 
   const userId = data.user?.id;
   const normalizedPromoCode = normalizePromoCode(promo_code);
-  const promoMatched =
+  const promoMatchedEnv =
     normalizedPromoCode.length > 0 &&
     promoCodesFromEnv().includes(normalizedPromoCode);
   let promoApplied = false;
+  let promoBonusCredits = 0;
 
   // 프로필 생성(트리거) 이후에 (1) 동의 이력 기록, (2) 프로모션 보너스를 수행.
   if (userId) {
@@ -168,20 +169,61 @@ export async function POST(request: NextRequest) {
           });
         }
 
-        // (2) 프로모션 보너스
-        if (promoMatched) {
-          const { error: bonusError } = await admin.rpc("add_credits_raw", {
-            p_user_id: userId,
-            p_credits: PROMO_BONUS_CREDITS,
-          });
+        // (2) 프로모션 보너스: DB 관리 코드 우선(코드별 크레딧 + 사용 이력 기록),
+        // 레거시 환경변수 코드 폴백(100크레딧 고정, 이력 없음).
+        if (normalizedPromoCode) {
+          const { data: redeemData, error: redeemError } = await admin.rpc(
+            "redeem_promo_code",
+            {
+              p_user_id: userId,
+              p_code: normalizedPromoCode,
+              p_source: "signup",
+            }
+          );
 
-          if (bonusError) {
-            console.warn("[signup] promo bonus failed", {
-              user_id: userId,
-              error: bonusError.message,
-            });
-          } else {
+          if (redeemData?.success) {
             promoApplied = true;
+            promoBonusCredits =
+              typeof redeemData.credits_granted === "number"
+                ? redeemData.credits_granted
+                : 0;
+            console.info("[signup] db promo bonus applied", { user_id: userId });
+          } else if (
+            promoMatchedEnv &&
+            (redeemError || redeemData?.error === "invalid_code")
+          ) {
+            // DB에 없는(또는 RPC 실패한) 코드만 환경변수 폴백. DB 코드가
+            // 비활성/소진 상태라면 관리자 설정을 존중해 폴백하지 않는다.
+            if (redeemError) {
+              console.warn("[signup] promo redeem rpc failed, falling back to env", {
+                user_id: userId,
+                error: redeemError.message,
+              });
+            }
+
+            const { error: bonusError } = await admin.rpc("add_credits_raw", {
+              p_user_id: userId,
+              p_credits: PROMO_BONUS_CREDITS,
+            });
+
+            if (bonusError) {
+              console.warn("[signup] promo bonus failed", {
+                user_id: userId,
+                error: bonusError.message,
+              });
+            } else {
+              promoApplied = true;
+              promoBonusCredits = PROMO_BONUS_CREDITS;
+              console.info("[signup] promo bonus applied", { user_id: userId });
+            }
+          } else if (redeemError) {
+            console.warn("[signup] promo redeem rpc failed", {
+              user_id: userId,
+              error: redeemError.message,
+            });
+          }
+
+          if (promoApplied) {
             const existingMetadata = data.user?.user_metadata ?? {};
             const { error: metadataError } = await admin.auth.admin.updateUserById(
               userId,
@@ -199,8 +241,6 @@ export async function POST(request: NextRequest) {
                 error: metadataError.message,
               });
             }
-
-            console.info("[signup] promo bonus applied", { user_id: userId });
           }
         }
       } else {
@@ -220,7 +260,7 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({
     user: { id: userId, email: data.user?.email },
     message: "회원가입이 완료되었습니다.",
-    credits: DEFAULT_SIGNUP_CREDITS + (promoApplied ? PROMO_BONUS_CREDITS : 0),
+    credits: DEFAULT_SIGNUP_CREDITS + promoBonusCredits,
     promo_applied: promoApplied,
   });
 }

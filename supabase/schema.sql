@@ -433,3 +433,119 @@ alter table public.user_consents enable row level security;
 create policy "본인 동의 이력 조회"
   on public.user_consents for select
   using (auth.uid() = user_id);
+
+-- ============================================
+-- 13. 프로모션 코드 (DB 관리) + 사용 이력
+-- ============================================
+-- 상세는 migrations/0008_promo_codes.sql 참고. 관리자가 코드·크레딧·최대 사용
+-- 횟수를 직접 지정해 생성하고, 사용자는 마이페이지/회원가입에서 상환한다.
+-- 같은 코드는 계정당 1회. 클라이언트 직접 접근 없음(서버 service_role 전용).
+create table if not exists public.promo_codes (
+  id uuid primary key default gen_random_uuid(),
+  code text not null unique
+    check (code = lower(btrim(code)) and char_length(code) between 2 and 50),
+  credits integer not null check (credits between 1 and 100000),
+  max_uses integer check (max_uses is null or max_uses >= 1),
+  is_active boolean not null default true,
+  memo text,
+  created_by uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.promo_redemptions (
+  id uuid primary key default gen_random_uuid(),
+  promo_code_id uuid not null references public.promo_codes(id),
+  user_id uuid references public.profiles(id) on delete set null,
+  email text,
+  credits_granted integer not null,
+  source text not null default 'mypage' check (source in ('mypage', 'signup')),
+  created_at timestamptz not null default now(),
+  unique (promo_code_id, user_id)
+);
+
+create index if not exists idx_promo_redemptions_code_id on public.promo_redemptions(promo_code_id);
+create index if not exists idx_promo_redemptions_user_id on public.promo_redemptions(user_id);
+
+alter table public.promo_codes enable row level security;
+alter table public.promo_redemptions enable row level security;
+
+-- 상환 함수 (원자적). 본문은 migrations/0008_promo_codes.sql 과 동일하게 유지.
+create or replace function public.redeem_promo_code(
+  p_user_id uuid,
+  p_code text,
+  p_source text default 'mypage'
+)
+returns jsonb as $$
+declare
+  v_promo record;
+  v_email text;
+  v_use_count integer;
+  v_new_credits integer;
+begin
+  if p_source not in ('mypage', 'signup') then
+    return jsonb_build_object('success', false, 'error', 'invalid_source');
+  end if;
+
+  select id, credits, max_uses, is_active into v_promo
+  from public.promo_codes
+  where code = lower(btrim(coalesce(p_code, '')))
+  for update;
+
+  if not found then
+    return jsonb_build_object('success', false, 'error', 'invalid_code');
+  end if;
+
+  if not v_promo.is_active then
+    return jsonb_build_object('success', false, 'error', 'inactive_code');
+  end if;
+
+  select email into v_email
+  from public.profiles
+  where id = p_user_id;
+
+  if not found then
+    return jsonb_build_object('success', false, 'error', 'user_not_found');
+  end if;
+
+  if exists (
+    select 1 from public.promo_redemptions
+    where promo_code_id = v_promo.id and user_id = p_user_id
+  ) then
+    return jsonb_build_object('success', false, 'error', 'already_redeemed');
+  end if;
+
+  if v_promo.max_uses is not null then
+    select count(*) into v_use_count
+    from public.promo_redemptions
+    where promo_code_id = v_promo.id;
+
+    if v_use_count >= v_promo.max_uses then
+      return jsonb_build_object('success', false, 'error', 'exhausted');
+    end if;
+  end if;
+
+  begin
+    insert into public.promo_redemptions (promo_code_id, user_id, email, credits_granted, source)
+    values (v_promo.id, p_user_id, v_email, v_promo.credits, p_source);
+  exception when unique_violation then
+    return jsonb_build_object('success', false, 'error', 'already_redeemed');
+  end;
+
+  update public.profiles
+  set credits = credits + v_promo.credits
+  where id = p_user_id
+  returning credits into v_new_credits;
+
+  insert into public.payments (user_id, amount, credits_added, pg_transaction_id, status)
+  values (p_user_id, 0, v_promo.credits, 'promo_' || v_promo.id::text || '_' || p_user_id::text, 'completed');
+
+  return jsonb_build_object(
+    'success', true,
+    'credits_granted', v_promo.credits,
+    'new_credits', v_new_credits
+  );
+end;
+$$ language plpgsql security definer set search_path = public, pg_temp;
+
+revoke execute on function public.redeem_promo_code(uuid, text, text) from public, anon, authenticated;
+grant execute on function public.redeem_promo_code(uuid, text, text) to service_role;

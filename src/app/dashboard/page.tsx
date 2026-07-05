@@ -169,6 +169,9 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* Promo Code */}
+        <PromoRedeemCard onRedeemed={loadData} />
+
         {/* Conversion History */}
         <div className="bezel-card rounded-2xl overflow-hidden">
           <div className="px-6 py-4 border-b border-[var(--border-subtle)]">
@@ -272,6 +275,82 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function PromoRedeemCard({ onRedeemed }: { onRedeemed: () => void }) {
+  const [code, setCode] = useState("");
+  const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">(
+    "idle"
+  );
+  const [message, setMessage] = useState("");
+
+  async function handleRedeem() {
+    const trimmed = code.trim();
+    if (!trimmed || status === "submitting") return;
+
+    setStatus("submitting");
+    setMessage("");
+    try {
+      const res = await fetch("/api/promo/redeem", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: trimmed }),
+      });
+      const result = await res.json().catch(() => ({}));
+
+      if (res.ok && result.success) {
+        setStatus("success");
+        setMessage(
+          `+${result.credits_granted}크레딧이 지급되었습니다. (잔여 ${result.new_credits}회)`
+        );
+        setCode("");
+        onRedeemed();
+      } else {
+        setStatus("error");
+        setMessage(result.error ?? "코드 적용에 실패했습니다.");
+      }
+    } catch {
+      setStatus("error");
+      setMessage("코드 적용에 실패했습니다. 잠시 후 다시 시도해주세요.");
+    }
+  }
+
+  return (
+    <div className="bezel-card rounded-2xl p-6 mb-10">
+      <h2 className="text-lg font-semibold mb-1">프로모션 코드</h2>
+      <p className="text-sm text-zinc-500 mb-4">
+        프로모션 코드가 있다면 입력하고 크레딧을 받으세요.
+      </p>
+      <div className="flex gap-2 max-w-md">
+        <input
+          type="text"
+          value={code}
+          onChange={(e) => {
+            setCode(e.target.value);
+            if (status !== "idle") setStatus("idle");
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleRedeem();
+          }}
+          placeholder="코드 입력"
+          className="flex-1 px-4 py-2.5 rounded-xl bg-white border border-zinc-300 text-zinc-900 placeholder-zinc-400 text-sm focus:outline-none focus:border-[var(--accent)] transition-colors"
+        />
+        <button
+          onClick={handleRedeem}
+          disabled={!code.trim() || status === "submitting"}
+          className="px-5 py-2.5 rounded-xl bg-[var(--accent)] text-white text-sm font-medium hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+        >
+          {status === "submitting" ? "적용 중..." : "적용"}
+        </button>
+      </div>
+      {status === "success" && (
+        <p className="mt-2 text-sm text-emerald-600">✓ {message}</p>
+      )}
+      {status === "error" && (
+        <p className="mt-2 text-sm text-red-600">✗ {message}</p>
+      )}
     </div>
   );
 }
