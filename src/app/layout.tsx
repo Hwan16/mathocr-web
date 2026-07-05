@@ -8,7 +8,7 @@ const GA_MEASUREMENT_ID = "G-N5B03EJ16V";
 
 const SITE_URL = "https://mathocr.ai.kr";
 const SITE_NAME = "AI MathOCR";
-const SITE_TITLE = "AI MathOCR — 수학문제 OCR, PDF를 편집 가능한 HWP로";
+const SITE_TITLE = "AI MathOCR — 수학문제 OCR, PDF·이미지를 편집 가능한 HWP로";
 const SITE_DESCRIPTION =
   "수학문제 OCR 프로그램 AI MathOCR. 시험지·교재 PDF와 사진 속 수식을 이미지가 아닌 한글(HWP) 수식편집기 객체로 변환합니다. 프론티어 AI 이중 검증으로 정확하게, 문제 속 그림은 크레딧 차감 없이 함께.";
 
@@ -25,6 +25,8 @@ export const metadata: Metadata = {
     "수학문제 HWP 변환",
     "수식 OCR",
     "PDF HWP 변환",
+    "이미지 HWP 변환",
+    "수학문제 사진 변환",
     "한글 수식편집기",
     "시험지 제작",
     "수식 인식",

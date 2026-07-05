@@ -124,13 +124,14 @@ export default function Home() {
               <h1 className="text-4xl lg:text-[3.4rem] font-bold leading-[1.2] lg:leading-[1.18] mb-6 tracking-tight">
                 수학문제 OCR,
                 <br />
-                PDF를 편집 가능한 <span className="text-[var(--accent)]">HWP</span>로
+                PDF와 이미지를 편집 가능한 <span className="text-[var(--accent)]">HWP</span>로
               </h1>
 
               <p className="text-lg lg:text-xl text-zinc-600 leading-relaxed mb-9">
                 수식이 이미지가 아닌 <strong className="text-zinc-900 font-semibold">한글 수식편집기 객체</strong>로
-                변환됩니다. 시험지·교재 제작에 쓰는 수식 입력 시간을
-                문제당 몇 초로 줄이세요.
+                변환됩니다. PDF는 물론 핸드폰으로 찍은 사진도 그대로 올릴 수
+                있어, 시험지·교재 제작에 쓰는 수식 입력 시간이 문제당 몇 초로
+                줄어듭니다.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-3">
