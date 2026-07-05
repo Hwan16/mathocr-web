@@ -6,6 +6,7 @@ import { trackEvent } from "@/lib/analytics";
 import { FAQS } from "@/lib/faqs";
 import { FaqStructuredData } from "./structured-data";
 import { PLANS, SIGNUP_FREE_CREDITS, CREDIT_RULE } from "@/lib/plans";
+import EarlyBirdPopup from "@/components/EarlyBirdPopup";
 
 const DOWNLOAD_URL =
   "https://github.com/Hwan16/mathocr-web/releases/download/v1.6.0/MathOCR-Setup-v1.6.0.exe";
@@ -860,6 +861,9 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* ── 얼리버드 안내 팝업 (결제 오픈 후 컴포넌트 내 POPUP_ENABLED=false) ── */}
+      <EarlyBirdPopup />
     </>
   );
 }
