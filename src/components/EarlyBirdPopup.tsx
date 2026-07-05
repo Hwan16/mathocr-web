@@ -78,7 +78,7 @@ export default function EarlyBirdPopup() {
             EARLY BIRD
           </div>
           <h2 className="text-2xl font-bold leading-snug">
-            결제 기능, 7월 중 오픈합니다
+            Coming Soon! 7월 중 정식 오픈
           </h2>
         </div>
 
