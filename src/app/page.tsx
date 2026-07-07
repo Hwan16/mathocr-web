@@ -9,8 +9,8 @@ import { PLANS, SIGNUP_FREE_CREDITS, CREDIT_RULE } from "@/lib/plans";
 import EarlyBirdPopup from "@/components/EarlyBirdPopup";
 
 const DOWNLOAD_URL =
-  "https://github.com/Hwan16/mathocr-web/releases/download/v1.7.0/MathOCR-Setup-v1.7.0.exe";
-const DOWNLOAD_LABEL = "v1.7.0 (124MB)";
+  "https://github.com/Hwan16/mathocr-web/releases/download/v1.8.0/MathOCR-Setup-v1.8.0.exe";
+const DOWNLOAD_LABEL = "v1.8.0 (124MB)";
 
 // 사업자 정보 (전자상거래법 제10조 표시 의무).
 // 사업자등록·통신판매업 신고 완료 후 아래 값을 채우고 SHOW_BUSINESS_INFO 를
