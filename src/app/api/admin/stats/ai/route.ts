@@ -51,7 +51,28 @@ async function fetchClaudeDailyCents(
       },
     });
     if (!res.ok) {
-      throw new Error(`Anthropic cost_report 오류 (HTTP ${res.status})`);
+      // Anthropic이 준 실제 사유를 그대로 노출 (본문에 키는 포함되지 않음).
+      const raw = await res.text();
+      let detail = "";
+      try {
+        const parsed = JSON.parse(raw);
+        detail = parsed?.error?.message || parsed?.error?.type || "";
+      } catch {
+        detail = raw.slice(0, 200);
+      }
+      console.error(
+        `[admin/stats/ai] cost_report failed: HTTP ${res.status} ${detail}`
+      );
+      // 흔한 원인: 일반 API 키(sk-ant-api...)를 넣은 경우 → Admin 키 안내 추가
+      const hint =
+        res.status === 401 || res.status === 403
+          ? " (Admin 키가 맞는지 확인 — sk-ant-admin01-로 시작해야 함)"
+          : "";
+      throw new Error(
+        `Anthropic cost_report 오류 (HTTP ${res.status})${
+          detail ? ` — ${detail}` : ""
+        }${hint}`
+      );
     }
 
     const body = await res.json();
