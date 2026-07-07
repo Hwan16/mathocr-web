@@ -684,7 +684,11 @@ export default function Home() {
                 <span className="text-sm opacity-75">{DOWNLOAD_LABEL}</span>
               </a>
               <div className="mt-6 text-sm text-zinc-500 space-y-1.5">
-                <p>Windows 10 / 11 · 한글(HWP) 설치 필요</p>
+                <p>Windows 10 / 11 · 정품 한글(한컴오피스) 필요</p>
+                <p>
+                  <span className="text-zinc-700 font-medium">한글 뷰어(무료)로는 변환되지 않습니다</span>{" "}
+                  · 한글 2014 이상 권장
+                </p>
                 <p>
                   설치 시 보안 경고가 나타나면{" "}
                   <span className="text-zinc-700 font-medium">&ldquo;추가 정보&rdquo;</span> →{" "}

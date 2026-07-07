@@ -28,8 +28,95 @@ interface ErrorLogEntry {
   error_type: string;
   error_message: string;
   stack_trace: string | null;
+  metadata?: Record<string, unknown> | null;
   created_at: string;
   profiles?: { email: string } | null;
+}
+
+// 실패 로그 메타데이터를 사람이 읽을 수 있게 변환
+const LOG_STEP_LABELS: Record<string, string> = {
+  init: "시작",
+  validate: "영역 검증",
+  crop: "영역 크롭",
+  ocr: "OCR 인식",
+  hwp_generate: "한글 문서 생성",
+};
+const LOG_CATEGORY_LABELS: Record<string, string> = {
+  hwp_server_fault: "한글 내부 오류 (자동화 중 예외)",
+  hwp_not_installed: "한글 미설치 / 뷰어",
+  hwp_launch_failed: "한글 실행 실패",
+  hwp_com_error: "한글 연동 오류",
+  other: "기타 (한글 무관)",
+};
+
+function LogMetaRow({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className="flex gap-2 text-xs">
+      <span className="text-zinc-400 shrink-0 w-24">{label}</span>
+      <span className="text-zinc-700 break-all">{value}</span>
+    </div>
+  );
+}
+
+function LogMetadata({ metadata }: { metadata: Record<string, unknown> }) {
+  const step = typeof metadata.step === "string" ? metadata.step : null;
+  const category = typeof metadata.category === "string" ? metadata.category : null;
+  const rows: { label: string; value: ReactNode }[] = [];
+
+  if (category) {
+    rows.push({
+      label: "원인 분류",
+      value: (
+        <span className="font-medium text-zinc-900">
+          {LOG_CATEGORY_LABELS[category] ?? category}
+        </span>
+      ),
+    });
+  }
+  if (step) rows.push({ label: "실패 단계", value: LOG_STEP_LABELS[step] ?? step });
+  if (metadata.error_code)
+    rows.push({ label: "에러 코드", value: String(metadata.error_code) });
+  if (typeof metadata.hwp_installed === "boolean")
+    rows.push({
+      label: "한글 설치 감지",
+      value: metadata.hwp_installed ? "감지됨" : "미감지(설치 안 됨/뷰어)",
+    });
+  if (metadata.hwp_version)
+    rows.push({ label: "한글 버전", value: String(metadata.hwp_version) });
+  if (metadata.pdf_name)
+    rows.push({ label: "파일", value: String(metadata.pdf_name) });
+  if (typeof metadata.region_count === "number")
+    rows.push({ label: "영역 수", value: String(metadata.region_count) });
+
+  // 알려지지 않은 키는 원본 JSON으로 보조 표시
+  const known = new Set([
+    "step",
+    "category",
+    "error_code",
+    "hwp_installed",
+    "hwp_version",
+    "pdf_name",
+    "region_count",
+  ]);
+  const extra = Object.fromEntries(
+    Object.entries(metadata).filter(([k]) => !known.has(k))
+  );
+
+  if (rows.length === 0 && Object.keys(extra).length === 0) return null;
+
+  return (
+    <div className="mt-3 p-3 rounded-lg bg-zinc-50 border border-[var(--border-subtle)] space-y-1">
+      <div className="text-xs font-medium text-zinc-500 mb-1.5">진단 정보</div>
+      {rows.map((r) => (
+        <LogMetaRow key={r.label} label={r.label} value={r.value} />
+      ))}
+      {Object.keys(extra).length > 0 && (
+        <pre className="mt-1 text-[11px] text-zinc-400 whitespace-pre-wrap break-all">
+          {JSON.stringify(extra)}
+        </pre>
+      )}
+    </div>
+  );
 }
 
 interface Stats {
@@ -784,10 +871,17 @@ function LogsTab() {
                   {new Date(log.created_at).toLocaleString("ko-KR")}
                 </span>
               </div>
-              {expandedId === log.id && log.stack_trace && (
-                <pre className="mt-3 p-3 rounded-lg bg-zinc-100 text-xs text-zinc-500 overflow-x-auto whitespace-pre-wrap">
-                  {log.stack_trace}
-                </pre>
+              {expandedId === log.id && (
+                <>
+                  {log.metadata && typeof log.metadata === "object" && (
+                    <LogMetadata metadata={log.metadata} />
+                  )}
+                  {log.stack_trace && (
+                    <pre className="mt-3 p-3 rounded-lg bg-zinc-100 text-xs text-zinc-500 overflow-x-auto whitespace-pre-wrap">
+                      {log.stack_trace}
+                    </pre>
+                  )}
+                </>
               )}
             </div>
           ))}
