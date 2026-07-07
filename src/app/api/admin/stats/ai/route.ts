@@ -185,8 +185,12 @@ export async function GET(request: NextRequest) {
   // ── Mathpix (기존 서버 키 재사용) ──
   const mathpixAppId = process.env.MATHPIX_APP_ID;
   const mathpixAppKey = process.env.MATHPIX_APP_KEY;
+  // 단가는 유한한 0 이상 값만 허용 (0=명시적 무료, 음수·NaN·미설정이면 기본값)
+  const parsedUnit = parseFloat(process.env.MATHPIX_COST_PER_REQUEST ?? "");
   const unitUsd =
-    parseFloat(process.env.MATHPIX_COST_PER_REQUEST ?? "") || DEFAULT_MATHPIX_UNIT_USD;
+    Number.isFinite(parsedUnit) && parsedUnit >= 0
+      ? parsedUnit
+      : DEFAULT_MATHPIX_UNIT_USD;
 
   let mathpix:
     | { configured: false }

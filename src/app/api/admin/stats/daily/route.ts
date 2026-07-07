@@ -30,19 +30,28 @@ function kstDateKey(createdAt: string): string {
 }
 
 // Supabase(PostgREST)는 한 번에 최대 1000행만 반환하므로 range로 나눠 모두 읽는다.
+// 상한(MAX_PAGES)에 도달했는데도 마지막 페이지가 가득 차 있으면 데이터가 상한을
+// 초과한 것 — 이 경우 조용히 잘라 집계를 왜곡시키지 말고 null(→ 500)을 반환한다.
+// (이 상한에 실제로 걸릴 규모가 되면 집계를 DB 쪽 GROUP BY로 옮겨야 한다.)
+const PAGE_SIZE = 1000;
+const MAX_PAGES = 100; // 안전 상한 = 100,000행
+
 async function fetchAllRows<T>(
   query: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>
 ): Promise<T[] | null> {
-  const pageSize = 1000;
   const rows: T[] = [];
-  for (let page = 0; page < 20; page++) {
-    const { data, error } = await query(page * pageSize, (page + 1) * pageSize - 1);
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const { data, error } = await query(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
     if (error) return null;
     const batch = data ?? [];
     rows.push(...batch);
-    if (batch.length < pageSize) break;
+    if (batch.length < PAGE_SIZE) return rows; // 마지막 페이지 → 정상 종료
   }
-  return rows;
+  // MAX_PAGES를 모두 채웠는데도 마지막 페이지가 가득 참 = 조회 상한 초과
+  console.error(
+    "[admin/stats/daily] row cap exceeded — 집계를 DB(GROUP BY)로 이전 필요"
+  );
+  return null;
 }
 
 interface PurchaseBreakdown {
