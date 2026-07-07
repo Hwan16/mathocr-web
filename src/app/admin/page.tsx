@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import {
+  useEffect,
+  useState,
+  useCallback,
+  useRef,
+  type RefObject,
+  type ReactNode,
+} from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 
@@ -813,8 +820,76 @@ function LogsTab() {
 }
 
 /* ── 통계 탭 ── */
+
+interface PurchaseBreakdown {
+  total: number;
+  starter: number;
+  basic: number;
+  pro: number;
+  other: number;
+}
+
+interface DailyRow {
+  date: string;
+  signups: number;
+  conversions: number;
+  credits_used: number;
+  revenue: number;
+  purchases: PurchaseBreakdown;
+}
+
+interface AiClaude {
+  configured: boolean;
+  error?: string;
+  daily?: { date: string; usd: number }[];
+  month_to_date_usd?: number;
+}
+
+interface AiMathpix {
+  configured: boolean;
+  error?: string;
+  unit_usd?: number;
+  daily?: { date: string; count: number; est_usd: number }[];
+  month_to_date_count?: number;
+  month_to_date_est_usd?: number;
+}
+
+interface AiStats {
+  days: number;
+  month: string;
+  claude: AiClaude;
+  mathpix: AiMathpix;
+}
+
+// 플랜별 차트 색 — 색약(적록) 구분 검증 완료 조합. Basic만 브랜드 보라 유지.
+const PLAN_CHART_COLORS: Record<string, string> = {
+  starter: "#1baf7a",
+  basic: "#7c3aed",
+  pro: "#eda100",
+  other: "#a1a1aa",
+};
+const PLAN_LABELS: Record<string, string> = {
+  starter: "Starter",
+  basic: "Basic",
+  pro: "Pro",
+  other: "기타",
+};
+
+const fmtInt = (n: number) => n.toLocaleString("ko-KR");
+const fmtKrw = (n: number) => `₩${n.toLocaleString("ko-KR")}`;
+const fmtUsd = (n: number) =>
+  `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const shortDate = (key: string) => {
+  const [, m, d] = key.split("-");
+  return `${parseInt(m)}/${parseInt(d)}`;
+};
+
 function StatsTab() {
   const [stats, setStats] = useState<Stats | null>(null);
+  const [days, setDays] = useState(30);
+  const [daily, setDaily] = useState<DailyRow[] | null>(null);
+  const [ai, setAi] = useState<AiStats | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     async function loadStats() {
@@ -830,6 +905,26 @@ function StatsTab() {
     }
     loadStats();
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    setRefreshing(true);
+    Promise.all([
+      fetch(`/api/admin/stats/daily?days=${days}`).then((r) => (r.ok ? r.json() : null)),
+      fetch(`/api/admin/stats/ai?days=${days}`).then((r) => (r.ok ? r.json() : null)),
+    ])
+      .then(([dailyData, aiData]) => {
+        if (cancelled) return;
+        if (dailyData?.daily) setDaily(dailyData.daily as DailyRow[]);
+        if (aiData) setAi(aiData as AiStats);
+      })
+      .finally(() => {
+        if (!cancelled) setRefreshing(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [days]);
 
   if (!stats) {
     return <div className="text-zinc-500">통계 로딩 중...</div>;
@@ -867,19 +962,648 @@ function StatsTab() {
     },
   ];
 
+  const planKeys = ["starter", "basic", "pro", "other"] as const;
+  const planTotals = planKeys.map((k) => ({
+    key: k,
+    total: (daily ?? []).reduce((sum, d) => sum + d.purchases[k], 0),
+  }));
+  // '기타'는 실제 발생했을 때만 노출
+  const visiblePlanKeys = planKeys.filter(
+    (k) => k !== "other" || planTotals.find((p) => p.key === "other")!.total > 0
+  );
+
+  const periodTotals = (daily ?? []).reduce(
+    (acc, d) => {
+      acc.signups += d.signups;
+      acc.purchases += d.purchases.total;
+      acc.credits += d.credits_used;
+      acc.revenue += d.revenue;
+      return acc;
+    },
+    { signups: 0, purchases: 0, credits: 0, revenue: 0 }
+  );
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      {statCards.map((s) => (
-        <div key={s.label} className="bezel-card rounded-2xl p-6">
-          <div className="text-sm text-zinc-500 mb-1">{s.label}</div>
-          <div className={`text-3xl font-bold ${s.color}`}>
-            {s.value.toLocaleString()}
-            <span className="text-base font-normal text-zinc-500 ml-1">
-              {s.unit}
-            </span>
+    <div className="space-y-8">
+      {/* 누적 요약 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {statCards.map((s) => (
+          <div key={s.label} className="bezel-card rounded-2xl p-6">
+            <div className="text-sm text-zinc-500 mb-1">{s.label}</div>
+            <div className={`text-3xl font-bold ${s.color}`}>
+              {s.value.toLocaleString()}
+              <span className="text-base font-normal text-zinc-500 ml-1">
+                {s.unit}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* 기간 필터 — 아래 모든 차트에 공통 적용 */}
+      <div className="flex items-center gap-2">
+        {[7, 30, 90].map((d) => (
+          <button
+            key={d}
+            onClick={() => setDays(d)}
+            className={`px-4 py-1.5 rounded-lg text-sm transition-colors ${
+              days === d
+                ? "bg-[var(--accent)] text-white"
+                : "text-zinc-600 hover:text-zinc-800 border border-[var(--border-light)]"
+            }`}
+          >
+            최근 {d}일
+          </button>
+        ))}
+        {refreshing && daily && (
+          <span className="text-xs text-zinc-400 ml-2">갱신 중...</span>
+        )}
+      </div>
+
+      {/* 일자별 서비스 지표 */}
+      <section className={refreshing && daily ? "opacity-60 transition-opacity" : ""}>
+        <h2 className="text-lg font-semibold mb-4">일자별 지표</h2>
+        {!daily ? (
+          <div className="bezel-card rounded-2xl px-6 py-12 text-center text-zinc-500">
+            불러오는 중...
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-4">
+              <div className="bezel-card rounded-2xl p-5">
+                <ChartHeader
+                  title="신규 회원가입"
+                  summary={`${fmtInt(periodTotals.signups)}명`}
+                />
+                <DailyBarChart
+                  data={daily.map((d) => ({ date: d.date, values: [d.signups] }))}
+                  series={[{ label: "가입", color: "#7c3aed" }]}
+                  format={(n) => `${fmtInt(n)}명`}
+                />
+              </div>
+
+              <div className="bezel-card rounded-2xl p-5">
+                <ChartHeader
+                  title="구매 건수"
+                  summary={`${fmtInt(periodTotals.purchases)}건 · ${fmtKrw(periodTotals.revenue)}`}
+                />
+                <DailyBarChart
+                  data={daily.map((d) => ({
+                    date: d.date,
+                    values: visiblePlanKeys.map((k) => d.purchases[k]),
+                  }))}
+                  series={visiblePlanKeys.map((k) => ({
+                    label: PLAN_LABELS[k],
+                    color: PLAN_CHART_COLORS[k],
+                  }))}
+                  format={(n) => `${fmtInt(n)}건`}
+                />
+                {/* 범례 + 기간 내 플랜별 합계 */}
+                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3">
+                  {visiblePlanKeys.map((k) => (
+                    <span key={k} className="flex items-center gap-1.5 text-xs text-zinc-600">
+                      <span
+                        className="inline-block w-2.5 h-2.5 rounded-full"
+                        style={{ backgroundColor: PLAN_CHART_COLORS[k] }}
+                      />
+                      {PLAN_LABELS[k]}{" "}
+                      <span className="text-zinc-400">
+                        {fmtInt(planTotals.find((p) => p.key === k)!.total)}
+                      </span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bezel-card rounded-2xl p-5 md:col-span-2 xl:col-span-1">
+                <ChartHeader
+                  title="크레딧 사용"
+                  summary={`${fmtInt(periodTotals.credits)}회`}
+                />
+                <DailyBarChart
+                  data={daily.map((d) => ({ date: d.date, values: [d.credits_used] }))}
+                  series={[{ label: "크레딧", color: "#2a78d6" }]}
+                  format={(n) => `${fmtInt(n)}회`}
+                />
+              </div>
+            </div>
+
+            <DailyTable daily={daily} visiblePlanKeys={visiblePlanKeys} />
+          </>
+        )}
+      </section>
+
+      {/* AI 서비스 비용 */}
+      <section className={refreshing && ai ? "opacity-60 transition-opacity" : ""}>
+        <h2 className="text-lg font-semibold mb-1">AI 서비스 비용</h2>
+        <p className="text-xs text-zinc-400 mb-4">
+          일자는 UTC 기준 (한국시간 오전 9시 경계) · 데이터는 각 서비스 공식 API에서 조회
+        </p>
+        {!ai ? (
+          <div className="bezel-card rounded-2xl px-6 py-12 text-center text-zinc-500">
+            불러오는 중...
+          </div>
+        ) : (
+          <AiCostSection ai={ai} />
+        )}
+      </section>
+    </div>
+  );
+}
+
+function ChartHeader({ title, summary }: { title: string; summary: string }) {
+  return (
+    <div className="flex items-baseline justify-between mb-3">
+      <h3 className="text-sm font-medium text-zinc-700">{title}</h3>
+      <span className="text-sm font-semibold text-zinc-900">{summary}</span>
+    </div>
+  );
+}
+
+/* ── 일자별 막대 차트 (SVG, 의존성 없음) ── */
+
+function useContainerWidth(): [RefObject<HTMLDivElement | null>, number] {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [width, setWidth] = useState(0);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new ResizeObserver((entries) => {
+      setWidth(entries[0]?.contentRect.width ?? 0);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  return [ref, width];
+}
+
+// 축 최대값을 보기 좋은 숫자로 올림 (절반 눈금도 정수가 되도록 짝수 계열)
+function niceMax(v: number): number {
+  if (v <= 2) return 2;
+  const pow = Math.pow(10, Math.floor(Math.log10(v)));
+  for (const m of [1, 2, 4, 6, 8, 10]) {
+    if (v <= m * pow) return m * pow;
+  }
+  return 10 * pow;
+}
+
+// 위쪽 모서리만 둥근 막대 (데이터 끝만 둥글게, 바닥은 직각)
+function topRoundedBar(x: number, y: number, w: number, h: number, r: number): string {
+  const rr = Math.min(r, w / 2, h);
+  return [
+    `M${x},${y + h}`,
+    `L${x},${y + rr}`,
+    `Q${x},${y} ${x + rr},${y}`,
+    `L${x + w - rr},${y}`,
+    `Q${x + w},${y} ${x + w},${y + rr}`,
+    `L${x + w},${y + h}`,
+    "Z",
+  ].join(" ");
+}
+
+interface ChartDatum {
+  date: string;
+  values: number[];
+}
+
+function DailyBarChart({
+  data,
+  series,
+  format,
+  height = 180,
+}: {
+  data: ChartDatum[];
+  series: { label: string; color: string }[];
+  format: (n: number) => string;
+  height?: number;
+}) {
+  const [containerRef, width] = useContainerWidth();
+  const [hover, setHover] = useState<number | null>(null);
+
+  const padTop = 8;
+  const padBottom = 20;
+  const padLeft = 34;
+  const padRight = 4;
+  const innerW = Math.max(0, width - padLeft - padRight);
+  const innerH = height - padTop - padBottom;
+
+  const totals = data.map((d) => d.values.reduce((a, b) => a + b, 0));
+  const rawMax = Math.max(...totals, 0);
+  const max = niceMax(rawMax);
+  const isEmpty = rawMax === 0;
+
+  const n = data.length;
+  const slotW = n > 0 ? innerW / n : 0;
+  const barW = Math.min(24, Math.max(2, slotW * 0.65));
+
+  // x축 라벨: 6개 내외만 표시
+  const labelStep = Math.max(1, Math.ceil(n / 6));
+  const yTicks = [max / 2, max];
+
+  const hovered = hover !== null ? data[hover] : null;
+  const tooltipLeft =
+    hover !== null && width > 0
+      ? Math.min(Math.max(padLeft + hover * slotW + slotW / 2 - 70, 0), width - 150)
+      : 0;
+
+  return (
+    <div ref={containerRef} className="relative" style={{ height }}>
+      {width > 0 && (
+        <svg
+          width={width}
+          height={height}
+          onMouseLeave={() => setHover(null)}
+          role="img"
+          aria-label={series.map((s) => s.label).join(", ")}
+        >
+          {/* 눈금선 (헤어라인) + y 라벨 */}
+          {yTicks.map((t) => {
+            const y = padTop + innerH - (t / max) * innerH;
+            return (
+              <g key={t}>
+                <line
+                  x1={padLeft}
+                  x2={width - padRight}
+                  y1={y}
+                  y2={y}
+                  stroke="#ececee"
+                  strokeWidth={1}
+                />
+                <text
+                  x={padLeft - 6}
+                  y={y + 3}
+                  textAnchor="end"
+                  fontSize={10}
+                  fill="#a1a1aa"
+                  style={{ fontVariantNumeric: "tabular-nums" }}
+                >
+                  {t >= 1000 ? `${t / 1000}k` : t}
+                </text>
+              </g>
+            );
+          })}
+          {/* 기준선 */}
+          <line
+            x1={padLeft}
+            x2={width - padRight}
+            y1={padTop + innerH}
+            y2={padTop + innerH}
+            stroke="#d4d4d8"
+            strokeWidth={1}
+          />
+
+          {/* 호버 배경 */}
+          {hover !== null && (
+            <rect
+              x={padLeft + hover * slotW}
+              y={padTop}
+              width={slotW}
+              height={innerH}
+              fill="#f4f4f5"
+            />
+          )}
+
+          {/* 막대 (스택: 아래→위, 세그먼트 사이 2px 흰 간격) */}
+          {data.map((d, i) => {
+            const x = padLeft + i * slotW + (slotW - barW) / 2;
+            let cursorY = padTop + innerH;
+            const segments: ReactNode[] = [];
+            const lastIdx = d.values.reduce(
+              (acc, v, si) => (v > 0 ? si : acc),
+              -1
+            );
+            d.values.forEach((v, si) => {
+              if (v <= 0) return;
+              const segH = (v / max) * innerH;
+              const isTop = si === lastIdx;
+              // 흰 간격(2px)은 세그먼트 '위쪽'에 — 막대는 항상 바닥(기준선)에 붙는다
+              const drawH = isTop ? segH : Math.max(1, segH - 2);
+              segments.push(
+                isTop ? (
+                  <path
+                    key={si}
+                    d={topRoundedBar(x, cursorY - segH, barW, drawH, 3)}
+                    fill={series[si].color}
+                  />
+                ) : (
+                  <rect
+                    key={si}
+                    x={x}
+                    y={cursorY - drawH}
+                    width={barW}
+                    height={drawH}
+                    fill={series[si].color}
+                  />
+                )
+              );
+              cursorY -= segH;
+            });
+            return <g key={d.date}>{segments}</g>;
+          })}
+
+          {/* x축 라벨 */}
+          {data.map((d, i) =>
+            i % labelStep === 0 ? (
+              <text
+                key={d.date}
+                x={padLeft + i * slotW + slotW / 2}
+                y={height - 6}
+                textAnchor="middle"
+                fontSize={10}
+                fill="#a1a1aa"
+              >
+                {shortDate(d.date)}
+              </text>
+            ) : null
+          )}
+
+          {/* 호버 히트 영역 (슬롯 전체) */}
+          {data.map((d, i) => (
+            <rect
+              key={d.date}
+              x={padLeft + i * slotW}
+              y={padTop}
+              width={slotW}
+              height={innerH}
+              fill="transparent"
+              onMouseEnter={() => setHover(i)}
+            />
+          ))}
+        </svg>
+      )}
+
+      {isEmpty && (
+        <div className="absolute inset-0 flex items-center justify-center text-xs text-zinc-400 pointer-events-none">
+          기간 내 데이터가 없습니다
+        </div>
+      )}
+
+      {/* 툴팁 */}
+      {hovered && !isEmpty && (
+        <div
+          className="absolute top-0 z-10 pointer-events-none rounded-lg bg-zinc-900 text-white px-3 py-2 shadow-lg"
+          style={{ left: tooltipLeft, minWidth: 120 }}
+        >
+          <div className="text-[11px] text-zinc-400 mb-1">{shortDate(hovered.date)}</div>
+          {series.map((s, si) => (
+            <div key={s.label} className="flex items-center gap-1.5 text-xs">
+              <span
+                className="inline-block w-2 h-2 rounded-full"
+                style={{ backgroundColor: s.color }}
+              />
+              <span className="text-zinc-300">{s.label}</span>
+              <span
+                className="ml-auto font-medium"
+                style={{ fontVariantNumeric: "tabular-nums" }}
+              >
+                {format(hovered.values[si])}
+              </span>
+            </div>
+          ))}
+          {series.length > 1 && (
+            <div className="flex items-center gap-1.5 text-xs mt-1 pt-1 border-t border-zinc-700">
+              <span className="text-zinc-300">합계</span>
+              <span
+                className="ml-auto font-medium"
+                style={{ fontVariantNumeric: "tabular-nums" }}
+              >
+                {format(hovered.values.reduce((a, b) => a + b, 0))}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── 일자별 상세 테이블 ── */
+function DailyTable({
+  daily,
+  visiblePlanKeys,
+}: {
+  daily: DailyRow[];
+  visiblePlanKeys: readonly ("starter" | "basic" | "pro" | "other")[];
+}) {
+  // 최근 날짜가 위로
+  const rows = [...daily].reverse();
+  return (
+    <div className="bezel-card rounded-2xl overflow-hidden">
+      <div className="px-6 py-3 border-b border-[var(--border-subtle)]">
+        <h3 className="text-sm font-medium text-zinc-700">일자별 상세</h3>
+      </div>
+      <div className="overflow-x-auto max-h-96 overflow-y-auto">
+        <table className="w-full text-sm">
+          <thead className="sticky top-0 bg-white">
+            <tr className="text-left text-zinc-500 border-b border-[var(--border-subtle)]">
+              <th className="px-6 py-2.5 font-medium">날짜</th>
+              <th className="px-4 py-2.5 font-medium text-right">가입</th>
+              <th className="px-4 py-2.5 font-medium text-right">구매</th>
+              {visiblePlanKeys.map((k) => (
+                <th key={k} className="px-4 py-2.5 font-medium text-right text-xs">
+                  {PLAN_LABELS[k]}
+                </th>
+              ))}
+              <th className="px-4 py-2.5 font-medium text-right">변환</th>
+              <th className="px-4 py-2.5 font-medium text-right">크레딧</th>
+              <th className="px-6 py-2.5 font-medium text-right">매출</th>
+            </tr>
+          </thead>
+          <tbody style={{ fontVariantNumeric: "tabular-nums" }}>
+            {rows.map((d) => {
+              const empty =
+                d.signups === 0 && d.purchases.total === 0 && d.conversions === 0;
+              return (
+                <tr
+                  key={d.date}
+                  className={`border-b border-[var(--border-subtle)] last:border-0 ${
+                    empty ? "text-zinc-300" : "text-zinc-700"
+                  }`}
+                >
+                  <td className="px-6 py-2">{d.date}</td>
+                  <td className="px-4 py-2 text-right">{fmtInt(d.signups)}</td>
+                  <td className="px-4 py-2 text-right font-medium">
+                    {fmtInt(d.purchases.total)}
+                  </td>
+                  {visiblePlanKeys.map((k) => (
+                    <td key={k} className="px-4 py-2 text-right text-xs">
+                      {fmtInt(d.purchases[k])}
+                    </td>
+                  ))}
+                  <td className="px-4 py-2 text-right">{fmtInt(d.conversions)}</td>
+                  <td className="px-4 py-2 text-right">{fmtInt(d.credits_used)}</td>
+                  <td className="px-6 py-2 text-right">
+                    {d.revenue > 0 ? fmtKrw(d.revenue) : "—"}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/* ── AI 서비스 비용 섹션 ── */
+function AiCostSection({ ai }: { ai: AiStats }) {
+  const { claude, mathpix } = ai;
+  const [monthYear, monthNum] = ai.month.split("-");
+  const monthLabel = `${monthYear}년 ${parseInt(monthNum)}월`;
+
+  // 두 서비스 날짜 합집합 (최근이 위)
+  const dateSet = new Set<string>();
+  claude.daily?.forEach((d) => dateSet.add(d.date));
+  mathpix.daily?.forEach((d) => dateSet.add(d.date));
+  const allDates = Array.from(dateSet).sort((a, b) => b.localeCompare(a));
+  const claudeByDate = new Map((claude.daily ?? []).map((d) => [d.date, d]));
+  const mathpixByDate = new Map((mathpix.daily ?? []).map((d) => [d.date, d]));
+
+  return (
+    <div className="space-y-4">
+      {/* 월 누적 카드 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bezel-card rounded-2xl p-6">
+          <div className="text-sm text-zinc-500 mb-1">
+            Claude API · {monthLabel} 누적 비용
+          </div>
+          {!claude.configured ? (
+            <ClaudeSetupGuide />
+          ) : claude.error ? (
+            <div className="text-sm text-red-600 mt-2">{claude.error}</div>
+          ) : (
+            <>
+              <div className="text-3xl font-bold text-zinc-900">
+                {fmtUsd(claude.month_to_date_usd ?? 0)}
+              </div>
+              <p className="text-xs text-zinc-400 mt-2">
+                선불 크레딧에서 차감되는 방식이라 별도 결제일은 없습니다. 잔액이
+                소진되면 충전(자동충전 설정 시 자동 결제)됩니다.
+              </p>
+            </>
+          )}
+        </div>
+
+        <div className="bezel-card rounded-2xl p-6">
+          <div className="text-sm text-zinc-500 mb-1">
+            Mathpix OCR · {monthLabel} 사용량
+          </div>
+          {!mathpix.configured ? (
+            <div className="text-sm text-zinc-500 mt-2">
+              MATHPIX_APP_ID / MATHPIX_APP_KEY 환경변수가 설정되지 않았습니다.
+            </div>
+          ) : mathpix.error ? (
+            <div className="text-sm text-red-600 mt-2">{mathpix.error}</div>
+          ) : (
+            <>
+              <div className="text-3xl font-bold text-zinc-900">
+                {fmtInt(mathpix.month_to_date_count ?? 0)}
+                <span className="text-base font-normal text-zinc-500 ml-1">건</span>
+                <span className="text-lg font-semibold text-zinc-600 ml-3">
+                  ≈ {fmtUsd(mathpix.month_to_date_est_usd ?? 0)}
+                </span>
+              </div>
+              <p className="text-xs text-zinc-400 mt-2">
+                월 사용량 후불 청구 — 이 금액이 다음 달 초에 결제될 예상액입니다.
+                (건당 ${mathpix.unit_usd} 기준 추정, MATHPIX_COST_PER_REQUEST로 조정
+                가능)
+              </p>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* 일자별 차트 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {claude.configured && !claude.error && (
+          <div className="bezel-card rounded-2xl p-5">
+            <ChartHeader
+              title="Claude 일자별 비용"
+              summary={fmtUsd((claude.daily ?? []).reduce((s, d) => s + d.usd, 0))}
+            />
+            <DailyBarChart
+              data={(claude.daily ?? []).map((d) => ({ date: d.date, values: [d.usd] }))}
+              series={[{ label: "비용(USD)", color: "#2a78d6" }]}
+              format={fmtUsd}
+            />
+          </div>
+        )}
+        {mathpix.configured && !mathpix.error && (
+          <div className="bezel-card rounded-2xl p-5">
+            <ChartHeader
+              title="Mathpix 일자별 요청"
+              summary={`${fmtInt((mathpix.daily ?? []).reduce((s, d) => s + d.count, 0))}건`}
+            />
+            <DailyBarChart
+              data={(mathpix.daily ?? []).map((d) => ({
+                date: d.date,
+                values: [d.count],
+              }))}
+              series={[{ label: "요청 수", color: "#1baf7a" }]}
+              format={(n) => `${fmtInt(n)}건`}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* 일자별 상세 테이블 */}
+      {allDates.length > 0 && (
+        <div className="bezel-card rounded-2xl overflow-hidden">
+          <div className="px-6 py-3 border-b border-[var(--border-subtle)]">
+            <h3 className="text-sm font-medium text-zinc-700">AI 비용 일자별 상세</h3>
+          </div>
+          <div className="overflow-x-auto max-h-96 overflow-y-auto">
+            <table className="w-full text-sm">
+              <thead className="sticky top-0 bg-white">
+                <tr className="text-left text-zinc-500 border-b border-[var(--border-subtle)]">
+                  <th className="px-6 py-2.5 font-medium">날짜 (UTC)</th>
+                  <th className="px-4 py-2.5 font-medium text-right">Claude 비용</th>
+                  <th className="px-4 py-2.5 font-medium text-right">Mathpix 요청</th>
+                  <th className="px-6 py-2.5 font-medium text-right">Mathpix 예상 비용</th>
+                </tr>
+              </thead>
+              <tbody style={{ fontVariantNumeric: "tabular-nums" }}>
+                {allDates.map((date) => {
+                  const c = claudeByDate.get(date);
+                  const m = mathpixByDate.get(date);
+                  return (
+                    <tr
+                      key={date}
+                      className="border-b border-[var(--border-subtle)] last:border-0 text-zinc-700"
+                    >
+                      <td className="px-6 py-2">{date}</td>
+                      <td className="px-4 py-2 text-right">
+                        {c ? fmtUsd(c.usd) : "—"}
+                      </td>
+                      <td className="px-4 py-2 text-right">
+                        {m ? fmtInt(m.count) : "—"}
+                      </td>
+                      <td className="px-6 py-2 text-right">
+                        {m ? fmtUsd(m.est_usd) : "—"}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
-      ))}
+      )}
+    </div>
+  );
+}
+
+function ClaudeSetupGuide() {
+  return (
+    <div className="text-sm text-zinc-500 mt-2 space-y-1.5">
+      <p>
+        Claude 비용 조회에는 <span className="font-mono text-xs">ANTHROPIC_ADMIN_KEY</span>{" "}
+        환경변수가 필요합니다 (일반 API 키와 다른 Admin 키).
+      </p>
+      <ol className="list-decimal list-inside text-xs text-zinc-400 space-y-0.5">
+        <li>Anthropic Console → Settings → Admin keys에서 키 생성 (조직 계정 필요)</li>
+        <li>Vercel 프로젝트 환경변수에 ANTHROPIC_ADMIN_KEY 추가 후 재배포</li>
+      </ol>
     </div>
   );
 }
