@@ -501,36 +501,36 @@ export default function Home() {
                 n: 1,
                 title: "회원가입 후 프로그램 설치",
                 desc: "홈페이지에서 회원가입하면 무료 크레딧 5개가 지급됩니다. Windows용 설치 파일을 다운로드해 실행하세요. 설치 중 보안 경고가 보이면 \"추가 정보\" → \"실행\"을 누르면 됩니다.",
-                img: "step-1.png",
-                imgLabel: "스크린샷: 회원가입 화면 + 설치 과정",
+                img: "step-1.webp",
+                imgLabel: "설치 후 로그인된 AI MathOCR 첫 화면 — PDF·이미지 파일을 끌어다 놓는 업로드 영역",
               },
               {
                 n: 2,
-                title: "로그인하고 PDF 또는 사진 열기",
-                desc: "프로그램을 실행해 가입한 계정으로 로그인합니다. 시험지 PDF를 드래그해서 놓거나, 핸드폰으로 찍은 문제 사진(JPG/PNG, 최대 10장)을 올려도 됩니다.",
-                img: "step-2.png",
-                imgLabel: "스크린샷: 로그인 + 파일 열기 화면",
+                title: "로그인하고 PDF 또는 이미지 열기",
+                desc: "프로그램을 실행해 가입한 계정으로 로그인합니다. 시험지 PDF를 드래그해서 놓거나, 핸드폰으로 찍은 문제 이미지(JPG/PNG, 최대 10장)를 올려도 됩니다. PDF는 여러 개를 함께 첨부할 수 있고, 기울어진 이미지는 회전해 바로잡을 수 있습니다.",
+                img: "step-2.webp",
+                imgLabel: "시험지 이미지 2장을 연 화면 — 왼쪽 목록에서 순서 변경·회전·삭제 가능",
               },
               {
                 n: 3,
                 title: "문제 영역을 드래그로 지정",
-                desc: "변환할 문제를 마우스 드래그로 감싸면 파란 박스가 생깁니다. 문제 안에 그래프나 도형이 있으면 [그림] 모드로 바꿔 그림 영역을 한 번 더 지정하세요. 우측 목록에 답안도 미리 입력할 수 있습니다.",
-                img: "step-3.png",
-                imgLabel: "스크린샷: 영역 지정 + 답안 입력",
+                desc: "변환할 문제를 마우스 드래그로 감싸면 파란 박스가 생깁니다. 문제 안에 그래프나 도형이 있으면 [그림] 모드로 그림 영역을, 해설이 있으면 [해설] 모드로 해설 영역을 따로 지정하세요. 우측 목록에 답안도 미리 입력할 수 있으며, 입력한 답안과 해설은 모두 해당 문제에 미주로 연결됩니다.",
+                img: "step-3.webp",
+                imgLabel: "문제 6개가 파란 박스로, 그림 영역이 초록 박스로 지정된 화면과 우측 답안 입력 목록",
               },
               {
                 n: 4,
                 title: "변환하기 버튼 클릭",
                 desc: "시험지 명을 입력하고 [변환하기]를 누르면 AI가 문제별로 수식을 인식합니다. 진행률이 실시간으로 표시되고, 문제 수에 따라 수십 초 안에 완료됩니다.",
-                img: "step-4.png",
-                imgLabel: "스크린샷: 변환 진행 화면",
+                img: "step-4.webp",
+                imgLabel: "변환 진행 중 화면 — 진행률 50%와 문제별 OCR 완료 표시, 변환 취소 버튼",
               },
               {
                 n: 5,
                 title: "완성된 HWP 확인",
                 desc: "변환이 끝나면 시험지 명으로 저장된 HWP 파일이 열립니다. 수식을 더블클릭해 보세요 — 수식편집기에서 바로 수정할 수 있습니다.",
-                img: "step-5.png",
-                imgLabel: "스크린샷: 완성된 HWP 결과물",
+                img: "step-5.webp",
+                imgLabel: "변환된 HWP를 한/글에서 연 모습 — 2단 시험지에 수식과 문항 배치",
               },
             ].map((step, i) => (
               <div
@@ -549,11 +549,14 @@ export default function Home() {
                   <h3 className="text-2xl font-bold mb-3">{step.title}</h3>
                   <p className="text-zinc-600 leading-relaxed text-lg">{step.desc}</p>
                 </div>
-                {/* TODO: 실제 캡쳐 준비 시 /public/guide/{step.img} 추가 후
-                    <img src={`/guide/${step.img}`} ... /> 로 교체 */}
-                <div className="lg:[direction:ltr] media-frame rounded-xl aspect-[16/10] flex items-center justify-center">
-                  <span className="text-sm">{step.imgLabel}</span>
-                </div>
+                <figure className="lg:[direction:ltr] card rounded-xl overflow-hidden">
+                  <img
+                    src={`/guide/${step.img}`}
+                    alt={step.imgLabel}
+                    className="w-full"
+                    loading="lazy"
+                  />
+                </figure>
               </div>
             ))}
           </div>
