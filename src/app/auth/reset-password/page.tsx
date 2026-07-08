@@ -38,18 +38,10 @@ export default function ResetPasswordPage() {
       <div className="w-full max-w-[400px]">
         {/* Logo */}
         <div className="text-center mb-10">
-          <a href="/" className="inline-flex items-center gap-2">
-            <span
-              className="text-3xl font-bold tracking-tighter"
-              style={{ fontFamily: "var(--font-en)" }}
-            >
-              Math
-            </span>
-            <span
-              className="text-3xl font-bold text-[var(--accent)]"
-              style={{ fontFamily: "var(--font-en)" }}
-            >
-              OCR
+          <a href="/" className="inline-flex flex-col items-center gap-3">
+            <img src="/mathocr-icon.png" alt="AI MathOCR" width={56} height={56} />
+            <span className="text-2xl font-bold tracking-tight">
+              AI Math<span className="text-[var(--accent)]">OCR</span>
             </span>
           </a>
           <p className="text-zinc-500 text-sm mt-2">비밀번호 재설정</p>

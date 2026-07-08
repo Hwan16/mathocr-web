@@ -180,18 +180,10 @@ export default function AdminPage() {
       <nav className="border-b border-[var(--border-subtle)] bg-[var(--surface)]">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <a href="/" className="flex items-center gap-2">
-              <span
-                className="text-xl font-bold tracking-tighter"
-                style={{ fontFamily: "var(--font-en)" }}
-              >
-                Math
-              </span>
-              <span
-                className="text-xl font-bold text-[var(--accent)]"
-                style={{ fontFamily: "var(--font-en)" }}
-              >
-                OCR
+            <a href="/" className="flex items-center gap-2.5">
+              <img src="/mathocr-icon.png" alt="AI MathOCR" width={36} height={36} />
+              <span className="text-lg font-bold tracking-tight">
+                AI Math<span className="text-[var(--accent)]">OCR</span>
               </span>
             </a>
             <span className="text-xs text-zinc-600 bg-zinc-100 px-2 py-0.5 rounded">

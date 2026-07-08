@@ -175,8 +175,9 @@ export default function ReportPage() {
             변환이 잘 안됐나요?
           </h1>
           <p className="text-lg text-zinc-600 leading-relaxed">
-            시험지의 상태에 따라 변환이 잘 안 될 수 있어요. 아래 내용을 먼저
-            확인해주시고, 그래도 결과가 이상하다면 직접 신고해주세요.
+            시험지의 상태에 따라 변환이 잘 안 될 수 있어요. 아래 내용을 먼저 확인해주시고,
+            <br />
+            그래도 결과가 이상하다면 직접 신고해주세요.
           </p>
         </div>
 
@@ -224,7 +225,8 @@ export default function ReportPage() {
             </span>
             {" "}— 특히 수학 수식이 잘못 변환된 경우처럼 명백히 틀렸다면 — 아래{" "}
             <span className="font-medium text-zinc-800">[신고 보내기]</span>로
-            어떤 부분이 잘못됐는지 알려주세요. 큰 도움이 됩니다.
+            어떤 부분이 잘못됐는지 알려주세요. 프로그램 로직 오류로 확인되면
+            보상 크레딧을 지급해드립니다.
           </p>
 
           {loggedIn === false ? (
