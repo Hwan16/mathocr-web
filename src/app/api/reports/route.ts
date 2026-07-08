@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
   }
 
   // 사용자별 신고 빈도 제한 (스팸/저장소 폭주 방지): 10건 / 1시간
-  const rl = checkRateLimit(`report:${user.id}`, 10, 60 * 60 * 1000);
+  const rl = await checkRateLimit(`report:${user.id}`, 10, 60 * 60 * 1000);
   if (!rl.allowed) {
     return NextResponse.json(
       { error: `신고가 너무 잦습니다. 잠시 후 다시 시도해주세요. (${rl.retryAfter}초)` },

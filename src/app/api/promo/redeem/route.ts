@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
   }
 
-  const rate = checkRateLimit(
+  const rate = await checkRateLimit(
     `promo-redeem:${user.id}`,
     REDEEM_RATE_LIMIT,
     REDEEM_RATE_LIMIT_WINDOW_MS

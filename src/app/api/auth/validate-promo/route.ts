@@ -36,7 +36,7 @@ function sleep(ms: number): Promise<void> {
 }
 
 export async function POST(request: NextRequest) {
-  const rate = checkRateLimit(
+  const rate = await checkRateLimit(
     `promo:${clientIp(request)}`,
     PROMO_RATE_LIMIT,
     PROMO_RATE_LIMIT_WINDOW_MS

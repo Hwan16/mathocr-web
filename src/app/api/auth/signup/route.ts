@@ -4,8 +4,8 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { NextRequest, NextResponse } from "next/server";
 
 // IP당 가입 시도 제한 (B3 — 무료 크레딧 파밍 봇 방어의 1차 저지선).
-// 인스턴스 메모리 기반이라 서버리스에서 완전하지 않음(T3에서 Redis로 교체 예정)이지만,
-// 같은 인스턴스로 몰아치는 자동 가입 봇에는 유효하다.
+// T3에서 Upstash Redis 기반으로 교체 — 서버리스 인스턴스가 바뀌어도 카운트가 유지된다.
+// (Upstash 미설정 시 인스턴스 메모리 폴백)
 const SIGNUP_IP_LIMIT = 5;
 const SIGNUP_IP_WINDOW_MS = 60 * 60 * 1000; // 1시간
 
@@ -81,7 +81,7 @@ async function waitForProfile(
 
 export async function POST(request: NextRequest) {
   const clientIp = getClientIp(request);
-  const rl = checkRateLimit(
+  const rl = await checkRateLimit(
     `signup:${clientIp ?? "unknown"}`,
     SIGNUP_IP_LIMIT,
     SIGNUP_IP_WINDOW_MS

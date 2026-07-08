@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
     return errorResponse("인증되지 않았습니다.", 401);
   }
 
-  const rateLimit = checkRateLimit(user.id, RATE_LIMIT, RATE_LIMIT_WINDOW_MS);
+  const rateLimit = await checkRateLimit(user.id, RATE_LIMIT, RATE_LIMIT_WINDOW_MS);
   if (!rateLimit.allowed) {
     return errorResponse(
       "잠시 후 다시 시도해주세요. (분당 시도 횟수 초과)",
