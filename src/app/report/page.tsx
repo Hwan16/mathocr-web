@@ -225,8 +225,8 @@ export default function ReportPage() {
             </span>
             {" "}— 특히 수학 수식이 잘못 변환된 경우처럼 명백히 틀렸다면 — 아래{" "}
             <span className="font-medium text-zinc-800">[신고 보내기]</span>로
-            어떤 부분이 잘못됐는지 알려주세요. 프로그램 로직 오류로 확인되면
-            보상 크레딧을 지급해드립니다.
+            어떤 부분이 잘못됐는지 알려주세요. 프로그램 오류로 확인되면
+            보상으로 50크레딧(50문제분)을 지급해드립니다.
           </p>
 
           {loggedIn === false ? (
