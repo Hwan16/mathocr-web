@@ -12,6 +12,10 @@ const DOWNLOAD_URL =
   "https://github.com/Hwan16/mathocr-web/releases/download/v1.8.0/MathOCR-Setup-v1.8.0.exe";
 const DOWNLOAD_LABEL = "v1.8.0 (124MB)";
 
+// 결제 오픈 게이트 — Vercel 환경변수에 NEXT_PUBLIC_PAYMENTS_ENABLED=true 를
+// 넣기 전까지 구매 버튼은 기존 "곧 오픈" 안내를 유지한다.
+const PAYMENTS_ENABLED = process.env.NEXT_PUBLIC_PAYMENTS_ENABLED === "true";
+
 // 사업자 정보 (전자상거래법 제10조 표시 의무).
 // 사업자등록·통신판매업 신고 완료 후 아래 값을 채우고 SHOW_BUSINESS_INFO 를
 // true 로 바꾸면 푸터에 노출된다. (미등록 상태에서는 노출하지 않는다.)
@@ -644,7 +648,11 @@ export default function Home() {
                       label: "purchase",
                       location: `pricing_${plan.id}`,
                     });
-                    setPurchaseNotice(true);
+                    if (PAYMENTS_ENABLED) {
+                      window.location.href = `/charge?plan=${plan.id}`;
+                    } else {
+                      setPurchaseNotice(true);
+                    }
                   }}
                   className={`block w-full text-center px-6 py-3.5 rounded-lg text-[15px] ${
                     plan.featured ? "btn-primary" : "btn-outline"
