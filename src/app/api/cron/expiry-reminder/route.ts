@@ -102,6 +102,7 @@ export async function GET(req: NextRequest) {
   if (dryRun) {
     return NextResponse.json({
       dryRun: true,
+      resendKeyConfigured: !!process.env.RESEND_API_KEY, // 운영 점검용 (값은 노출 안 함)
       window: { start: windowStart, end: windowEnd },
       count: targets.length,
       recipients: targets.map((p) => ({
