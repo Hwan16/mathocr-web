@@ -16,6 +16,8 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get("redirect") || "/dashboard";
+  // 이메일 인증 링크를 타고 돌아온 경우 (signup의 emailRedirectTo)
+  const justConfirmed = searchParams.get("confirmed") === "1";
 
   // 저장된 이메일 불러오기
   useEffect(() => {
@@ -39,7 +41,16 @@ function LoginForm() {
       });
 
       if (error) {
-        setError("이메일 또는 비밀번호가 올바르지 않습니다.");
+        if (
+          error.code === "email_not_confirmed" ||
+          error.message?.includes("not confirmed")
+        ) {
+          setError(
+            "이메일 인증이 아직 완료되지 않았습니다. 가입 시 받은 메일의 인증 링크를 눌러주세요."
+          );
+        } else {
+          setError("이메일 또는 비밀번호가 올바르지 않습니다.");
+        }
         return;
       }
 
@@ -72,6 +83,12 @@ function LoginForm() {
         </a>
         <p className="text-zinc-500 text-sm mt-2">계정에 로그인하세요</p>
       </div>
+
+      {justConfirmed && (
+        <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          이메일 인증이 완료되었습니다. 로그인해주세요. 🎉
+        </div>
+      )}
 
       {/* Form Card */}
       <div className="card rounded-xl p-8 shadow-sm">

@@ -18,6 +18,19 @@ export async function POST(request: NextRequest) {
   });
 
   if (error) {
+    // 이메일 인증 미완료는 별도 안내 (데스크톱 앱이 이 메시지를 그대로 표시)
+    if (
+      error.code === "email_not_confirmed" ||
+      error.message?.includes("not confirmed")
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "이메일 인증이 필요합니다. 가입 시 받은 메일의 인증 링크를 눌러주세요.",
+        },
+        { status: 403 }
+      );
+    }
     return NextResponse.json({ error: "이메일 또는 비밀번호가 올바르지 않습니다." }, { status: 401 });
   }
 

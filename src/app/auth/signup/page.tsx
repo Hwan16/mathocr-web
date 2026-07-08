@@ -21,6 +21,8 @@ export default function SignupPage() {
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [agreePrivacy, setAgreePrivacy] = useState(false);
   const [loading, setLoading] = useState(false);
+  // 이메일 인증(Confirm email)이 켜진 경우: 가입 후 "메일 확인" 안내 화면으로 전환
+  const [confirmEmailSent, setConfirmEmailSent] = useState(false);
   const router = useRouter();
 
   async function handleValidatePromo() {
@@ -100,6 +102,13 @@ export default function SignupPage() {
         return;
       }
 
+      // 이메일 인증이 켜져 있으면 세션이 없다 → 메일 확인 안내로 전환
+      if (result.needs_confirmation) {
+        trackEvent("sign_up", { method: "password" });
+        setConfirmEmailSent(true);
+        return;
+      }
+
       const supabase = createClient();
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
@@ -136,7 +145,32 @@ export default function SignupPage() {
           <p className="text-zinc-500 text-sm mt-2">새 계정을 만드세요</p>
         </div>
 
-        {/* Form Card */}
+        {confirmEmailSent ? (
+          /* 이메일 인증 안내 (Confirm email 활성 시) */
+          <div className="card rounded-xl p-8 shadow-sm text-center">
+            <div className="text-4xl mb-4" aria-hidden>
+              📮
+            </div>
+            <h2 className="text-lg font-bold text-zinc-900 mb-2">
+              확인 메일을 보냈어요
+            </h2>
+            <p className="text-sm text-zinc-600 leading-relaxed mb-1">
+              <strong className="text-zinc-900">{email}</strong> 주소로 보낸
+              메일의 인증 링크를 누르면 가입이 완료됩니다.
+            </p>
+            <p className="text-xs text-zinc-400 leading-relaxed mb-6">
+              메일이 안 보이면 스팸함을 확인해주세요. 이미 가입된 이메일이라면
+              메일이 오지 않을 수 있어요 — 바로 로그인해 보세요.
+            </p>
+            <a
+              href="/auth/login"
+              className="btn-primary inline-block px-6 py-3 rounded-lg text-sm"
+            >
+              로그인 페이지로
+            </a>
+          </div>
+        ) : (
+        /* Form Card */
         <div className="card rounded-xl p-8 shadow-sm">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
@@ -297,11 +331,14 @@ export default function SignupPage() {
             </a>
           </div>
         </div>
+        )}
 
         {/* Benefits */}
-        <div className="mt-6 text-center text-xs text-zinc-500">
-          가입 시 무료 체험 크레딧 5회가 제공됩니다
-        </div>
+        {!confirmEmailSent && (
+          <div className="mt-6 text-center text-xs text-zinc-500">
+            가입 시 무료 체험 크레딧 5회가 제공됩니다 (유효기간 7일)
+          </div>
+        )}
       </div>
     </div>
   );

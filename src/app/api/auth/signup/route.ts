@@ -1,6 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { NextRequest, NextResponse } from "next/server";
+
+// IP당 가입 시도 제한 (B3 — 무료 크레딧 파밍 봇 방어의 1차 저지선).
+// 인스턴스 메모리 기반이라 서버리스에서 완전하지 않음(T3에서 Redis로 교체 예정)이지만,
+// 같은 인스턴스로 몰아치는 자동 가입 봇에는 유효하다.
+const SIGNUP_IP_LIMIT = 5;
+const SIGNUP_IP_WINDOW_MS = 60 * 60 * 1000; // 1시간
 
 const PROMO_BONUS_CREDITS = 100;
 const DEFAULT_SIGNUP_CREDITS = 5;
@@ -73,6 +80,19 @@ async function waitForProfile(
 }
 
 export async function POST(request: NextRequest) {
+  const clientIp = getClientIp(request);
+  const rl = checkRateLimit(
+    `signup:${clientIp ?? "unknown"}`,
+    SIGNUP_IP_LIMIT,
+    SIGNUP_IP_WINDOW_MS
+  );
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: "가입 시도가 너무 많습니다. 잠시 후 다시 시도해주세요." },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfter) } }
+    );
+  }
+
   const {
     email,
     password,
@@ -124,6 +144,10 @@ export async function POST(request: NextRequest) {
     email,
     password,
     options: {
+      // 이메일 인증(Confirm email)이 켜진 경우, 인증 링크 클릭 후 로그인
+      // 페이지로 돌려보낸다. (Supabase Auth의 Redirect URLs 허용 목록에
+      // 이 경로가 등록되어 있어야 한다.)
+      emailRedirectTo: `${request.nextUrl.origin}/auth/login?confirmed=1`,
       data: {
         consent_version: CONSENT_VERSION,
         consent_terms: true,
@@ -156,7 +180,6 @@ export async function POST(request: NextRequest) {
         // 원자적 도장은 위 signUp user_metadata 에 이미 남았으므로 이 기록 실패가
         // 가입을 막지는 않는다(추후 백필 가능). email 은 탈퇴(user_id=null) 후에도
         // '누가 동의했는지' 식별하기 위한 스냅샷이다.
-        const clientIp = getClientIp(request);
         const userAgent = request.headers.get("user-agent");
         const { error: consentError } = await admin.from("user_consents").insert([
           { user_id: userId, email, doc_type: "terms", version: CONSENT_VERSION, agreed: true, ip: clientIp, user_agent: userAgent },
@@ -257,9 +280,16 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // 이메일 인증(Confirm email)이 켜져 있으면 세션 없이 반환된다 →
+  // 클라이언트는 "인증 메일을 확인하세요" 화면으로 분기한다.
+  const needsConfirmation = !data.session;
+
   return NextResponse.json({
     user: { id: userId, email: data.user?.email },
-    message: "회원가입이 완료되었습니다.",
+    needs_confirmation: needsConfirmation,
+    message: needsConfirmation
+      ? "확인 메일을 보냈습니다. 메일의 인증 링크를 눌러 가입을 완료해주세요."
+      : "회원가입이 완료되었습니다.",
     credits: DEFAULT_SIGNUP_CREDITS + promoBonusCredits,
     promo_applied: promoApplied,
   });
