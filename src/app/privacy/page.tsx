@@ -19,7 +19,7 @@ export default function PrivacyPage() {
             </span>
           </a>
           <h1 className="text-2xl font-bold mt-4">개인정보처리방침</h1>
-          <p className="text-zinc-500 text-sm mt-2">시행일: 2026년 7월 3일</p>
+          <p className="text-zinc-500 text-sm mt-2">시행일: 2026년 7월 8일</p>
         </div>
 
         {/* Content */}
@@ -301,7 +301,7 @@ function PrivacyContent() {
           개인정보 보호책임자를 지정하고 있습니다.
         </p>
         <ul className="list-disc pl-5 space-y-1">
-          <li>개인정보 보호책임자: AI MathOCR 운영자</li>
+          <li>개인정보 보호책임자: 김기환 (대표)</li>
           <li>
             연락처(이메일):{" "}
             <a
@@ -344,8 +344,10 @@ function PrivacyContent() {
       </section>
 
       <p className="text-xs text-zinc-400 pt-2">
-        ※ 사업자 정보(상호·사업자등록번호 등) 및 개인정보 보호책임자 성명은
-        사업자등록·통신판매업 신고 절차 완료 후 구체적으로 갱신될 예정입니다.
+        사업자 정보: 환희에듀테크랩 · 대표 김기환 · 사업자등록번호 880-61-00784
+        · 통신판매업신고 2026-인천연수구-1787 · 인천광역시 연수구
+        송도문화로84번길 24, 206동 201호 · 전화 010-4552-5994 · 이메일
+        aimathocr.official@gmail.com
       </p>
     </div>
   );

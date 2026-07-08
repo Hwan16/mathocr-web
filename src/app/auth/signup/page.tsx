@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { trackEvent } from "@/lib/analytics";
 
 // 동의받은 약관/방침의 버전(시행일). 문서 개정 시 함께 갱신한다.
-const CONSENT_VERSION = "2026-07-03";
+const CONSENT_VERSION = "2026-07-08";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");

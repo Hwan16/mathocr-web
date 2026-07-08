@@ -7,7 +7,7 @@ const DEFAULT_SIGNUP_CREDITS = 5;
 const PROFILE_RETRY_DELAYS_MS = [100, 200, 400, 800, 1200];
 // 서버가 인정하는 현재 약관/개인정보 문서 버전(시행일). 동의 이력은 클라이언트
 // 값이 아니라 반드시 이 서버 상수로 기록한다(감사 신뢰성).
-const CONSENT_VERSION = "2026-07-03";
+const CONSENT_VERSION = "2026-07-08";
 
 type SignupBody = {
   email?: string;

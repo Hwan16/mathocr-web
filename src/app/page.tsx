@@ -15,15 +15,15 @@ const DOWNLOAD_LABEL = "v1.8.0 (124MB)";
 // 사업자 정보 (전자상거래법 제10조 표시 의무).
 // 사업자등록·통신판매업 신고 완료 후 아래 값을 채우고 SHOW_BUSINESS_INFO 를
 // true 로 바꾸면 푸터에 노출된다. (미등록 상태에서는 노출하지 않는다.)
-const SHOW_BUSINESS_INFO = false;
+const SHOW_BUSINESS_INFO = true;
 const BUSINESS_INFO = {
-  company: "", // 상호
-  ceo: "", // 대표자명
-  privacyOfficer: "", // 개인정보 보호책임자
-  bizRegNo: "", // 사업자등록번호
-  mailOrderNo: "", // 통신판매업 신고번호
-  address: "", // 사업장 주소
-  phone: "", // 전화번호
+  company: "환희에듀테크랩", // 상호
+  ceo: "김기환", // 대표자명
+  privacyOfficer: "김기환", // 개인정보 보호책임자
+  bizRegNo: "880-61-00784", // 사업자등록번호
+  mailOrderNo: "2026-인천연수구-1787", // 통신판매업 신고번호
+  address: "인천광역시 연수구 송도문화로84번길 24, 206동 201호", // 사업장 주소
+  phone: "010-4552-5994", // 전화번호
   email: "aimathocr.official@gmail.com",
 };
 
