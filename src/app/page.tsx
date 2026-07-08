@@ -465,7 +465,7 @@ export default function Home() {
           <div className="max-w-3xl mb-14">
             <div className="text-sm font-semibold text-[var(--accent)] mb-3">사용법</div>
             <h2 className="text-3xl lg:text-4xl font-bold tracking-tight mb-4">
-              처음 쓰는 분도 5분이면 충분합니다
+              처음 쓰는 분도 2분이면 충분합니다
             </h2>
             <p className="text-lg text-zinc-600 leading-relaxed">
               아래 순서를 그대로 따라 하면 첫 변환까지 한 번에 끝납니다.
@@ -481,7 +481,6 @@ export default function Home() {
                 className="text-[var(--accent)]"
               />
               전체 과정 동영상 가이드
-              <span className="ml-auto font-normal text-zinc-400">1분 36초</span>
             </figcaption>
             <video
               className="w-full aspect-[781/540] bg-zinc-100"
