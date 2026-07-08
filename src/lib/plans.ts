@@ -43,6 +43,8 @@ export const PLANS = [
 
 // 가입 시 무료로 지급되는 크레딧(문제) 수. 큰 셀링포인트는 아니라 홈에서는 최소로만 노출.
 export const SIGNUP_FREE_CREDITS = 5;
+// 무료 크레딧 유효기간(일) — DB의 handle_new_user(0009 마이그레이션)와 반드시 일치시킬 것.
+export const SIGNUP_FREE_VALIDITY_DAYS = 7;
 
 // 크레딧 차감 규칙(정책의 단일 출처). 실제 차감 로직은 이미 앱에 반영됨.
 // - 문제 1개 = 1 크레딧 / 해설 1개 = 1 크레딧

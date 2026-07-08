@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { trackEvent } from "@/lib/analytics";
 import { FAQS } from "@/lib/faqs";
 import { FaqStructuredData } from "./structured-data";
-import { PLANS, SIGNUP_FREE_CREDITS, CREDIT_RULE } from "@/lib/plans";
+import { PLANS, SIGNUP_FREE_CREDITS, SIGNUP_FREE_VALIDITY_DAYS, CREDIT_RULE } from "@/lib/plans";
 import EarlyBirdPopup from "@/components/EarlyBirdPopup";
 
 const DOWNLOAD_URL =
@@ -556,6 +556,19 @@ export default function Home() {
               월 구독 없이 필요한 만큼만 충전하세요. 많이 살수록 크레딧당 단가가
               낮아지고, 문제 속 그림은 크레딧 차감 없이 함께 넣을 수 있습니다.
             </p>
+            {/* 유효기간 연장 정책 강조 — grant_plan_credits(0009)의 실제 동작과 일치 */}
+            <div className="mt-5 inline-flex items-start gap-2.5 rounded-xl border border-[var(--accent-border)] bg-white px-4 py-2.5 text-[15px] text-zinc-800">
+              <iconify-icon
+                icon="solar:check-circle-bold"
+                width="18"
+                className="shrink-0 mt-0.5"
+                style={{ color: "var(--accent)" }}
+              />
+              <span>
+                만료 전에 충전하면 <strong>남은 크레딧도 새 유효기간으로 함께 연장</strong>됩니다
+                — 쓰던 크레딧이 사라지지 않아요.
+              </span>
+            </div>
           </div>
 
           <div className="grid md:grid-cols-3 gap-5">
@@ -609,7 +622,7 @@ export default function Home() {
                 <ul className="space-y-3 mb-8 text-[15px] text-zinc-600">
                   {[
                     `${plan.credits} 크레딧 충전`,
-                    `유효기간 ${plan.validityDays}일`,
+                    `유효기간 ${plan.validityDays}일 · 재충전 시 함께 연장`,
                     "문제 속 그림은 무료",
                     "실패한 문제는 차감 안 됨",
                   ].map((t) => (
@@ -652,7 +665,7 @@ export default function Home() {
                 onClick={() => trackEvent("cta_click", { label: "sign_up", location: "pricing_free" })}
                 className="btn-outline text-center px-5 py-2.5 rounded-lg text-sm whitespace-nowrap"
               >
-                가입하고 {SIGNUP_FREE_CREDITS} 크레딧 무료 체험
+                가입하고 {SIGNUP_FREE_CREDITS} 크레딧 무료 체험 ({SIGNUP_FREE_VALIDITY_DAYS}일)
               </a>
             </div>
             <dl className="grid sm:grid-cols-2 gap-x-10">

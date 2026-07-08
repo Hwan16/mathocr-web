@@ -14,12 +14,12 @@ create table public.profiles (
   updated_at timestamptz not null default now()
 );
 
--- 새 사용자 가입 시 profiles 자동 생성
+-- 새 사용자 가입 시 profiles 자동 생성 (무료 5크레딧 = 유효기간 7일, 0009)
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
-  insert into public.profiles (id, email)
-  values (new.id, new.email);
+  insert into public.profiles (id, email, expires_at)
+  values (new.id, new.email, now() + interval '7 days');
   return new;
 end;
 $$ language plpgsql security definer set search_path = public, pg_temp;
@@ -56,6 +56,11 @@ create table public.payments (
 
 create index idx_payments_user_id on public.payments(user_id);
 create index idx_payments_status on public.payments(status);
+
+-- 같은 PG 거래로 크레딧이 두 번 지급되는 것을 차단 (웹훅 재시도 대비, 0009)
+create unique index uq_payments_pg_transaction_id
+  on public.payments (pg_transaction_id)
+  where pg_transaction_id is not null;
 
 -- ============================================
 -- 3. conversions 테이블 (변환 이력)
@@ -185,8 +190,10 @@ end;
 $$ language plpgsql security definer set search_path = public, pg_temp;
 
 -- ============================================
--- 7. 크레딧 추가 함수 (결제 완료 시)
+-- 7. 크레딧 추가 함수 (레거시 — 유효기간 미설정)
 -- ============================================
+-- ⚠ 유효기간(expires_at)을 건드리지 않으므로 플랜 충전에는 쓰지 말 것.
+--    신규 충전 경로는 7-b의 grant_plan_credits를 사용한다.
 create or replace function public.add_credits(
   p_user_id uuid,
   p_credits integer,
@@ -231,6 +238,70 @@ begin
   where id = p_user_id;
 end;
 $$ language plpgsql security definer set search_path = public, pg_temp;
+
+-- ============================================
+-- 7-b. 플랜 충전 함수 (유효기간 연장 모델, 0009)
+-- ============================================
+-- 토스 결제 웹훅·관리자 수동 충전의 공통 진입점. service_role 전용.
+--  · 유효기간 = greatest(기존 만료일, now() + 플랜 유효기간) — 절대 안 줄어듦
+--  · 만료 전 재충전: 잔여 크레딧까지 새 유효기간으로 함께 연장
+--  · 만료 후 충전: 만료된 잔여분 소멸, 신규 크레딧만 지급
+--  · 같은 거래 ID 재처리는 uq_payments_pg_transaction_id가 차단 → 'duplicate_transaction'
+create or replace function public.grant_plan_credits(
+  p_user_id uuid,
+  p_credits integer,
+  p_validity_days integer,
+  p_amount integer default 0,
+  p_transaction_id text default null
+)
+returns jsonb as $$
+declare
+  v_txn_id text;
+  v_new_credits integer;
+  v_new_expires timestamptz;
+begin
+  if p_credits is null or p_credits <= 0 then
+    return jsonb_build_object('success', false, 'error', 'invalid_credits');
+  end if;
+  if p_validity_days is null or p_validity_days <= 0 then
+    return jsonb_build_object('success', false, 'error', 'invalid_validity_days');
+  end if;
+
+  v_txn_id := coalesce(p_transaction_id, 'grant_' || p_user_id::text || '_' || gen_random_uuid()::text);
+
+  begin
+    insert into public.payments (user_id, amount, credits_added, pg_transaction_id, status)
+    values (p_user_id, coalesce(p_amount, 0), p_credits, v_txn_id, 'completed');
+  exception when unique_violation then
+    return jsonb_build_object('success', false, 'error', 'duplicate_transaction');
+  end;
+
+  update public.profiles
+  set credits = case
+        when expires_at is not null and expires_at < now() then p_credits
+        else credits + p_credits
+      end,
+      expires_at = greatest(
+        coalesce(expires_at, now()),
+        now() + make_interval(days => p_validity_days)
+      )
+  where id = p_user_id
+  returning credits, expires_at into v_new_credits, v_new_expires;
+
+  if not found then
+    raise exception 'grant_plan_credits: profile not found (%)', p_user_id;
+  end if;
+
+  return jsonb_build_object(
+    'success', true,
+    'new_credits', v_new_credits,
+    'expires_at', v_new_expires
+  );
+end;
+$$ language plpgsql security definer set search_path = public, pg_temp;
+
+revoke execute on function public.grant_plan_credits(uuid, integer, integer, integer, text) from public, anon, authenticated;
+grant execute on function public.grant_plan_credits(uuid, integer, integer, integer, text) to service_role;
 
 -- ============================================
 -- 9. 변환 종료(완료/실패) 원자적 처리 + 실패 1회 환불
