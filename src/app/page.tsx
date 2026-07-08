@@ -472,15 +472,28 @@ export default function Home() {
             </p>
           </div>
 
-          {/* 동영상 가이드
-              TODO: 동영상 준비 시 아래 placeholder를 YouTube embed로 교체
-              <iframe className="w-full aspect-video rounded-xl" src="https://www.youtube.com/embed/VIDEO_ID" ... /> */}
-          <div className="media-frame rounded-xl aspect-video max-w-4xl mx-auto mb-20 flex flex-col items-center justify-center gap-3">
-            <div className="w-16 h-16 rounded-full bg-white border border-zinc-300 flex items-center justify-center">
-              <iconify-icon icon="solar:play-bold" width="24" className="text-[var(--accent)]" />
-            </div>
-            <span className="text-sm">전체 과정 동영상 가이드 (준비 중)</span>
-          </div>
+          {/* 동영상 가이드 — 영상 교체 시 H.264+AAC 코덱 유지(브라우저 호환), 비율 781:540 */}
+          <figure className="card rounded-xl overflow-hidden max-w-4xl mx-auto mb-20">
+            <figcaption className="flex items-center gap-2 px-5 py-3 border-b border-zinc-200 bg-zinc-50 text-sm font-semibold text-zinc-500">
+              <iconify-icon
+                icon="solar:play-bold"
+                width="14"
+                className="text-[var(--accent)]"
+              />
+              전체 과정 동영상 가이드
+              <span className="ml-auto font-normal text-zinc-400">1분 36초</span>
+            </figcaption>
+            <video
+              className="w-full aspect-[781/540] bg-zinc-100"
+              src="/guide/usage-guide.mp4"
+              poster="/guide/usage-guide-poster.jpg"
+              controls
+              playsInline
+              preload="metadata"
+            >
+              브라우저가 동영상 재생을 지원하지 않습니다.
+            </video>
+          </figure>
 
           {/* 스텝 1~5 */}
           <div className="space-y-16 lg:space-y-20">

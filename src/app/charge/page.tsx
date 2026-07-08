@@ -31,6 +31,9 @@ function ChargeInner() {
     getPlan(preselect ?? "") ? (preselect as string) : "basic"
   );
   const [paying, setPaying] = useState(false);
+  // 상품 내용(유효기간 포함)·환불 규정 확인 체크 — 미체크 시 결제 불가.
+  // 분쟁 시 "고지받지 못했다" 주장을 차단하는 핵심 증거라 플랜을 바꾸면 다시 받는다.
+  const [confirmed, setConfirmed] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -55,9 +58,11 @@ function ChargeInner() {
     })();
   }, []);
 
+  const selectedPlan = getPlan(selectedId);
+
   const onPay = async () => {
     const plan = getPlan(selectedId);
-    if (!plan || !user || !CLIENT_KEY) return;
+    if (!plan || !user || !CLIENT_KEY || !confirmed) return;
     setError(null);
     setPaying(true);
     trackEvent("cta_click", { label: "charge_pay", location: `charge_${plan.id}` });
@@ -149,7 +154,10 @@ function ChargeInner() {
                   <button
                     key={plan.id}
                     type="button"
-                    onClick={() => setSelectedId(plan.id)}
+                    onClick={() => {
+                      setSelectedId(plan.id);
+                      setConfirmed(false); // 플랜이 바뀌면 확인을 다시 받는다
+                    }}
                     className={`card rounded-xl p-5 bg-white text-left transition-shadow ${
                       selected
                         ? "!border-[var(--accent)] ring-1 ring-[var(--accent)]"
@@ -177,6 +185,65 @@ function ChargeInner() {
               })}
             </div>
 
+            {/* 환불·유효기간 안내 — 결제 전 고지 (전자상거래법상 거래조건 표시 + 분쟁 예방) */}
+            <div className="card rounded-xl bg-white p-5 mb-4">
+              <p className="text-sm font-semibold text-zinc-900 mb-2">
+                환불·유효기간 안내
+              </p>
+              <ul className="list-disc pl-5 space-y-1 text-sm text-zinc-600 leading-relaxed">
+                <li>결제 완료 즉시 크레딧이 지급됩니다.</li>
+                <li>
+                  결제 후 <strong className="text-zinc-800">7일 이내</strong>에는
+                  미사용 크레딧 전액을 환불받을 수 있습니다. (일부 사용 시
+                  사용분 차감)
+                </li>
+                <li>
+                  7일이 지난 후에는 미사용 크레딧 금액에서{" "}
+                  <strong className="text-zinc-800">10%를 공제</strong>한 금액이
+                  환불됩니다.
+                </li>
+                <li>
+                  <strong className="text-zinc-800">
+                    유효기간이 지난 크레딧은 자동 소멸되며 환불 대상이
+                    아닙니다.
+                  </strong>{" "}
+                  만료 전에 충전하면 남아 있는 크레딧의 유효기간도 새 충전분
+                  기준으로 함께 연장됩니다.
+                </li>
+                <li>
+                  자세한 내용은{" "}
+                  <a
+                    href="/terms"
+                    className="underline hover:text-zinc-900"
+                    target="_blank"
+                  >
+                    이용약관
+                  </a>
+                  에서 확인할 수 있습니다.
+                </li>
+              </ul>
+            </div>
+
+            {/* 최종 확인 — 유효기간 있는 상품임을 결제 직전에 명시적으로 확인받는다 */}
+            {selectedPlan && (
+              <label className="flex items-start gap-2.5 mb-4 cursor-pointer select-none text-sm text-zinc-700">
+                <input
+                  type="checkbox"
+                  checked={confirmed}
+                  onChange={(e) => setConfirmed(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 accent-[var(--accent)]"
+                />
+                <span>
+                  [ {selectedPlan.name} / {selectedPlan.credits}크레딧 /{" "}
+                  <strong className="text-zinc-900">
+                    유효기간 {selectedPlan.validityDays}일
+                  </strong>{" "}
+                  / {selectedPlan.price.toLocaleString()}원 ] 상품 내용과 위
+                  환불·유효기간 안내를 확인했습니다.
+                </span>
+              </label>
+            )}
+
             {error && (
               <p className="text-sm text-red-600 mb-4" role="alert">
                 {error}
@@ -186,22 +253,13 @@ function ChargeInner() {
             <button
               type="button"
               onClick={onPay}
-              disabled={paying}
+              disabled={paying || !confirmed}
               className="btn-primary w-full py-4 rounded-lg text-base disabled:opacity-60"
             >
               {paying
                 ? "결제창 여는 중…"
                 : `${getPlan(selectedId)?.price.toLocaleString()}원 결제하기`}
             </button>
-
-            <p className="text-xs text-zinc-400 mt-4 leading-relaxed">
-              결제 완료 즉시 크레딧이 지급됩니다. 미사용 크레딧은 결제일로부터
-              7일 이내 전액 환불받을 수 있으며, 자세한 내용은{" "}
-              <a href="/terms" className="underline hover:text-zinc-600">
-                이용약관
-              </a>
-              을 확인해주세요.
-            </p>
           </>
         )}
       </div>
