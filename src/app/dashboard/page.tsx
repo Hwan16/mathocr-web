@@ -29,6 +29,7 @@ export default function DashboardPage() {
   const [totalConversions, setTotalConversions] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const router = useRouter();
   const supabase = createClient();
   const limit = 10;
@@ -265,6 +266,177 @@ export default function DashboardPage() {
               </div>
             </div>
           )}
+        </div>
+
+        {/* Account Settings */}
+        <div className="bezel-card rounded-2xl p-6 mt-10">
+          <h2 className="text-lg font-semibold mb-1">계정 설정</h2>
+          <div className="divide-y divide-[var(--border-subtle)]">
+            <div className="py-4 flex items-center justify-between gap-4">
+              <div>
+                <div className="text-sm font-medium text-zinc-800">
+                  비밀번호 변경
+                </div>
+                <p className="text-sm text-zinc-500">
+                  가입 이메일로 비밀번호 재설정 링크를 보내드립니다.
+                </p>
+              </div>
+              <a
+                href="/auth/reset-password"
+                className="shrink-0 px-4 py-2 rounded-xl text-sm border border-[var(--border-light)] text-zinc-600 hover:text-zinc-900 transition-colors"
+              >
+                변경하기
+              </a>
+            </div>
+            <div className="py-4 flex items-center justify-between gap-4">
+              <div>
+                <div className="text-sm font-medium text-zinc-800">
+                  회원 탈퇴
+                </div>
+                <p className="text-sm text-zinc-500">
+                  계정과 이용 데이터가 삭제되며, 잔여 크레딧은 복구할 수
+                  없습니다.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                className="shrink-0 px-4 py-2 rounded-xl text-sm border border-red-200 text-red-600 hover:bg-red-50 transition-colors"
+              >
+                탈퇴하기
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {showDeleteModal && user?.email && (
+        <DeleteAccountModal
+          email={user.email}
+          onClose={() => setShowDeleteModal(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+function DeleteAccountModal({
+  email,
+  onClose,
+}: {
+  email: string;
+  onClose: () => void;
+}) {
+  const [confirmEmail, setConfirmEmail] = useState("");
+  const [status, setStatus] = useState<
+    "idle" | "submitting" | "done" | "error"
+  >("idle");
+  const [message, setMessage] = useState("");
+  const supabase = createClient();
+
+  const emailMatches =
+    confirmEmail.trim().toLowerCase() === email.toLowerCase();
+
+  async function handleDelete() {
+    if (!emailMatches || status === "submitting") return;
+    setStatus("submitting");
+    setMessage("");
+    try {
+      const res = await fetch("/api/account/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirmEmail: confirmEmail.trim() }),
+      });
+      const result = await res.json().catch(() => ({}));
+
+      if (res.ok && result.success) {
+        // 서버에서 계정이 이미 삭제됨 — 브라우저에 남은 세션만 정리
+        await supabase.auth.signOut({ scope: "local" });
+        setStatus("done");
+      } else {
+        setStatus("error");
+        setMessage(result.error ?? "탈퇴 처리에 실패했습니다.");
+      }
+    } catch {
+      setStatus("error");
+      setMessage("탈퇴 처리에 실패했습니다. 잠시 후 다시 시도해주세요.");
+    }
+  }
+
+  if (status === "done") {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+        <div className="bezel-card w-full max-w-md rounded-2xl bg-white p-6 text-center">
+          <h2 className="text-lg font-semibold mb-2">탈퇴가 완료되었습니다</h2>
+          <p className="text-sm text-zinc-500 mb-6">
+            그동안 AI MathOCR를 이용해주셔서 감사합니다.
+          </p>
+          <a
+            href="/"
+            className="inline-block px-5 py-2.5 rounded-xl bg-[var(--accent)] text-white text-sm font-medium hover:opacity-90 transition-opacity"
+          >
+            홈으로
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+      <div className="bezel-card w-full max-w-md rounded-2xl bg-white p-6">
+        <h2 className="text-lg font-semibold mb-3">정말 탈퇴하시겠어요?</h2>
+        <ul className="text-sm text-zinc-600 space-y-2 mb-5 list-disc pl-5">
+          <li>
+            <span className="font-medium text-red-600">
+              잔여 크레딧은 즉시 소멸
+            </span>
+            되며 복구할 수 없습니다. 환불 대상 크레딧이 있다면 탈퇴 전에{" "}
+            <a
+              href="mailto:aimathocr.official@gmail.com"
+              className="underline"
+            >
+              aimathocr.official@gmail.com
+            </a>
+            으로 문의해주세요.
+          </li>
+          <li>변환 이력 등 계정 정보가 모두 삭제됩니다.</li>
+          <li>
+            결제·동의 기록은 전자상거래법에 따라 5년간 보존 후 파기됩니다.
+          </li>
+        </ul>
+        <label className="block text-sm text-zinc-600 mb-2">
+          확인을 위해 가입 이메일{" "}
+          <span className="font-medium text-zinc-900">{email}</span> 을
+          입력해주세요.
+        </label>
+        <input
+          type="email"
+          value={confirmEmail}
+          onChange={(e) => {
+            setConfirmEmail(e.target.value);
+            if (status === "error") setStatus("idle");
+          }}
+          placeholder={email}
+          className="w-full px-4 py-2.5 rounded-xl bg-white border border-zinc-300 text-zinc-900 placeholder-zinc-300 text-sm focus:outline-none focus:border-red-400 transition-colors"
+        />
+        {status === "error" && (
+          <p className="mt-2 text-sm text-red-600">✗ {message}</p>
+        )}
+        <div className="mt-5 flex gap-2 justify-end">
+          <button
+            onClick={onClose}
+            disabled={status === "submitting"}
+            className="px-4 py-2 rounded-xl text-sm border border-[var(--border-light)] text-zinc-600 hover:text-zinc-900 disabled:opacity-40 transition-colors"
+          >
+            취소
+          </button>
+          <button
+            onClick={handleDelete}
+            disabled={!emailMatches || status === "submitting"}
+            className="px-4 py-2 rounded-xl text-sm font-medium bg-red-600 text-white hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            {status === "submitting" ? "처리 중..." : "탈퇴하기"}
+          </button>
         </div>
       </div>
     </div>

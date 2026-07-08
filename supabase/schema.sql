@@ -44,9 +44,13 @@ create trigger profiles_updated_at
 -- ============================================
 -- 2. payments 테이블 (결제 이력)
 -- ============================================
+-- 탈퇴(프로필 삭제) 후에도 대금결제 기록(5년, 전자상거래법)으로 보존하기 위해
+-- user_id 는 nullable + ON DELETE SET NULL 이며, email 스냅샷으로 식별한다.
+-- 스냅샷은 탈퇴 API가 계정 삭제 직전에 기록한다. (0010)
 create table public.payments (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references public.profiles(id) on delete cascade,
+  user_id uuid references public.profiles(id) on delete set null,
+  email text,                           -- 탈퇴 후 식별용 이메일 스냅샷 (0010)
   amount integer not null,              -- 결제 금액 (원)
   credits_added integer not null,       -- 추가된 크레딧
   pg_transaction_id text,               -- 토스페이먼츠 거래 ID
