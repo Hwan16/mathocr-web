@@ -52,10 +52,10 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
     images: [
       {
-        url: "/mathocr-icon.png",
-        width: 600,
-        height: 600,
-        alt: "AI MathOCR",
+        url: "/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "AI MathOCR — 수학문제, 편집 가능한 HWP로",
       },
     ],
   },
@@ -63,7 +63,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
-    images: ["/mathocr-icon.png"],
+    images: ["/og-image.jpg"],
   },
   robots: {
     index: true,
