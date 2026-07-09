@@ -298,9 +298,10 @@ export default function Home() {
               지저분한 원본도, 편집 가능한 HWP 시험지로
             </h2>
             <p className="text-lg text-zinc-600 leading-relaxed">
-              수학문제 OCR의 품질은 원본 처리에서 갈립니다. AI가 원문만 골라
-              복원하고, 문제·그림·해설 영역을 원하는 대로 지정해 완성된
-              HWP로 만들어 드립니다.
+              수학문제 OCR의 품질은 원본 처리에서 갈립니다.
+              <br />
+              AI가 원문만 골라 복원하고, 문제·그림·해설 영역을 원하는 대로
+              지정해 완성된 HWP로 만들어 드립니다.
             </p>
           </div>
 
@@ -341,8 +342,10 @@ export default function Home() {
               결과물로 보여드립니다
             </h2>
             <p className="text-lg text-zinc-600 leading-relaxed">
-              말로 하는 설명보다 실제 변환 결과가 정확합니다. 왼쪽이 원본,
-              오른쪽이 AI MathOCR의 수학문제 OCR이 만든 HWP입니다.
+              말로 하는 설명보다 실제 변환 결과가 정확합니다.
+              <br />
+              왼쪽이 원본, 오른쪽이 AI MathOCR의 수학문제 OCR이 만든
+              HWP입니다.
             </p>
           </div>
 
