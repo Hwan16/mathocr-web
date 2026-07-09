@@ -79,5 +79,7 @@ export async function POST(request: NextRequest) {
     success: true,
     credits_granted: data.credits_granted,
     new_credits: data.new_credits,
+    // 상환 후 계정 만료일 (0011 적용 전 RPC는 이 필드가 없음 → null)
+    expires_at: data.expires_at ?? null,
   });
 }

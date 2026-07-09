@@ -88,7 +88,9 @@ export async function POST(request: NextRequest) {
     if (dbBonus !== null) {
       return NextResponse.json({
         valid: true,
-        bonus_credits: dbBonus,
+        bonus_credits: dbBonus.credits,
+        // null = 계정 만료일 따름, n = 사용 시 만료일이 최소 now()+n일로 연장
+        validity_days: dbBonus.validityDays,
       });
     }
 
@@ -106,12 +108,14 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// DB 프로모션 코드 검증: 활성 + 사용 횟수 미소진이면 지급 크레딧, 아니면 null.
-async function dbPromoBonusCredits(code: string): Promise<number | null> {
+// DB 프로모션 코드 검증: 활성 + 사용 횟수 미소진이면 지급 크레딧·유효기간, 아니면 null.
+async function dbPromoBonusCredits(
+  code: string
+): Promise<{ credits: number; validityDays: number | null } | null> {
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("promo_codes")
-    .select("id, credits, max_uses, is_active")
+    .select("id, credits, max_uses, validity_days, is_active")
     .eq("code", code)
     .maybeSingle();
 
@@ -125,5 +129,5 @@ async function dbPromoBonusCredits(code: string): Promise<number | null> {
     if ((count ?? 0) >= data.max_uses) return null;
   }
 
-  return data.credits;
+  return { credits: data.credits, validityDays: data.validity_days ?? null };
 }

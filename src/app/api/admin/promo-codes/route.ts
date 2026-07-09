@@ -31,7 +31,7 @@ export async function GET() {
   const { data, error } = await adminClient
     .from("promo_codes")
     .select(
-      "id, code, credits, max_uses, is_active, memo, created_at, promo_redemptions(id, email, credits_granted, source, created_at)"
+      "id, code, credits, max_uses, validity_days, is_active, memo, created_at, promo_redemptions(id, email, credits_granted, source, created_at)"
     )
     .order("created_at", { ascending: false });
 
@@ -51,14 +51,20 @@ export async function GET() {
   return NextResponse.json({ codes });
 }
 
-// 관리자: 프로모션 코드 생성 (코드·크레딧·최대 사용 횟수·메모 직접 지정)
+// 관리자: 프로모션 코드 생성 (코드·크레딧·최대 사용 횟수·유효기간·메모 직접 지정)
 export async function POST(request: NextRequest) {
   const admin = await requireAdmin();
   if (!admin) {
     return NextResponse.json({ error: "관리자 권한이 필요합니다." }, { status: 403 });
   }
 
-  let body: { code?: unknown; credits?: unknown; max_uses?: unknown; memo?: unknown };
+  let body: {
+    code?: unknown;
+    credits?: unknown;
+    max_uses?: unknown;
+    validity_days?: unknown;
+    memo?: unknown;
+  };
   try {
     body = await request.json();
   } catch {
@@ -104,6 +110,28 @@ export async function POST(request: NextRequest) {
     maxUses = body.max_uses;
   }
 
+  // validity_days: null/undefined = 유효기간 연장 없음(계정 만료일 따름),
+  // 숫자 = 상환 시 만료일을 최소 now()+n일로 연장 (0011)
+  let validityDays: number | null = null;
+  if (
+    body.validity_days !== undefined &&
+    body.validity_days !== null &&
+    body.validity_days !== ""
+  ) {
+    if (
+      typeof body.validity_days !== "number" ||
+      !Number.isInteger(body.validity_days) ||
+      body.validity_days < 1 ||
+      body.validity_days > 3650
+    ) {
+      return NextResponse.json(
+        { error: "유효기간은 1~3,650일 사이의 정수여야 합니다." },
+        { status: 400 }
+      );
+    }
+    validityDays = body.validity_days;
+  }
+
   const memo =
     typeof body.memo === "string" && body.memo.trim()
       ? body.memo.trim().slice(0, 500)
@@ -116,10 +144,11 @@ export async function POST(request: NextRequest) {
       code,
       credits,
       max_uses: maxUses,
+      validity_days: validityDays,
       memo,
       created_by: admin.id,
     })
-    .select("id, code, credits, max_uses, is_active, memo, created_at")
+    .select("id, code, credits, max_uses, validity_days, is_active, memo, created_at")
     .single();
 
   if (error) {

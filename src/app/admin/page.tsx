@@ -244,6 +244,7 @@ interface PromoCode {
   code: string;
   credits: number;
   max_uses: number | null;
+  validity_days: number | null; // null = 계정 만료일 따름(연장 없음)
   is_active: boolean;
   memo: string | null;
   created_at: string;
@@ -257,6 +258,7 @@ function PromosTab() {
   const [formCode, setFormCode] = useState("");
   const [formCredits, setFormCredits] = useState("");
   const [formMaxUses, setFormMaxUses] = useState("1");
+  const [formValidityDays, setFormValidityDays] = useState("");
   const [formMemo, setFormMemo] = useState("");
   const [formError, setFormError] = useState("");
   const [creating, setCreating] = useState(false);
@@ -295,6 +297,17 @@ function PromosTab() {
       }
     }
 
+    // 유효기간(일): 빈칸 = 연장 없음(계정 만료일 따름)
+    const validityTrimmed = formValidityDays.trim();
+    let validityDays: number | null = null;
+    if (validityTrimmed) {
+      validityDays = parseInt(validityTrimmed);
+      if (isNaN(validityDays) || validityDays <= 0 || validityDays > 3650) {
+        setFormError("유효기간은 1~3,650일 사이로 입력해주세요. (빈칸 = 연장 없음)");
+        return;
+      }
+    }
+
     setCreating(true);
     try {
       const res = await fetch("/api/admin/promo-codes", {
@@ -304,6 +317,7 @@ function PromosTab() {
           code: formCode.trim(),
           credits,
           max_uses: maxUses,
+          validity_days: validityDays,
           memo: formMemo.trim() || null,
         }),
       });
@@ -313,6 +327,7 @@ function PromosTab() {
         setFormCode("");
         setFormCredits("");
         setFormMaxUses("1");
+        setFormValidityDays("");
         setFormMemo("");
         loadCodes();
       } else {
@@ -355,7 +370,7 @@ function PromosTab() {
         <p className="text-sm text-zinc-500 mb-4">
           코드와 지급 크레딧을 직접 지정합니다. 같은 코드는 한 계정당 1회만 사용할 수 있습니다.
         </p>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
           <div>
             <label className="block text-xs text-zinc-500 mb-1">코드</label>
             <input
@@ -391,6 +406,20 @@ function PromosTab() {
             />
           </div>
           <div>
+            <label className="block text-xs text-zinc-500 mb-1">
+              유효기간 · 일 (빈칸 = 연장 없음)
+            </label>
+            <input
+              type="number"
+              min={1}
+              max={3650}
+              value={formValidityDays}
+              onChange={(e) => setFormValidityDays(e.target.value)}
+              placeholder="예: 30"
+              className="w-full px-3 py-2 rounded-xl bg-white border border-zinc-300 text-zinc-900 placeholder-zinc-400 text-sm focus:outline-none focus:border-[var(--accent)] transition-colors"
+            />
+          </div>
+          <div>
             <label className="block text-xs text-zinc-500 mb-1">메모 (선택)</label>
             <input
               type="text"
@@ -401,6 +430,11 @@ function PromosTab() {
             />
           </div>
         </div>
+        <p className="mt-2 text-xs text-zinc-400">
+          유효기간을 지정하면 코드 사용 시 계정 만료일이 최소 &quot;오늘 + 지정 일수&quot;로
+          연장됩니다 (잔여 크레딧 포함, 기존 만료일이 더 길면 그대로). 빈칸이면 크레딧만
+          지급되고 계정의 기존 만료일을 따릅니다.
+        </p>
         <div className="mt-4 flex items-center gap-3">
           <button
             onClick={handleCreate}
@@ -426,6 +460,7 @@ function PromosTab() {
                 <tr className="text-left text-zinc-500 border-b border-[var(--border-subtle)]">
                   <th className="px-6 py-3 font-medium">코드</th>
                   <th className="px-6 py-3 font-medium text-center">지급 크레딧</th>
+                  <th className="px-6 py-3 font-medium text-center">유효기간</th>
                   <th className="px-6 py-3 font-medium text-center">사용 현황</th>
                   <th className="px-6 py-3 font-medium text-center">상태</th>
                   <th className="px-6 py-3 font-medium">메모</th>
@@ -477,6 +512,16 @@ function PromoRow({
         <td className="px-6 py-3 font-mono text-zinc-800">{promo.code}</td>
         <td className="px-6 py-3 text-center text-[var(--accent)] font-medium">
           {promo.credits}
+        </td>
+        <td
+          className="px-6 py-3 text-center text-zinc-600"
+          title={
+            promo.validity_days
+              ? `사용 시 만료일이 최소 오늘+${promo.validity_days}일로 연장`
+              : "연장 없음 — 계정의 기존 만료일을 따름"
+          }
+        >
+          {promo.validity_days ? `${promo.validity_days}일` : "—"}
         </td>
         <td className="px-6 py-3 text-center">
           <button
@@ -531,7 +576,7 @@ function PromoRow({
       </tr>
       {expanded && promo.use_count > 0 && (
         <tr className="border-b border-[var(--border-subtle)] bg-zinc-50">
-          <td colSpan={7} className="px-6 py-4">
+          <td colSpan={8} className="px-6 py-4">
             <div className="text-xs font-medium text-zinc-500 mb-2">
               사용 내역 ({promo.use_count}건)
             </div>

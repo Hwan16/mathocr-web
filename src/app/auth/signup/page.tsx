@@ -18,6 +18,8 @@ export default function SignupPage() {
     "idle" | "checking" | "valid" | "invalid" | "error"
   >("idle");
   const [promoBonusCredits, setPromoBonusCredits] = useState<number>(0);
+  // 코드에 유효기간이 지정된 경우(일수) — 가입 시 만료일이 최소 now()+n일로 연장됨
+  const [promoValidityDays, setPromoValidityDays] = useState<number | null>(null);
   const [error, setError] = useState("");
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [agreePrivacy, setAgreePrivacy] = useState(false);
@@ -47,6 +49,9 @@ export default function SignupPage() {
       if (result.valid) {
         setPromoBonusCredits(
           typeof result.bonus_credits === "number" ? result.bonus_credits : 0
+        );
+        setPromoValidityDays(
+          typeof result.validity_days === "number" ? result.validity_days : null
         );
         setPromoStatus("valid");
       } else {
@@ -269,7 +274,8 @@ export default function SignupPage() {
               )}
               {promoStatus === "valid" && (
                 <p className="mt-1.5 text-xs text-emerald-600">
-                  ✓ 사용 가능한 코드입니다. 가입 시 +{promoBonusCredits}크레딧 보너스가 적용됩니다.
+                  ✓ 사용 가능한 코드입니다. 가입 시 +{promoBonusCredits}크레딧 보너스가
+                  적용됩니다{promoValidityDays ? ` (유효기간 ${promoValidityDays}일)` : ""}.
                 </p>
               )}
               {promoStatus === "invalid" && (

@@ -522,6 +522,9 @@ create table if not exists public.promo_codes (
   credits integer not null check (credits between 1 and 100000),
   max_uses integer check (max_uses is null or max_uses >= 1),
   is_active boolean not null default true,
+  -- null = 유효기간 연장 없음(계정 만료일 따름), n = 상환 시 만료일을 최소 now()+n일로 연장 (0011)
+  validity_days integer
+    check (validity_days is null or (validity_days >= 1 and validity_days <= 3650)),
   memo text,
   created_by uuid references public.profiles(id) on delete set null,
   created_at timestamptz not null default now()
@@ -556,12 +559,13 @@ declare
   v_email text;
   v_use_count integer;
   v_new_credits integer;
+  v_new_expires timestamptz;
 begin
   if p_source not in ('mypage', 'signup') then
     return jsonb_build_object('success', false, 'error', 'invalid_source');
   end if;
 
-  select id, credits, max_uses, is_active into v_promo
+  select id, credits, max_uses, is_active, validity_days into v_promo
   from public.promo_codes
   where code = lower(btrim(coalesce(p_code, '')))
   for update;
@@ -606,10 +610,26 @@ begin
     return jsonb_build_object('success', false, 'error', 'already_redeemed');
   end;
 
-  update public.profiles
-  set credits = credits + v_promo.credits
-  where id = p_user_id
-  returning credits into v_new_credits;
+  if v_promo.validity_days is not null then
+    -- 유효기간 지정 코드: 플랜 충전(grant_plan_credits)과 동일한 연장 모델 (0011)
+    update public.profiles
+    set credits = case
+          when expires_at is not null and expires_at < now() then v_promo.credits
+          else credits + v_promo.credits
+        end,
+        expires_at = greatest(
+          coalesce(expires_at, now()),
+          now() + make_interval(days => v_promo.validity_days)
+        )
+    where id = p_user_id
+    returning credits, expires_at into v_new_credits, v_new_expires;
+  else
+    -- 유효기간 미지정 코드: 크레딧만 지급, 만료일 그대로
+    update public.profiles
+    set credits = credits + v_promo.credits
+    where id = p_user_id
+    returning credits, expires_at into v_new_credits, v_new_expires;
+  end if;
 
   insert into public.payments (user_id, amount, credits_added, pg_transaction_id, status)
   values (p_user_id, 0, v_promo.credits, 'promo_' || v_promo.id::text || '_' || p_user_id::text, 'completed');
@@ -617,7 +637,8 @@ begin
   return jsonb_build_object(
     'success', true,
     'credits_granted', v_promo.credits,
-    'new_credits', v_new_credits
+    'new_credits', v_new_credits,
+    'expires_at', v_new_expires
   );
 end;
 $$ language plpgsql security definer set search_path = public, pg_temp;

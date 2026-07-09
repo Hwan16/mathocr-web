@@ -466,8 +466,11 @@ function PromoRedeemCard({ onRedeemed }: { onRedeemed: () => void }) {
 
       if (res.ok && result.success) {
         setStatus("success");
+        const expiryNote = result.expires_at
+          ? ` · ${new Date(result.expires_at).toLocaleDateString("ko-KR")}까지 사용 가능`
+          : "";
         setMessage(
-          `+${result.credits_granted}크레딧이 지급되었습니다. (잔여 ${result.new_credits}회)`
+          `+${result.credits_granted}크레딧이 지급되었습니다. (잔여 ${result.new_credits}회${expiryNote})`
         );
         setCode("");
         onRedeemed();
