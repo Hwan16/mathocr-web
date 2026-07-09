@@ -799,7 +799,8 @@ export default function Home() {
                       className="text-zinc-400 group-open:rotate-180 transition-transform shrink-0 ml-4"
                     />
                   </summary>
-                  <p className="text-zinc-600 leading-relaxed mt-3 pr-8">{item.a}</p>
+                  {/* whitespace-pre-line: 답변 문자열의 \n을 줄바꿈으로 렌더 (조작법 FAQ처럼 단계식 답변용) */}
+                  <p className="text-zinc-600 leading-relaxed mt-3 pr-8 whitespace-pre-line">{item.a}</p>
                 </details>
               ))}
             </div>
