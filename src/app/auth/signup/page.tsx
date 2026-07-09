@@ -76,6 +76,25 @@ export default function SignupPage() {
       return;
     }
 
+    // 프로모션 코드를 입력했다면 [확인] 검증을 통과해야 가입 진행.
+    // 서버는 코드 적용에 실패해도 가입 자체는 성공시키므로(보너스만 미지급),
+    // 오타 코드가 아무 안내 없이 넘어가는 일을 여기서 막는다.
+    // (코드를 수정하면 promoStatus가 idle로 리셋되어 재검증이 강제된다)
+    if (promoCode.trim() && promoStatus !== "valid") {
+      if (promoStatus === "invalid") {
+        setError(
+          "유효하지 않은 프로모션 코드입니다. 코드를 다시 확인하거나, 지운 뒤 가입해주세요."
+        );
+      } else if (promoStatus === "error") {
+        setError(
+          "프로모션 코드 확인에 실패했습니다. [확인]을 다시 눌러보거나, 코드를 지우고 가입 후 마이페이지에서 입력해주세요."
+        );
+      } else {
+        setError("프로모션 코드 옆 [확인] 버튼을 눌러 코드를 먼저 확인해주세요.");
+      }
+      return;
+    }
+
     setLoading(true);
 
     try {
