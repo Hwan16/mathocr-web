@@ -95,11 +95,27 @@ async function main() {
     check("만료일 유지 (~30일 그대로)", redeemB?.expires_at && Math.abs(daysFromNow(redeemB.expires_at) - 30) < 0.5,
       `expiry=${redeemB?.expires_at ? daysFromNow(redeemB.expires_at).toFixed(1) : "null"}일`);
 
-    // 5) payments 이력 2건
+    // 5) 만료일이 이미 긴 상태(~30일)에서 더 짧은 유효기간(5일) 코드 → 만료일 축소되면 안 됨
+    //    (실사용 시나리오: 결제로 60일 확보 후 무료 코드 적용 — 만료일은 절대 줄지 않아야 함)
+    const codeC = `e2e-shorter-${ts}`;
+    const { data: rowC, error: insCErr } = await admin.from("promo_codes")
+      .insert({ code: codeC, credits: 13, max_uses: 1, validity_days: 5, memo: "e2e 축소 방지 테스트 (자동 비활성화됨)" })
+      .select("id").single();
+    if (insCErr) throw new Error("코드 C 생성 실패: " + insCErr.message);
+    codeIds.push(rowC.id);
+
+    const { data: redeemC } = await admin.rpc("redeem_promo_code", {
+      p_user_id: uid, p_code: codeC, p_source: "mypage",
+    });
+    check("짧은 유효기간 코드 상환 성공", redeemC?.success === true, JSON.stringify(redeemC));
+    check("만료일 축소 없음 (5일 코드에도 ~30일 유지)", redeemC?.expires_at && Math.abs(daysFromNow(redeemC.expires_at) - 30) < 0.5,
+      `expiry=${redeemC?.expires_at ? daysFromNow(redeemC.expires_at).toFixed(1) : "null"}일`);
+
+    // 6) payments 이력 3건
     const { data: pays } = await admin.from("payments")
       .select("credits_added").eq("user_id", uid).like("pg_transaction_id", "promo_%");
-    check("payments 프로모션 기록 2건", (pays ?? []).length === 2 &&
-      pays.map((p) => p.credits_added).sort((a, b) => a - b).join(",") === "11,77",
+    check("payments 프로모션 기록 3건", (pays ?? []).length === 3 &&
+      pays.map((p) => p.credits_added).sort((a, b) => a - b).join(",") === "11,13,77",
       JSON.stringify(pays));
   } finally {
     // 정리: 계정 삭제(redemptions.user_id → null) + 코드 비활성화(이력 있어 삭제 불가)
