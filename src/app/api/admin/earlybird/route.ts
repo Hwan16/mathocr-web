@@ -2,8 +2,10 @@ import { getAuthUser } from "@/lib/supabase/auth-helper";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
 
-// 관리자: 얼리버드 현황 — 메일 수신 동의자 명단 + 요약 (0013/0014)
+// 관리자: 얼리버드 신청 현황 (0015 신청제) — 신청자 명단 + 요약
 // 사용처: 관리자 대시보드 '얼리버드' 탭. 발송은 POST /api/admin/earlybird/send.
+
+const APPLY_CAP = 200; // /api/earlybird/apply 와 동일하게 유지
 
 async function requireAdmin() {
   const user = await getAuthUser();
@@ -20,15 +22,6 @@ async function requireAdmin() {
   return user;
 }
 
-type SubscriberRow = {
-  email: string | null;
-  created_at: string;
-  credits: number;
-  expires_at: string | null;
-  utm_source: string | null;
-  earlybird_mail_sent_at?: string | null;
-};
-
 export async function GET() {
   const admin = await requireAdmin();
   if (!admin) {
@@ -37,35 +30,23 @@ export async function GET() {
 
   const adminClient = createAdminClient();
 
-  // 동의자 명단 (0014 미적용 환경에서도 죽지 않도록 발송 컬럼 없이 폴백 재조회)
-  const first = await adminClient
-    .from("profiles")
-    .select("email, created_at, credits, expires_at, utm_source, earlybird_mail_sent_at")
-    .eq("marketing_opt_in", true)
+  const { data: applicants, error } = await adminClient
+    .from("earlybird_signups")
+    .select("email, created_at, utm_source, mail_sent_at, unsubscribed_at")
     .order("created_at", { ascending: false })
     .limit(1000);
-  let subscribers = first.data as SubscriberRow[] | null;
-  let error = first.error;
 
-  if (error) {
-    const fallback = await adminClient
-      .from("profiles")
-      .select("email, created_at, credits, expires_at, utm_source")
-      .eq("marketing_opt_in", true)
-      .order("created_at", { ascending: false })
-      .limit(1000);
-    subscribers = fallback.data as SubscriberRow[] | null;
-    error = fallback.error;
+  if (error || !applicants) {
+    return NextResponse.json(
+      { error: "명단 조회 실패 — 0015 마이그레이션 적용 여부를 확인하세요." },
+      { status: 500 }
+    );
   }
 
-  if (error || !subscribers) {
-    return NextResponse.json({ error: "명단 조회 실패" }, { status: 500 });
-  }
+  const mailSent = applicants.filter((a) => a.mail_sent_at).length;
+  const unsubscribed = applicants.filter((a) => a.unsubscribed_at).length;
 
-  const rows = subscribers as SubscriberRow[];
-  const mailSent = rows.filter((s) => s.earlybird_mail_sent_at).length;
-
-  // 얼리버드 코드 소진 현황 (선착순 잔여 확인용)
+  // 얼리버드 코드 상태 (오픈까지 비활성 보관 → 오픈 날 활성화 후 발송)
   let redeemed: number | null = null;
   let cap: number | null = null;
   const { data: code } = await adminClient
@@ -84,20 +65,15 @@ export async function GET() {
 
   return NextResponse.json({
     summary: {
-      opted_in: rows.length,
+      applied: applicants.length,
+      apply_cap: APPLY_CAP,
       mail_sent: mailSent,
-      mail_pending: rows.length - mailSent,
+      unsubscribed,
+      mail_pending: applicants.length - mailSent - unsubscribed,
       earlybird_redeemed: redeemed,
       earlybird_cap: cap,
       earlybird_code_active: code?.is_active ?? null,
     },
-    subscribers: rows.map((s) => ({
-      email: s.email,
-      created_at: s.created_at,
-      credits: s.credits,
-      expires_at: s.expires_at,
-      utm_source: s.utm_source,
-      mail_sent_at: s.earlybird_mail_sent_at ?? null,
-    })),
+    applicants,
   });
 }

@@ -688,3 +688,26 @@ $$ language plpgsql security definer set search_path = public, pg_temp;
 
 revoke execute on function public.redeem_promo_code(uuid, text, text, text, text) from public, anon, authenticated;
 grant execute on function public.redeem_promo_code(uuid, text, text, text, text) to service_role;
+
+-- ============================================
+-- 14. 얼리버드 사전 신청 (0015 — 신청제)
+-- ============================================
+-- 오픈 전 이메일 리드. 오픈 날 관리자 탭에서 30문제 코드(earlybird) 메일 발송.
+create table if not exists public.earlybird_signups (
+  id uuid primary key default gen_random_uuid(),
+  email text not null,
+  normalized_email text not null unique, -- 알리아스 접은 이메일 (중복 신청 차단)
+  utm_source text,
+  utm_medium text,
+  utm_campaign text,
+  ip text,
+  user_agent text,
+  mail_sent_at timestamptz,      -- 오픈 메일 발송 기록 (중복 발송 방지)
+  unsubscribed_at timestamptz,   -- 수신거부 (발송 대상 제외)
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_earlybird_signups_created_at
+  on public.earlybird_signups (created_at);
+
+alter table public.earlybird_signups enable row level security;

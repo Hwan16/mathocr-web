@@ -4,10 +4,10 @@ import { useEffect, useState } from "react";
 import { trackEvent } from "@/lib/analytics";
 
 // ── 얼리버드 안내 팝업 (홈페이지 진입 시) ──
-// 2026-07-11 개편: 인스타 구글폼 경로 폐기 → 사이트 안 전용 가입 페이지(/earlybird)로
-// 직행. 혜택: 가입 즉시 총 30문제(기본 5 + 보너스 25, 유효 30일), 선착순 200명.
+// 2026-07-11 신청제 전환(사용자 결정): 오픈 전 크레딧 즉시 지급 부담 → 이메일 사전
+// 신청(/earlybird)만 받고, 오픈 날 30문제 코드를 메일로 발송한다. 선착순 200명.
 // 숨김 옵션은 "오늘 하루"만 둔다 (사용자 결정 — 장기 숨김은 기회 노출 손해).
-// 결제 기능 오픈 후에는 POPUP_ENABLED 를 false 로 바꾸고 earlybird 코드를 비활성화.
+// 결제 기능 오픈 후에는 POPUP_ENABLED 를 false 로 바꾸고 earlybird 코드를 활성화.
 const POPUP_ENABLED = true;
 // [오늘 하루 보지 않기]로 숨긴 만료 시각(epoch ms)을 브라우저에 저장
 const STORAGE_KEY = "mathocr_earlybird_popup_hide_until";
@@ -56,7 +56,7 @@ export default function EarlyBirdPopup() {
       className="fixed inset-0 z-[100] flex items-center justify-center px-4"
       role="dialog"
       aria-modal="true"
-      aria-label="얼리버드 — 지금 가입하면 30문제 무료"
+      aria-label="얼리버드 신청 — 오픈 날 30문제 무료"
     >
       {/* 배경 클릭 = 이번만 닫기 */}
       <div
@@ -74,12 +74,12 @@ export default function EarlyBirdPopup() {
           ✕
         </button>
 
-        {/* 헤더: 마스코트 (원본 배경과 같은 라벤더 → 흰색 페이드) */}
-        <div className="relative bg-[#eae1fc]">
+        {/* 헤더: 마스코트 — contain으로 전신 노출, 배경은 이미지 자체 그라데이션(라벤더→흰색)과 맞춤 */}
+        <div className="relative bg-gradient-to-b from-[#eae1fc] to-white">
           <img
             src="/earlybird-mascot.webp"
             alt="AI MathOCR 마스코트"
-            className="w-full h-48 object-cover object-top"
+            className="w-full h-56 object-contain"
           />
           <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-b from-transparent to-white" />
           <span className="absolute top-3 left-3 text-[11px] font-semibold tracking-widest bg-violet-600 text-white rounded-full px-3 py-1 shadow-sm">
@@ -90,21 +90,21 @@ export default function EarlyBirdPopup() {
         {/* 본문 */}
         <div className="px-7 pb-6 pt-1">
           <h2 className="text-2xl font-bold leading-snug text-zinc-900">
-            지금 가입하면{" "}
-            <span className="text-violet-700">30문제 무료</span>
+            얼리버드 신청하면{" "}
+            <span className="text-violet-700">오픈 날 30문제 무료</span>
           </h2>
           <p className="mt-1.5 text-sm text-zinc-500 leading-relaxed">
-            정식 오픈 전 얼리버드 — 시험지 한 장을 통째로 한글(HWP)로 변환해
-            보세요.
+            정식 오픈 준비 중 — 이메일만 남기면 무료 코드를 가장 먼저
+            보내드려요.
           </p>
           <ul className="mt-3 space-y-2 text-sm text-zinc-700">
             <li className="flex items-start gap-2">
               <span className="text-[var(--accent)] mt-0.5">✓</span>
-              가입 즉시 총 <b>30문제</b> (기본 5 + 보너스 25 · 유효기간 30일)
+              오픈 날 총 <b>30문제 무료 코드</b>를 메일로 (가입 5 + 코드 25)
             </li>
             <li className="flex items-start gap-2">
               <span className="text-[var(--accent)] mt-0.5">✓</span>
-              정식 오픈 소식을 <b>메일로</b> 가장 먼저 안내
+              지금은 <b>이메일 신청뿐</b> — 결제·가입 없음
             </li>
           </ul>
 
@@ -113,7 +113,7 @@ export default function EarlyBirdPopup() {
             onClick={() => trackEvent("earlybird_popup_cta_click")}
             className="mt-5 w-full flex items-center justify-center gap-2 rounded-xl bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white text-sm font-semibold py-3 transition-colors"
           >
-            선착순 30문제 받고 시작하기
+            선착순 200명 얼리버드 신청하기
           </a>
         </div>
 

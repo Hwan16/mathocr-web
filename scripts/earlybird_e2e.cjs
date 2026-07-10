@@ -62,21 +62,21 @@ async function main() {
     throw new Error(`${BASE_URL} 접속 불가 — dev 서버를 먼저 실행하세요`);
   });
 
-  // 1) 실제 earlybird 코드가 열려 있는지 (소모하지는 않음)
+  // 1) 실제 earlybird 코드는 오픈 전 보관(비활성) 상태여야 한다 (0015 신청제 전환)
+  //    → validate-promo가 invalid로 응답 (오픈 날 활성화 후에는 valid로 바뀜)
   const vres = await fetch(`${BASE_URL}/api/auth/validate-promo`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ code: "earlybird" }),
   });
   const vjson = await vres.json().catch(() => ({}));
-  check("earlybird 코드 오픈 (25크레딧·유효 30일)",
-    vjson.valid === true && vjson.bonus_credits === 25 && vjson.validity_days === 30,
-    JSON.stringify(vjson));
+  check("earlybird 코드 오픈 전 보관 상태 (validate=invalid)",
+    vjson.valid === false, JSON.stringify(vjson));
 
   // 2) 클론 코드 생성 (실코드 선착순 보존)
   const cloneCode = `e2e-eb-${ts}`;
   const { data: codeRow, error: codeErr } = await admin.from("promo_codes")
-    .insert({ code: cloneCode, credits: 25, max_uses: 200, validity_days: 30, memo: "e2e 얼리버드 가드 테스트 (자동 비활성화됨)" })
+    .insert({ code: cloneCode, credits: 25, max_uses: 200, validity_days: 7, memo: "e2e 얼리버드 가드 테스트 (자동 비활성화됨)" })
     .select("id").single();
   if (codeErr) throw new Error("클론 코드 생성 실패: " + codeErr.message);
   codeIds.push(codeRow.id);
@@ -100,7 +100,7 @@ async function main() {
 
     const { data: p1 } = await admin.from("profiles")
       .select("credits, expires_at, marketing_opt_in").eq("id", r1.user.id).maybeSingle();
-    check("profiles: 크레딧 30 + 만료 ~30일", p1?.credits === 30 && Math.abs(daysFromNow(p1.expires_at) - 30) < 0.5,
+    check("profiles: 크레딧 30 + 만료 ~7일", p1?.credits === 30 && Math.abs(daysFromNow(p1.expires_at) - 7) < 0.5,
       JSON.stringify(p1));
     check("profiles.marketing_opt_in = true", p1?.marketing_opt_in === true, JSON.stringify(p1));
 

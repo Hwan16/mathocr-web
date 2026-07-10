@@ -1,14 +1,21 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { verifyUnsubscribeToken } from "@/lib/unsubscribe";
+import { verifyUnsubscribeToken, type UnsubscribeKind } from "@/lib/unsubscribe";
 import { NextRequest, NextResponse } from "next/server";
 
-// 마케팅 메일 수신거부 (0014) — 메일 하단 링크의 목적지.
+// 마케팅 메일 수신거부 (0014/0015) — 메일 하단 링크의 목적지.
+//
+// kind=app  : 얼리버드 신청자 (earlybird_signups.unsubscribed_at 기록)
+// kind=user : 회원 (profiles.marketing_opt_in=false + 철회 감사행)
 //
 // 2단계 확인: GET 은 확인 페이지(버튼)만 보여주고, 실제 해제는 POST 로만 수행한다.
 // 메일 보안 스캐너(Outlook SafeLinks 등)가 링크를 자동 방문해 의도치 않게
 // 수신거부되는 사고를 막기 위함. 토큰은 서버 서명(HMAC)이라 uid 위조로는 못 푼다.
 
 export const dynamic = "force-dynamic";
+
+function parseKind(value: string | null): UnsubscribeKind {
+  return value === "app" ? "app" : "user";
+}
 
 function page(body: string, status = 200) {
   return new NextResponse(
@@ -32,11 +39,19 @@ function invalidPage() {
   );
 }
 
+function donePage() {
+  return page(
+    `<p style="margin:0 0 8px;font-weight:700;">수신거부가 완료되었습니다.</p>
+     <p style="margin:0;font-size:13px;color:#52525b;">더 이상 마케팅·혜택 안내 메일이 발송되지 않습니다.</p>`
+  );
+}
+
 // 1단계: 확인 페이지 (스캐너 자동 방문으로는 아무 일도 일어나지 않음)
 export async function GET(request: NextRequest) {
   const uid = request.nextUrl.searchParams.get("uid") ?? "";
   const token = request.nextUrl.searchParams.get("token") ?? "";
-  if (!uid || !verifyUnsubscribeToken(uid, token)) {
+  const kind = parseKind(request.nextUrl.searchParams.get("kind"));
+  if (!uid || !verifyUnsubscribeToken(uid, token, kind)) {
     return invalidPage();
   }
   return page(
@@ -44,6 +59,7 @@ export async function GET(request: NextRequest) {
      <form method="POST" action="/api/unsubscribe">
        <input type="hidden" name="uid" value="${uid}" />
        <input type="hidden" name="token" value="${token}" />
+       <input type="hidden" name="kind" value="${kind}" />
        <button type="submit" style="background:#7c3aed;color:#fff;border:0;border-radius:10px;padding:12px 28px;font-size:14px;font-weight:700;cursor:pointer;">
          수신거부 확정
        </button>
@@ -57,11 +73,43 @@ export async function POST(request: NextRequest) {
   const form = await request.formData().catch(() => null);
   const uid = String(form?.get("uid") ?? "");
   const token = String(form?.get("token") ?? "");
-  if (!uid || !verifyUnsubscribeToken(uid, token)) {
+  const kind = parseKind(String(form?.get("kind") ?? ""));
+  if (!uid || !verifyUnsubscribeToken(uid, token, kind)) {
     return invalidPage();
   }
 
   const admin = createAdminClient();
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
+  const userAgent = request.headers.get("user-agent");
+
+  if (kind === "app") {
+    // 얼리버드 신청자
+    const { data: row, error } = await admin
+      .from("earlybird_signups")
+      .select("email, unsubscribed_at")
+      .eq("id", uid)
+      .maybeSingle();
+    if (error || !row) return invalidPage();
+
+    if (!row.unsubscribed_at) {
+      const { error: updateError } = await admin
+        .from("earlybird_signups")
+        .update({ unsubscribed_at: new Date().toISOString() })
+        .eq("id", uid);
+      if (updateError) {
+        return page(
+          `<p style="margin:0;">처리 중 오류가 발생했습니다.<br />잠시 후 다시 시도해주세요.</p>`,
+          500
+        );
+      }
+      await admin.from("user_consents").insert([
+        { user_id: null, email: row.email, doc_type: "marketing", version: "2026-07-11", agreed: false, ip, user_agent: userAgent },
+      ]);
+    }
+    return donePage();
+  }
+
+  // 회원 (profiles.marketing_opt_in)
   const { data: profile, error } = await admin
     .from("profiles")
     .select("email, marketing_opt_in")
@@ -85,20 +133,9 @@ export async function POST(request: NextRequest) {
     }
     // 철회 감사 기록 (agreed=false)
     await admin.from("user_consents").insert([
-      {
-        user_id: uid,
-        email: profile.email,
-        doc_type: "marketing",
-        version: "2026-07-11",
-        agreed: false,
-        ip: request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
-        user_agent: request.headers.get("user-agent"),
-      },
+      { user_id: uid, email: profile.email, doc_type: "marketing", version: "2026-07-11", agreed: false, ip, user_agent: userAgent },
     ]);
   }
 
-  return page(
-    `<p style="margin:0 0 8px;font-weight:700;">수신거부가 완료되었습니다.</p>
-     <p style="margin:0;font-size:13px;color:#52525b;">더 이상 마케팅·혜택 안내 메일이 발송되지 않습니다.</p>`
-  );
+  return donePage();
 }

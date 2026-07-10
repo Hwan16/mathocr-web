@@ -232,26 +232,27 @@ export default function AdminPage() {
   );
 }
 
-/* ── 얼리버드 탭 (0013/0014) — 메일 수신 동의자 명단 + 오픈 안내 메일 발송 ── */
-interface EarlybirdSubscriber {
-  email: string | null;
+/* ── 얼리버드 탭 (0015 신청제) — 사전 신청자 명단 + 오픈 안내 메일 발송 ── */
+interface EarlybirdApplicant {
+  email: string;
   created_at: string;
-  credits: number;
-  expires_at: string | null;
   utm_source: string | null;
   mail_sent_at: string | null;
+  unsubscribed_at: string | null;
 }
 
 interface EarlybirdData {
   summary: {
-    opted_in: number;
+    applied: number;
+    apply_cap: number;
     mail_sent: number;
+    unsubscribed: number;
     mail_pending: number;
     earlybird_redeemed: number | null;
     earlybird_cap: number | null;
     earlybird_code_active: boolean | null;
   };
-  subscribers: EarlybirdSubscriber[];
+  applicants: EarlybirdApplicant[];
 }
 
 function EarlybirdTab() {
@@ -291,6 +292,7 @@ function EarlybirdTab() {
       }
       setSendResult(
         `[발송 전 점검] 미발송 ${r.pending}명 (1회 최대 ${r.batch_size}명) · ` +
+          `코드 ${r.code_active ? "활성 ✓" : "❌ 보관 중 — 발송 전 프로모션 탭에서 활성화 필요"} · ` +
           `Resend 키 ${r.resend_key_configured ? "설정됨" : "❌ 미설정(Vercel env 필요)"} · ` +
           `수신거부 서명 ${r.unsubscribe_configured ? "설정됨" : "❌ 미설정(CRON_SECRET)"} · ` +
           `제목: ${r.preview_subject}`
@@ -337,16 +339,15 @@ function EarlybirdTab() {
   // 명단 CSV 다운로드 (엑셀용 BOM 포함)
   function downloadCsv() {
     if (!data) return;
-    const header = "이메일,가입일,크레딧,만료일,유입출처,메일발송\n";
-    const body = data.subscribers
+    const header = "이메일,신청일,유입출처,메일발송,수신거부\n";
+    const body = data.applicants
       .map((s) =>
         [
-          s.email ?? "",
+          s.email,
           s.created_at.slice(0, 10),
-          s.credits,
-          s.expires_at ? s.expires_at.slice(0, 10) : "",
           s.utm_source ?? "직접",
           s.mail_sent_at ? s.mail_sent_at.slice(0, 10) : "미발송",
+          s.unsubscribed_at ? s.unsubscribed_at.slice(0, 10) : "",
         ].join(",")
       )
       .join("\n");
@@ -368,10 +369,10 @@ function EarlybirdTab() {
 
   const s = data.summary;
   const cards = [
-    { label: "메일 수신 동의자", value: `${fmtInt(s.opted_in)}명` },
-    { label: "오픈 메일 발송", value: `${fmtInt(s.mail_sent)} / ${fmtInt(s.opted_in)}명` },
+    { label: "얼리버드 신청", value: `${fmtInt(s.applied)} / ${fmtInt(s.apply_cap)}명` },
+    { label: "오픈 메일 발송", value: `${fmtInt(s.mail_sent)} / ${fmtInt(s.applied)}명` },
     {
-      label: "얼리버드 코드 사용",
+      label: "코드 사용 (오픈 후)",
       value:
         s.earlybird_redeemed !== null
           ? `${fmtInt(s.earlybird_redeemed)} / ${s.earlybird_cap ?? "∞"}명`
@@ -383,8 +384,8 @@ function EarlybirdTab() {
         s.earlybird_code_active === null
           ? "—"
           : s.earlybird_code_active
-            ? "진행 중"
-            : "종료됨",
+            ? "활성"
+            : "보관 중 (오픈 대기)",
     },
   ];
 
@@ -403,11 +404,12 @@ function EarlybirdTab() {
       {/* 발송 컨트롤 */}
       <div className="bezel-card rounded-2xl p-5">
         <h3 className="text-sm font-semibold text-zinc-800 mb-1">
-          오픈 안내 메일 (결제 오픈 날 사용)
+          오픈 안내 메일 — 30문제 코드 발송 (결제 오픈 날 사용)
         </h3>
         <p className="text-xs text-zinc-500 mb-4 leading-relaxed">
-          수신 동의자 중 미발송자에게만 나가고, 보낸 사람은 다시 발송되지 않습니다.
-          발송 전에 [발송 전 점검]으로 대상 수와 설정(Resend 키)을 확인하세요.
+          오픈 날 순서: ① 프로모션 탭에서 earlybird 코드 <b>활성화</b> → ② [발송 전
+          점검] → ③ [오픈 메일 발송]. 신청자 중 미발송자에게만 나가고, 보낸 사람은
+          다시 발송되지 않습니다. 코드가 보관 중이면 실발송이 자동 차단됩니다.
         </p>
         <div className="flex flex-wrap gap-2">
           <button
@@ -442,7 +444,7 @@ function EarlybirdTab() {
       <div className="bezel-card rounded-2xl overflow-hidden">
         <div className="px-6 py-3 border-b border-[var(--border-subtle)]">
           <h3 className="text-sm font-medium text-zinc-700">
-            수신 동의자 명단 ({fmtInt(s.opted_in)}명)
+            신청자 명단 ({fmtInt(s.applied)}명)
           </h3>
         </div>
         <div className="overflow-x-auto max-h-96 overflow-y-auto">
@@ -450,35 +452,35 @@ function EarlybirdTab() {
             <thead className="sticky top-0 bg-white">
               <tr className="text-left text-zinc-500 border-b border-[var(--border-subtle)]">
                 <th className="px-6 py-2.5 font-medium">이메일</th>
-                <th className="px-4 py-2.5 font-medium">가입일</th>
-                <th className="px-4 py-2.5 font-medium text-right">크레딧</th>
+                <th className="px-4 py-2.5 font-medium">신청일</th>
                 <th className="px-4 py-2.5 font-medium">유입</th>
                 <th className="px-4 py-2.5 font-medium">오픈 메일</th>
               </tr>
             </thead>
             <tbody>
-              {data.subscribers.length === 0 ? (
+              {data.applicants.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-zinc-400">
-                    아직 수신 동의자가 없습니다 — 얼리버드 가입이 들어오면 여기에 쌓입니다.
+                  <td colSpan={4} className="px-6 py-8 text-center text-zinc-400">
+                    아직 신청자가 없습니다 — 얼리버드 신청이 들어오면 여기에 쌓입니다.
                   </td>
                 </tr>
               ) : (
-                data.subscribers.map((sub, i) => (
+                data.applicants.map((sub, i) => (
                   <tr
                     key={`${sub.email}-${i}`}
                     className="border-b border-[var(--border-subtle)] last:border-0 text-zinc-700"
                   >
-                    <td className="px-6 py-2">{sub.email ?? "—"}</td>
+                    <td className="px-6 py-2">{sub.email}</td>
                     <td className="px-4 py-2 text-zinc-500">
                       {sub.created_at.slice(0, 10)}
                     </td>
-                    <td className="px-4 py-2 text-right">{fmtInt(sub.credits)}</td>
                     <td className="px-4 py-2 text-xs text-zinc-500">
                       {sub.utm_source ?? "직접"}
                     </td>
                     <td className="px-4 py-2 text-xs">
-                      {sub.mail_sent_at ? (
+                      {sub.unsubscribed_at ? (
+                        <span className="text-red-500">수신거부</span>
+                      ) : sub.mail_sent_at ? (
                         <span className="text-emerald-600">
                           ✓ {sub.mail_sent_at.slice(0, 10)}
                         </span>
