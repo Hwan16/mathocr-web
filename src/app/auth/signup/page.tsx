@@ -4,6 +4,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { trackEvent } from "@/lib/analytics";
+import { getStoredUtm } from "@/lib/utm";
 
 // 동의받은 약관/방침의 버전(시행일). 문서 개정 시 함께 갱신한다.
 // 서버(api/auth/signup/route.ts)의 CONSENT_VERSION과 반드시 일치시킬 것.
@@ -113,6 +114,8 @@ export default function SignupPage() {
           agreed_terms: agreeTerms,
           agreed_privacy: agreePrivacy,
           consent_version: CONSENT_VERSION,
+          // 가입 출처(M4) — 방문 시 저장해둔 first-touch UTM (없으면 직접 유입)
+          ...(getStoredUtm() ?? {}),
         }),
       });
       const result = await response.json().catch(() => ({}));

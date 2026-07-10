@@ -24,6 +24,9 @@ type SignupBody = {
   agreed_terms?: boolean;
   agreed_privacy?: boolean;
   consent_version?: string;
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
 };
 
 function getClientIp(request: NextRequest): string | null {
@@ -37,6 +40,19 @@ function getClientIp(request: NextRequest): string | null {
 
 function normalizePromoCode(value: unknown): string {
   return typeof value === "string" ? value.trim().toLowerCase() : "";
+}
+
+// 가입 출처(M4) UTM 값 정리 — 클라이언트 입력이므로 제어문자 제거·길이 제한.
+// 빈 값은 null(= 직접 유입)로 기록한다.
+function normalizeUtm(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  let cleaned = "";
+  for (const ch of value) {
+    const code = ch.codePointAt(0) ?? 0;
+    if (code >= 32 && code !== 127) cleaned += ch; // 제어문자(비인쇄)는 버린다
+  }
+  cleaned = cleaned.trim().toLowerCase().slice(0, 100);
+  return cleaned || null;
 }
 
 function promoCodesFromEnv(): string[] {
@@ -101,7 +117,15 @@ export async function POST(request: NextRequest) {
     agreed_terms,
     agreed_privacy,
     consent_version,
+    utm_source,
+    utm_medium,
+    utm_campaign,
   }: SignupBody = await request.json().catch(() => ({}));
+
+  // 가입 출처(M4): source가 없으면 medium/campaign도 버린다(단독으로는 의미 없음)
+  const utmSource = normalizeUtm(utm_source);
+  const utmMedium = utmSource ? normalizeUtm(utm_medium) : null;
+  const utmCampaign = utmSource ? normalizeUtm(utm_campaign) : null;
 
   if (!email || !password) {
     return NextResponse.json(
@@ -154,6 +178,14 @@ export async function POST(request: NextRequest) {
         consent_terms: true,
         consent_privacy: true,
         consented_at: new Date().toISOString(),
+        // 가입 출처 원본 스탬프 — profiles 기록(아래)이 실패해도 백필할 수 있는 사본
+        ...(utmSource
+          ? {
+              utm_source: utmSource,
+              utm_medium: utmMedium,
+              utm_campaign: utmCampaign,
+            }
+          : {}),
       },
     },
   });
@@ -191,6 +223,25 @@ export async function POST(request: NextRequest) {
             user_id: userId,
             error: consentError.message,
           });
+        }
+
+        // (1.5) 가입 출처 기록 (M4 — 채널별 가입 수 집계용, 0012 마이그레이션).
+        // user_metadata에 사본이 있으므로 실패해도 가입은 막지 않는다.
+        if (utmSource) {
+          const { error: utmError } = await admin
+            .from("profiles")
+            .update({
+              utm_source: utmSource,
+              utm_medium: utmMedium,
+              utm_campaign: utmCampaign,
+            })
+            .eq("id", userId);
+          if (utmError) {
+            console.warn("[signup] utm attribution record failed", {
+              user_id: userId,
+              error: utmError.message,
+            });
+          }
         }
 
         // (2) 프로모션 보너스: DB 관리 코드 우선(코드별 크레딧 + 사용 이력 기록),

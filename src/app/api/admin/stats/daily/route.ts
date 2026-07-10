@@ -65,6 +65,8 @@ interface PurchaseBreakdown {
 interface DailyRow {
   date: string;
   signups: number;
+  // 가입 출처별 분해 (M4). 키는 utm_source, UTM 없이 온 가입은 "direct".
+  signup_sources: Record<string, number>;
   conversions: number;
   credits_used: number;
   revenue: number;
@@ -91,11 +93,11 @@ export async function GET(request: NextRequest) {
 
   const adminClient = createAdminClient();
 
-  const [signupRows, paymentRows, conversionRows] = await Promise.all([
-    fetchAllRows<{ created_at: string }>((from, to) =>
+  let [signupRows, paymentRows, conversionRows] = await Promise.all([
+    fetchAllRows<{ created_at: string; utm_source?: string | null }>((from, to) =>
       adminClient
         .from("profiles")
-        .select("created_at")
+        .select("created_at, utm_source")
         .gte("created_at", startIso)
         .order("created_at")
         .range(from, to)
@@ -121,6 +123,19 @@ export async function GET(request: NextRequest) {
     ),
   ]);
 
+  // utm_source 컬럼은 0012 마이그레이션이 만든다 — 적용 전 환경에서도
+  // 대시보드가 죽지 않도록, 실패 시 출처 없이 재조회한다(전부 direct로 집계).
+  if (!signupRows) {
+    signupRows = await fetchAllRows<{ created_at: string }>((from, to) =>
+      adminClient
+        .from("profiles")
+        .select("created_at")
+        .gte("created_at", startIso)
+        .order("created_at")
+        .range(from, to)
+    );
+  }
+
   if (!signupRows || !paymentRows || !conversionRows) {
     return NextResponse.json({ error: "일자별 통계 조회 실패" }, { status: 500 });
   }
@@ -132,6 +147,7 @@ export async function GET(request: NextRequest) {
     byDate.set(key, {
       date: key,
       signups: 0,
+      signup_sources: {},
       conversions: 0,
       credits_used: 0,
       revenue: 0,
@@ -141,7 +157,10 @@ export async function GET(request: NextRequest) {
 
   for (const row of signupRows) {
     const day = byDate.get(kstDateKey(row.created_at));
-    if (day) day.signups += 1;
+    if (!day) continue;
+    day.signups += 1;
+    const source = row.utm_source ?? "direct";
+    day.signup_sources[source] = (day.signup_sources[source] ?? 0) + 1;
   }
 
   // 플랜 구분은 결제 금액으로 판별 (payments에 플랜 컬럼이 없음)

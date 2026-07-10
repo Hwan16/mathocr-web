@@ -963,6 +963,8 @@ interface PurchaseBreakdown {
 interface DailyRow {
   date: string;
   signups: number;
+  // 가입 출처별 분해 (M4). 키는 utm_source, UTM 없이 온 가입은 "direct".
+  signup_sources?: Record<string, number>;
   conversions: number;
   credits_used: number;
   revenue: number;
@@ -1005,6 +1007,39 @@ const PLAN_LABELS: Record<string, string> = {
   pro: "Pro",
   other: "기타",
 };
+
+// 가입 출처(UTM) 표시 — 표기 규약(docs/MARKETING_2026-07-10.md M4)의 소스만 고정 배색.
+// 규약 밖 소스가 들어와도 회색으로 원문 그대로 노출된다.
+const SOURCE_LABELS: Record<string, string> = {
+  direct: "직접 유입",
+  naver: "네이버",
+  google: "구글",
+  meta: "메타",
+  youtube: "유튜브",
+  community: "커뮤니티",
+  referral: "추천",
+};
+const SOURCE_COLORS: Record<string, string> = {
+  direct: "#a1a1aa",
+  naver: "#03c75a",
+  google: "#4285f4",
+  meta: "#d62976",
+  youtube: "#ff0033",
+  community: "#eda100",
+  referral: "#14b8a6",
+};
+const sourceLabel = (s: string) => SOURCE_LABELS[s] ?? s;
+const sourceColor = (s: string) => SOURCE_COLORS[s] ?? "#71717a";
+
+// 일자별 테이블용 컴팩트 출처 표기 — 광고·채널 유입(UTM 있는 것)만 표시
+function fmtSources(sources: Record<string, number> | undefined): string {
+  const tagged = Object.entries(sources ?? {}).filter(([s]) => s !== "direct");
+  if (tagged.length === 0) return "—";
+  return tagged
+    .sort((a, b) => b[1] - a[1])
+    .map(([s, c]) => `${sourceLabel(s)} ${c}`)
+    .join(" · ");
+}
 
 const fmtInt = (n: number) => n.toLocaleString("ko-KR");
 const fmtKrw = (n: number) => `₩${n.toLocaleString("ko-KR")}`;
@@ -1114,6 +1149,16 @@ function StatsTab() {
     { signups: 0, purchases: 0, credits: 0, revenue: 0 }
   );
 
+  // 기간 내 가입 출처별 합계 (많은 순) — 채널별 예산 판단(M4)의 핵심 숫자
+  const sourceTotals = Object.entries(
+    (daily ?? []).reduce<Record<string, number>>((acc, d) => {
+      for (const [source, count] of Object.entries(d.signup_sources ?? {})) {
+        acc[source] = (acc[source] ?? 0) + count;
+      }
+      return acc;
+    }, {})
+  ).sort((a, b) => b[1] - a[1]);
+
   return (
     <div className="space-y-8">
       {/* 누적 요약 */}
@@ -1171,6 +1216,24 @@ function StatsTab() {
                   series={[{ label: "가입", color: "#7c3aed" }]}
                   format={(n) => `${fmtInt(n)}명`}
                 />
+                {/* 기간 내 가입 출처별 합계 (M4 — UTM 기반, null은 직접 유입) */}
+                {sourceTotals.length > 0 && (
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3">
+                    {sourceTotals.map(([source, count]) => (
+                      <span
+                        key={source}
+                        className="flex items-center gap-1.5 text-xs text-zinc-600"
+                      >
+                        <span
+                          className="inline-block w-2.5 h-2.5 rounded-full"
+                          style={{ backgroundColor: sourceColor(source) }}
+                        />
+                        {sourceLabel(source)}{" "}
+                        <span className="text-zinc-400">{fmtInt(count)}</span>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="bezel-card rounded-2xl p-5">
@@ -1529,6 +1592,7 @@ function DailyTable({
             <tr className="text-left text-zinc-500 border-b border-[var(--border-subtle)]">
               <th className="px-6 py-2.5 font-medium">날짜</th>
               <th className="px-4 py-2.5 font-medium text-right">가입</th>
+              <th className="px-4 py-2.5 font-medium text-xs">유입 출처</th>
               <th className="px-4 py-2.5 font-medium text-right">구매</th>
               {visiblePlanKeys.map((k) => (
                 <th key={k} className="px-4 py-2.5 font-medium text-right text-xs">
@@ -1553,6 +1617,9 @@ function DailyTable({
                 >
                   <td className="px-6 py-2">{d.date}</td>
                   <td className="px-4 py-2 text-right">{fmtInt(d.signups)}</td>
+                  <td className="px-4 py-2 text-xs whitespace-nowrap text-zinc-500">
+                    {fmtSources(d.signup_sources)}
+                  </td>
                   <td className="px-4 py-2 text-right font-medium">
                     {fmtInt(d.purchases.total)}
                   </td>

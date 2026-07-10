@@ -10,6 +10,9 @@ create table public.profiles (
   role text not null default 'user' check (role in ('user', 'admin')),
   credits integer not null default 5,  -- 가입 시 무료 5회 제공
   expires_at timestamptz,              -- null이면 만료 없음
+  utm_source text,                     -- 가입 출처 (M4, 0012) — null = 직접 유입
+  utm_medium text,
+  utm_campaign text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
