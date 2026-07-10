@@ -4,11 +4,12 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { trackEvent } from "@/lib/analytics";
+import { metaPixelTrack } from "@/lib/meta-pixel";
 import { getStoredUtm } from "@/lib/utm";
 
 // 동의받은 약관/방침의 버전(시행일). 문서 개정 시 함께 갱신한다.
 // 서버(api/auth/signup/route.ts)의 CONSENT_VERSION과 반드시 일치시킬 것.
-const CONSENT_VERSION = "2026-07-09";
+const CONSENT_VERSION = "2026-07-11";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
@@ -133,6 +134,7 @@ export default function SignupPage() {
       // 이메일 인증이 켜져 있으면 세션이 없다 → 메일 확인 안내로 전환
       if (result.needs_confirmation) {
         trackEvent("sign_up", { method: "password" });
+        metaPixelTrack("CompleteRegistration");
         setConfirmEmailSent(true);
         return;
       }
@@ -150,6 +152,7 @@ export default function SignupPage() {
 
       // 가입 성공 → 자동 로그인 → 대시보드
       trackEvent("sign_up", { method: "password" });
+      metaPixelTrack("CompleteRegistration");
       router.push("/dashboard");
       router.refresh();
     } catch {

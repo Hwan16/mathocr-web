@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import StructuredData from "./structured-data";
 import UtmTracker from "@/components/UtmTracker";
+import MetaPixel from "@/components/MetaPixel";
 import "./globals.css";
 
 // GA4 측정 ID (공개 값 — 모든 페이지 HTML에 노출되는 값이라 비밀 아님)
@@ -115,6 +116,8 @@ export default function RootLayout({
         <StructuredData />
         {/* 가입 출처(UTM) 추적 — 광고 랜딩 페이지가 어디든 잡히도록 전역 마운트 */}
         <UtmTracker />
+        {/* 메타 픽셀 — NEXT_PUBLIC_META_PIXEL_ID 설정 시에만 활성 (M6) */}
+        <MetaPixel />
       </body>
       {/* GA4: 실제 배포(production)에서만 로드 — 로컬/개발 접속은 추적하지 않음 */}
       {process.env.NODE_ENV === "production" && (

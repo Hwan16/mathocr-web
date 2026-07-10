@@ -19,7 +19,10 @@ export default function PrivacyPage() {
             </span>
           </a>
           <h1 className="text-2xl font-bold mt-4">개인정보처리방침</h1>
-          <p className="text-zinc-500 text-sm mt-2">시행일: 2026년 7월 8일</p>
+          <p className="text-zinc-500 text-sm mt-2">
+            시행일: 2026년 7월 11일 (최초 시행 2026년 7월 8일 · 2026년 7월 11일
+            개정: 제7조의2 온라인 맞춤형 광고 고지 신설)
+          </p>
         </div>
 
         {/* Content */}
@@ -242,6 +245,49 @@ function PrivacyContent() {
           서비스는 이용 통계 분석(Google Analytics)을 위하여 쿠키를 사용할 수
           있습니다. 이용자는 웹 브라우저의 설정을 통해 쿠키 저장을 거부하거나
           삭제할 수 있으며, 이 경우 서비스 이용에 일부 제한이 있을 수 있습니다.
+        </p>
+      </section>
+
+      {/* 제7조의2 — 2026-07-11 신설: 메타 픽셀 등 맞춤형 광고 도구 도입 대비 고지.
+          ⚠️ 픽셀 활성화(NEXT_PUBLIC_META_PIXEL_ID 설정)는 이 조항 배포 이후에만 할 것 */}
+      <section>
+        <h2 className="text-lg font-semibold text-zinc-900 mb-3">
+          제7조의2 (온라인 맞춤형 광고를 위한 행태정보의 수집·이용)
+        </h2>
+        <p className="mb-2">
+          ① 서비스는 이용자에게 관련성 높은 광고를 제공하기 위하여 다음과 같이
+          행태정보를 수집·이용할 수 있습니다.
+        </p>
+        <ul className="list-disc pl-5 space-y-2">
+          <li>
+            수집하는 행태정보의 항목: 웹사이트 방문 이력, 페이지 조회·클릭 등
+            서비스 내 활동 정보 (성명·이메일 등 개인을 직접 식별하는 정보는
+            포함하지 않습니다)
+          </li>
+          <li>
+            수집 방법: 이용자가 웹사이트 방문 시 광고 사업자가 제공하는 도구(메타
+            픽셀 — Meta Platforms, Inc.)를 통한 자동 수집
+          </li>
+          <li>
+            수집 목적: 관심 기반 맞춤형 광고 제공(리타게팅) 및 광고 성과 측정
+          </li>
+          <li>
+            보유·이용 기간: 각 광고 사업자의 정책에 따르며, 메타의 경우 최대
+            180일
+          </li>
+        </ul>
+        <p className="mt-2 mb-2">
+          ② 이용자는 다음 방법으로 맞춤형 광고를 차단하거나 거부할 수 있습니다.
+        </p>
+        <ul className="list-disc pl-5 space-y-2">
+          <li>웹 브라우저의 쿠키 차단 설정 또는 차단 확장 프로그램 사용</li>
+          <li>
+            메타 광고 설정(facebook.com/adpreferences)에서 맞춤형 광고 표시 해제
+          </li>
+        </ul>
+        <p className="mt-2">
+          ③ 행태정보 수집·이용에 관한 문의는 제11조의 개인정보 보호책임자에게 할
+          수 있습니다.
         </p>
       </section>
 
