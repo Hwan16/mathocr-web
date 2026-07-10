@@ -180,24 +180,13 @@ export default function EarlybirdPage() {
             <div className="px-7 pb-7 pt-1">
               <h1 className="text-xl font-bold text-zinc-900 leading-snug">
                 얼리버드 신청하면{" "}
-                <span className="text-violet-700">오픈 날 30문제 무료</span>
+                <span className="text-violet-700">30문제 무료!</span>
               </h1>
-              <p className="mt-1.5 text-sm text-zinc-500 leading-relaxed">
-                정식 오픈 준비 중이에요. 이메일만 남기면 — 결제도 가입도 지금은
-                없어요.
+              <p className="mt-2.5 text-sm text-zinc-600 leading-relaxed">
+                7월 중 정식 오픈 예정이에요.
+                <br />
+                이메일을 남겨주시면, 정식 오픈날 프로모션 코드를 보내드려요.
               </p>
-
-              <ul className="mt-4 space-y-1.5 text-sm text-zinc-700">
-                <li className="flex items-start gap-2">
-                  <span className="text-[var(--accent)] mt-0.5">✓</span>
-                  오픈 날 <b>총 30문제 무료 코드</b>를 메일로 (가입 기본 5 +
-                  코드 25 · 코드 등록 후 7일)
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-[var(--accent)] mt-0.5">✓</span>
-                  오픈 소식을 가장 먼저 받아보세요
-                </li>
-              </ul>
 
               <form onSubmit={handleSubmit} className="mt-5 space-y-4">
                 <div>
@@ -233,8 +222,8 @@ export default function EarlybirdPage() {
                     </label>
                   </div>
                   <p className="text-[11px] text-zinc-400 leading-relaxed pl-7">
-                    수집 항목: 이메일 · 목적: 얼리버드 오픈/혜택 안내 · 보유:
-                    안내 완료 또는 동의 철회 시까지 · 수신거부: 메일 하단
+                    수집 항목: 이메일 · 목적: 얼리버드 오픈 안내 / 혜택 지급 ·
+                    보유: 안내 완료 또는 동의 철회 시까지 · 수신거부: 메일 하단
                     링크로 언제든 가능
                   </p>
                 </div>

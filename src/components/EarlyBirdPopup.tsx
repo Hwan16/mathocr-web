@@ -91,22 +91,19 @@ export default function EarlyBirdPopup() {
         <div className="px-7 pb-6 pt-1">
           <h2 className="text-2xl font-bold leading-snug text-zinc-900">
             얼리버드 신청하면{" "}
-            <span className="text-violet-700">오픈 날 30문제 무료</span>
+            <span className="text-violet-700">30문제 무료!</span>
           </h2>
-          <p className="mt-1.5 text-sm text-zinc-500 leading-relaxed">
-            정식 오픈 준비 중 — 이메일만 남기면 무료 코드를 가장 먼저
-            보내드려요.
+          <p className="mt-3 text-sm leading-relaxed">
+            <span className="font-semibold text-zinc-800">AI MathOCR</span>
+            <br />
+            <span className="font-semibold text-violet-700">
+              7월 중 정식 Open!
+            </span>
+            <br />
+            <span className="text-zinc-600">
+              이메일을 남겨주시면, 정식 오픈날 프로모션 코드를 보내드려요.
+            </span>
           </p>
-          <ul className="mt-3 space-y-2 text-sm text-zinc-700">
-            <li className="flex items-start gap-2">
-              <span className="text-[var(--accent)] mt-0.5">✓</span>
-              오픈 날 총 <b>30문제 무료 코드</b>를 메일로 (가입 5 + 코드 25)
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-[var(--accent)] mt-0.5">✓</span>
-              지금은 <b>이메일 신청뿐</b> — 결제·가입 없음
-            </li>
-          </ul>
 
           <a
             href="/earlybird"
