@@ -11,7 +11,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 
-type Tab = "users" | "logs" | "stats" | "reports" | "refunds" | "promos";
+type Tab = "users" | "logs" | "stats" | "reports" | "refunds" | "promos" | "earlybird";
 
 interface AdminUser {
   id: string;
@@ -168,6 +168,7 @@ export default function AdminPage() {
   const tabs: { key: Tab; label: string }[] = [
     { key: "users", label: "유저 관리" },
     { key: "promos", label: "프로모션 코드" },
+    { key: "earlybird", label: "얼리버드" },
     { key: "reports", label: "변환 리포트" },
     { key: "refunds", label: "크레딧 반환" },
     { key: "logs", label: "오류 로그" },
@@ -221,10 +222,276 @@ export default function AdminPage() {
 
         {tab === "users" && <UsersTab />}
         {tab === "promos" && <PromosTab />}
+        {tab === "earlybird" && <EarlybirdTab />}
         {tab === "reports" && <ReportsTab />}
         {tab === "refunds" && <RefundsTab />}
         {tab === "logs" && <LogsTab />}
         {tab === "stats" && <StatsTab />}
+      </div>
+    </div>
+  );
+}
+
+/* ── 얼리버드 탭 (0013/0014) — 메일 수신 동의자 명단 + 오픈 안내 메일 발송 ── */
+interface EarlybirdSubscriber {
+  email: string | null;
+  created_at: string;
+  credits: number;
+  expires_at: string | null;
+  utm_source: string | null;
+  mail_sent_at: string | null;
+}
+
+interface EarlybirdData {
+  summary: {
+    opted_in: number;
+    mail_sent: number;
+    mail_pending: number;
+    earlybird_redeemed: number | null;
+    earlybird_cap: number | null;
+    earlybird_code_active: boolean | null;
+  };
+  subscribers: EarlybirdSubscriber[];
+}
+
+function EarlybirdTab() {
+  const [data, setData] = useState<EarlybirdData | null>(null);
+  const [loadError, setLoadError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [sendResult, setSendResult] = useState("");
+
+  async function load() {
+    setLoadError("");
+    const res = await fetch("/api/admin/earlybird");
+    if (!res.ok) {
+      setLoadError("명단을 불러오지 못했습니다.");
+      return;
+    }
+    setData((await res.json()) as EarlybirdData);
+  }
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  // 발송 전 점검 (dry) — 대상 수·Resend 키·수신거부 서명 설정 여부 확인
+  async function handleDryRun() {
+    setBusy(true);
+    setSendResult("");
+    try {
+      const res = await fetch("/api/admin/earlybird/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dry: true }),
+      });
+      const r = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setSendResult(`점검 실패: ${r.error ?? res.status}`);
+        return;
+      }
+      setSendResult(
+        `[발송 전 점검] 미발송 ${r.pending}명 (1회 최대 ${r.batch_size}명) · ` +
+          `Resend 키 ${r.resend_key_configured ? "설정됨" : "❌ 미설정(Vercel env 필요)"} · ` +
+          `수신거부 서명 ${r.unsubscribe_configured ? "설정됨" : "❌ 미설정(CRON_SECRET)"} · ` +
+          `제목: ${r.preview_subject}`
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleSend() {
+    const pending = data?.summary.mail_pending ?? 0;
+    if (
+      !window.confirm(
+        `미발송 ${pending}명에게 오픈 안내 메일을 발송합니다.\n` +
+          `(한 번에 최대 90명 — Resend 무료 티어 일 100통 보호. 남으면 내일 다시 누르면 이어서 발송)\n\n진행할까요?`
+      )
+    ) {
+      return;
+    }
+    setBusy(true);
+    setSendResult("발송 중... (1초에 1~2명씩 천천히 보냅니다)");
+    try {
+      const res = await fetch("/api/admin/earlybird/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dry: false }),
+      });
+      const r = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setSendResult(`발송 실패: ${r.error ?? res.status}`);
+        return;
+      }
+      setSendResult(
+        `발송 완료: ${r.sent}명 성공` +
+          (r.failed?.length ? ` · 실패 ${r.failed.length}명 (${r.failed.join(", ")})` : "") +
+          (r.remaining > 0 ? ` · 남은 대상 ${r.remaining}명 — 내일 다시 발송 버튼을 누르세요` : " · 전원 발송 끝")
+      );
+      await load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // 명단 CSV 다운로드 (엑셀용 BOM 포함)
+  function downloadCsv() {
+    if (!data) return;
+    const header = "이메일,가입일,크레딧,만료일,유입출처,메일발송\n";
+    const body = data.subscribers
+      .map((s) =>
+        [
+          s.email ?? "",
+          s.created_at.slice(0, 10),
+          s.credits,
+          s.expires_at ? s.expires_at.slice(0, 10) : "",
+          s.utm_source ?? "직접",
+          s.mail_sent_at ? s.mail_sent_at.slice(0, 10) : "미발송",
+        ].join(",")
+      )
+      .join("\n");
+    const blob = new Blob(["﻿" + header + body], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `earlybird_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  if (loadError) {
+    return <div className="text-red-600 text-sm">{loadError}</div>;
+  }
+  if (!data) {
+    return <div className="text-zinc-500">불러오는 중...</div>;
+  }
+
+  const s = data.summary;
+  const cards = [
+    { label: "메일 수신 동의자", value: `${fmtInt(s.opted_in)}명` },
+    { label: "오픈 메일 발송", value: `${fmtInt(s.mail_sent)} / ${fmtInt(s.opted_in)}명` },
+    {
+      label: "얼리버드 코드 사용",
+      value:
+        s.earlybird_redeemed !== null
+          ? `${fmtInt(s.earlybird_redeemed)} / ${s.earlybird_cap ?? "∞"}명`
+          : "—",
+    },
+    {
+      label: "코드 상태",
+      value:
+        s.earlybird_code_active === null
+          ? "—"
+          : s.earlybird_code_active
+            ? "진행 중"
+            : "종료됨",
+    },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* 요약 카드 */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {cards.map((c) => (
+          <div key={c.label} className="bezel-card rounded-2xl p-5">
+            <p className="text-xs text-zinc-500 mb-1">{c.label}</p>
+            <p className="text-xl font-bold text-zinc-900">{c.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* 발송 컨트롤 */}
+      <div className="bezel-card rounded-2xl p-5">
+        <h3 className="text-sm font-semibold text-zinc-800 mb-1">
+          오픈 안내 메일 (결제 오픈 날 사용)
+        </h3>
+        <p className="text-xs text-zinc-500 mb-4 leading-relaxed">
+          수신 동의자 중 미발송자에게만 나가고, 보낸 사람은 다시 발송되지 않습니다.
+          발송 전에 [발송 전 점검]으로 대상 수와 설정(Resend 키)을 확인하세요.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={handleDryRun}
+            disabled={busy}
+            className="px-4 py-2 rounded-lg border border-zinc-300 text-sm text-zinc-700 hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:opacity-40 transition-colors"
+          >
+            발송 전 점검
+          </button>
+          <button
+            onClick={handleSend}
+            disabled={busy || s.mail_pending === 0}
+            className="px-4 py-2 rounded-lg bg-[var(--accent)] text-white text-sm font-semibold hover:bg-[var(--accent-hover)] disabled:opacity-40 transition-colors"
+          >
+            {busy ? "처리 중..." : `오픈 메일 발송 (미발송 ${fmtInt(s.mail_pending)}명)`}
+          </button>
+          <button
+            onClick={downloadCsv}
+            className="px-4 py-2 rounded-lg border border-zinc-300 text-sm text-zinc-700 hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors"
+          >
+            명단 CSV 다운로드
+          </button>
+        </div>
+        {sendResult && (
+          <p className="mt-3 text-xs text-zinc-600 bg-zinc-50 border border-zinc-200 rounded-lg p-3 leading-relaxed">
+            {sendResult}
+          </p>
+        )}
+      </div>
+
+      {/* 명단 테이블 */}
+      <div className="bezel-card rounded-2xl overflow-hidden">
+        <div className="px-6 py-3 border-b border-[var(--border-subtle)]">
+          <h3 className="text-sm font-medium text-zinc-700">
+            수신 동의자 명단 ({fmtInt(s.opted_in)}명)
+          </h3>
+        </div>
+        <div className="overflow-x-auto max-h-96 overflow-y-auto">
+          <table className="w-full text-sm">
+            <thead className="sticky top-0 bg-white">
+              <tr className="text-left text-zinc-500 border-b border-[var(--border-subtle)]">
+                <th className="px-6 py-2.5 font-medium">이메일</th>
+                <th className="px-4 py-2.5 font-medium">가입일</th>
+                <th className="px-4 py-2.5 font-medium text-right">크레딧</th>
+                <th className="px-4 py-2.5 font-medium">유입</th>
+                <th className="px-4 py-2.5 font-medium">오픈 메일</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.subscribers.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-8 text-center text-zinc-400">
+                    아직 수신 동의자가 없습니다 — 얼리버드 가입이 들어오면 여기에 쌓입니다.
+                  </td>
+                </tr>
+              ) : (
+                data.subscribers.map((sub, i) => (
+                  <tr
+                    key={`${sub.email}-${i}`}
+                    className="border-b border-[var(--border-subtle)] last:border-0 text-zinc-700"
+                  >
+                    <td className="px-6 py-2">{sub.email ?? "—"}</td>
+                    <td className="px-4 py-2 text-zinc-500">
+                      {sub.created_at.slice(0, 10)}
+                    </td>
+                    <td className="px-4 py-2 text-right">{fmtInt(sub.credits)}</td>
+                    <td className="px-4 py-2 text-xs text-zinc-500">
+                      {sub.utm_source ?? "직접"}
+                    </td>
+                    <td className="px-4 py-2 text-xs">
+                      {sub.mail_sent_at ? (
+                        <span className="text-emerald-600">
+                          ✓ {sub.mail_sent_at.slice(0, 10)}
+                        </span>
+                      ) : (
+                        <span className="text-zinc-400">미발송</span>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

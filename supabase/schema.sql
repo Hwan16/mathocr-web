@@ -14,6 +14,7 @@ create table public.profiles (
   utm_medium text,
   utm_campaign text,
   marketing_opt_in boolean not null default false, -- 마케팅 메일 수신 동의 (0013, 얼리버드 혜택 조건)
+  earlybird_mail_sent_at timestamptz,  -- 얼리버드 오픈 메일 발송 시각 (0014) — null = 미발송
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
