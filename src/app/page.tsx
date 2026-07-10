@@ -162,8 +162,9 @@ export default function Home() {
               </p>
             </div>
 
-            {/* 우: 데스크톱 앱 화면 (실제 앱 v1.8 UI 반영 목업 — 계정 칩·해설 모드·플로팅 페이지 컨트롤)
-                TODO: 실제 앱 스크린샷 확보 시 /public/guide/hero-app.png 로 교체 */}
+            {/* 우: 데스크톱 앱 화면 목업 — placeholder 아님, 의도된 디자인(사용자 결정 2026-07-11).
+                실제 스크린샷은 하단 가이드·쇼케이스 섹션에 충분해서 히어로는 깔끔한 목업으로 유지.
+                실사진으로 교체하지 말 것 — 앱 UI가 크게 바뀌면 목업 디테일만 동기화. */}
             <div className="hidden sm:block">
               <div className="rounded-xl border border-zinc-300 bg-white shadow-[0_24px_64px_-16px_rgba(24,24,27,0.18)] overflow-hidden">
                 {/* 타이틀바 */}
