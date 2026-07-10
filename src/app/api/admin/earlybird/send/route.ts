@@ -10,8 +10,8 @@ import { NextRequest, NextResponse } from "next/server";
 //   remaining 으로 표시되고, 다음 날 버튼을 다시 누르면 이어서 발송된다.
 // - dry: true 면 발송 없이 대상·설정 점검만 (오픈 전 미리 확인용)
 // - 법적 요건: 제목 (광고) 표기 + 전송자 명시 + 수신거부 링크 (정보통신망법)
-//
-// ⚠️ 오픈 직전 확정: OFFER_HTML(얼리버드 구매 혜택 문구)를 실제 혜택으로 교체할 것.
+// - 혜택 정책(사용자 확정 2026-07-11): 얼리버드 혜택은 가입 시 30문제가 전부 —
+//   별도 구매 할인 없음. 이 메일은 "오픈했으니 충전 가능" 안내만 한다.
 
 export const dynamic = "force-dynamic";
 
@@ -19,8 +19,6 @@ const BATCH_SIZE = 90;
 const FROM = "AI MathOCR <noreply@mathocr.ai.kr>";
 const SITE_URL = "https://mathocr.ai.kr";
 
-// ⚠️ 오픈 직전 확정할 것 (사용자 결정): 얼리버드 구매 혜택의 실제 내용/프로모 코드.
-// 아래는 혜택 미확정 상태에서도 보낼 수 있는 기본 문구.
 const OFFER_HTML = `
   <div style="border:1px solid #e4e4e7;border-radius:12px;padding:16px 20px;margin:0 0 20px;">
     <p style="margin:0 0 8px;font-weight:700;">🎁 얼리버드 등록자님께</p>

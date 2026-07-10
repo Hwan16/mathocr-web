@@ -253,7 +253,7 @@ function EarlybirdContent() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[var(--accent)] mt-0.5">✓</span>
-                  정식 오픈 소식과 얼리버드 구매 혜택을 메일로 안내
+                  정식 오픈 소식을 메일로 가장 먼저 안내
                 </li>
               </ul>
 
