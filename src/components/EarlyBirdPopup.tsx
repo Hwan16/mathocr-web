@@ -94,8 +94,7 @@ export default function EarlyBirdPopup() {
             <span className="text-violet-700">30문제 무료!</span>
           </h2>
           <p className="mt-3 text-sm leading-relaxed">
-            <span className="font-semibold text-zinc-800">AI MathOCR</span>
-            <br />
+            <span className="font-semibold text-zinc-800">AI MathOCR</span>{" "}
             <span className="font-semibold text-violet-700">
               7월 중 정식 Open!
             </span>
