@@ -182,9 +182,11 @@ revoke execute on function public.redeem_promo_code(uuid, text, text, text, text
 grant execute on function public.redeem_promo_code(uuid, text, text, text, text) to service_role;
 
 -- ============================================
--- 5. earlybird 코드 생성 (선착순 200명 · 25크레딧 · 유효 30일)
+-- 5. earlybird 코드 생성 (선착순 200명 · 25크레딧 · 유효 7일)
 -- ============================================
+-- 2026-07-11: 최초 적용은 30일이었으나 같은 날 사용자 지시로 7일로 운영 변경
+-- (프로덕션은 직접 update 완료). 재실행 대비 값도 7로 유지.
 insert into public.promo_codes (code, credits, max_uses, validity_days, memo)
-values ('earlybird', 25, 200, 30,
-        '얼리버드 선착순 200명 — 가입 기본 5 + 보너스 25 = 총 30문제. 결제 오픈 시 비활성화할 것 (2026-07-11)')
+values ('earlybird', 25, 200, 7,
+        '얼리버드 선착순 200명 — 가입 기본 5 + 보너스 25 = 총 30문제, 유효 7일. 결제 오픈 시 비활성화할 것 (2026-07-11)')
 on conflict (code) do nothing;
