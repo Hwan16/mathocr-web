@@ -13,6 +13,7 @@ create table public.profiles (
   utm_source text,                     -- 가입 출처 (M4, 0012) — null = 직접 유입
   utm_medium text,
   utm_campaign text,
+  marketing_opt_in boolean not null default false, -- 마케팅 메일 수신 동의 (0013, 얼리버드 혜택 조건)
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -495,7 +496,7 @@ create table if not exists public.user_consents (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references public.profiles(id) on delete set null,
   email text,                            -- 탈퇴 후 식별용 이메일 스냅샷
-  doc_type text not null check (doc_type in ('terms', 'privacy')),
+  doc_type text not null check (doc_type in ('terms', 'privacy', 'marketing')),
   version text not null,
   agreed boolean not null default true,
   ip text,
@@ -540,27 +541,42 @@ create table if not exists public.promo_redemptions (
   email text,
   credits_granted integer not null,
   source text not null default 'mypage' check (source in ('mypage', 'signup')),
+  normalized_email text, -- 알리아스 접은 이메일 (0013 어뷰징 가드 — 탈퇴 후에도 남아 재수령 차단)
+  ip text,               -- 상환 요청 IP (0013 — 같은 코드 IP당 24시간 2회 제한)
   created_at timestamptz not null default now(),
   unique (promo_code_id, user_id)
 );
 
 create index if not exists idx_promo_redemptions_code_id on public.promo_redemptions(promo_code_id);
 create index if not exists idx_promo_redemptions_user_id on public.promo_redemptions(user_id);
+-- 같은 코드는 같은 사람(정규화 이메일)당 1회 (0013)
+create unique index if not exists uq_promo_redemptions_code_normemail
+  on public.promo_redemptions (promo_code_id, normalized_email)
+  where normalized_email is not null;
+create index if not exists idx_promo_redemptions_code_ip
+  on public.promo_redemptions (promo_code_id, ip)
+  where ip is not null;
 
 alter table public.promo_codes enable row level security;
 alter table public.promo_redemptions enable row level security;
 
--- 상환 함수 (원자적). 본문은 migrations/0008_promo_codes.sql 과 동일하게 유지.
+-- 상환 함수 (원자적). 본문은 migrations/0013_earlybird.sql 과 동일하게 유지.
+-- 가드(0013): 알리아스 정규화 이메일 중복 차단 + 같은 IP 24시간 2회 제한
+drop function if exists public.redeem_promo_code(uuid, text, text);
+
 create or replace function public.redeem_promo_code(
   p_user_id uuid,
   p_code text,
-  p_source text default 'mypage'
+  p_source text default 'mypage',
+  p_normalized_email text default null,
+  p_ip text default null
 )
 returns jsonb as $$
 declare
   v_promo record;
   v_email text;
   v_use_count integer;
+  v_ip_count integer;
   v_new_credits integer;
   v_new_expires timestamptz;
 begin
@@ -596,6 +612,27 @@ begin
     return jsonb_build_object('success', false, 'error', 'already_redeemed');
   end if;
 
+  -- 가드 A: 같은 사람의 이메일 알리아스 변형 재수령 차단 (탈퇴 이력 포함)
+  if p_normalized_email is not null and exists (
+    select 1 from public.promo_redemptions
+    where promo_code_id = v_promo.id and normalized_email = p_normalized_email
+  ) then
+    return jsonb_build_object('success', false, 'error', 'already_redeemed');
+  end if;
+
+  -- 가드 B: 같은 IP 에서 같은 코드 24시간 내 2회까지
+  if p_ip is not null then
+    select count(*) into v_ip_count
+    from public.promo_redemptions
+    where promo_code_id = v_promo.id
+      and ip = p_ip
+      and created_at > now() - interval '24 hours';
+
+    if v_ip_count >= 2 then
+      return jsonb_build_object('success', false, 'error', 'ip_limit');
+    end if;
+  end if;
+
   if v_promo.max_uses is not null then
     select count(*) into v_use_count
     from public.promo_redemptions
@@ -607,8 +644,10 @@ begin
   end if;
 
   begin
-    insert into public.promo_redemptions (promo_code_id, user_id, email, credits_granted, source)
-    values (v_promo.id, p_user_id, v_email, v_promo.credits, p_source);
+    insert into public.promo_redemptions
+      (promo_code_id, user_id, email, credits_granted, source, normalized_email, ip)
+    values
+      (v_promo.id, p_user_id, v_email, v_promo.credits, p_source, p_normalized_email, p_ip);
   exception when unique_violation then
     return jsonb_build_object('success', false, 'error', 'already_redeemed');
   end;
@@ -646,5 +685,5 @@ begin
 end;
 $$ language plpgsql security definer set search_path = public, pg_temp;
 
-revoke execute on function public.redeem_promo_code(uuid, text, text) from public, anon, authenticated;
-grant execute on function public.redeem_promo_code(uuid, text, text) to service_role;
+revoke execute on function public.redeem_promo_code(uuid, text, text, text, text) from public, anon, authenticated;
+grant execute on function public.redeem_promo_code(uuid, text, text, text, text) to service_role;

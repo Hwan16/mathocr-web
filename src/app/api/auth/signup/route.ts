@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { normalizeEmailAlias } from "@/lib/email";
 import { NextRequest, NextResponse } from "next/server";
 
 // IP당 가입 시도 제한 (B3 — 무료 크레딧 파밍 봇 방어의 1차 저지선).
@@ -25,6 +26,8 @@ type SignupBody = {
   agreed_terms?: boolean;
   agreed_privacy?: boolean;
   consent_version?: string;
+  // 얼리버드 등 혜택 조건부 마케팅 수신 동의 (0013). 일반 가입은 보내지 않는다.
+  marketing_opt_in?: boolean;
   utm_source?: string;
   utm_medium?: string;
   utm_campaign?: string;
@@ -118,10 +121,13 @@ export async function POST(request: NextRequest) {
     agreed_terms,
     agreed_privacy,
     consent_version,
+    marketing_opt_in,
     utm_source,
     utm_medium,
     utm_campaign,
   }: SignupBody = await request.json().catch(() => ({}));
+
+  const marketingOptIn = marketing_opt_in === true;
 
   // 가입 출처(M4): source가 없으면 medium/campaign도 버린다(단독으로는 의미 없음)
   const utmSource = normalizeUtm(utm_source);
@@ -179,6 +185,7 @@ export async function POST(request: NextRequest) {
         consent_terms: true,
         consent_privacy: true,
         consented_at: new Date().toISOString(),
+        ...(marketingOptIn ? { marketing_opt_in: true } : {}),
         // 가입 출처 원본 스탬프 — profiles 기록(아래)이 실패해도 백필할 수 있는 사본
         ...(utmSource
           ? {
@@ -202,6 +209,8 @@ export async function POST(request: NextRequest) {
     promoCodesFromEnv().includes(normalizedPromoCode);
   let promoApplied = false;
   let promoBonusCredits = 0;
+  // 코드 미적용 사유 (얼리버드 페이지가 exhausted/already_redeemed/ip_limit 안내에 사용)
+  let promoErrorCode: string | null = null;
 
   // 프로필 생성(트리거) 이후에 (1) 동의 이력 기록, (2) 프로모션 보너스를 수행.
   if (userId) {
@@ -226,21 +235,42 @@ export async function POST(request: NextRequest) {
           });
         }
 
-        // (1.5) 가입 출처 기록 (M4 — 채널별 가입 수 집계용, 0012 마이그레이션).
-        // user_metadata에 사본이 있으므로 실패해도 가입은 막지 않는다.
-        if (utmSource) {
-          const { error: utmError } = await admin
-            .from("profiles")
-            .update({
-              utm_source: utmSource,
-              utm_medium: utmMedium,
-              utm_campaign: utmCampaign,
-            })
-            .eq("id", userId);
-          if (utmError) {
-            console.warn("[signup] utm attribution record failed", {
+        // (1.2) 마케팅 수신 동의 감사 기록 (0013 — 얼리버드 혜택 조건).
+        // 약관·개인정보 행과 분리 삽입: 이 행이 실패해도 필수 동의 기록은 남는다.
+        if (marketingOptIn) {
+          const { error: marketingConsentError } = await admin
+            .from("user_consents")
+            .insert([
+              { user_id: userId, email, doc_type: "marketing", version: CONSENT_VERSION, agreed: true, ip: clientIp, user_agent: userAgent },
+            ]);
+          if (marketingConsentError) {
+            console.warn("[signup] marketing consent record failed", {
               user_id: userId,
-              error: utmError.message,
+              error: marketingConsentError.message,
+            });
+          }
+        }
+
+        // (1.5) 가입 출처(M4)·마케팅 수신 여부(0013)를 프로필에 기록.
+        // user_metadata에 사본이 있으므로 실패해도 가입은 막지 않는다.
+        const profilePatch: Record<string, unknown> = {};
+        if (utmSource) {
+          profilePatch.utm_source = utmSource;
+          profilePatch.utm_medium = utmMedium;
+          profilePatch.utm_campaign = utmCampaign;
+        }
+        if (marketingOptIn) {
+          profilePatch.marketing_opt_in = true;
+        }
+        if (Object.keys(profilePatch).length > 0) {
+          const { error: patchError } = await admin
+            .from("profiles")
+            .update(profilePatch)
+            .eq("id", userId);
+          if (patchError) {
+            console.warn("[signup] profile attribution/opt-in record failed", {
+              user_id: userId,
+              error: patchError.message,
             });
           }
         }
@@ -254,8 +284,20 @@ export async function POST(request: NextRequest) {
               p_user_id: userId,
               p_code: normalizedPromoCode,
               p_source: "signup",
+              // 어뷰징 가드(0013): 알리아스 접은 이메일 + 요청 IP
+              p_normalized_email: normalizeEmailAlias(email),
+              p_ip: clientIp,
             }
           );
+
+          if (!redeemData?.success) {
+            promoErrorCode =
+              typeof redeemData?.error === "string"
+                ? redeemData.error
+                : redeemError
+                  ? "rpc_failed"
+                  : null;
+          }
 
           if (redeemData?.success) {
             promoApplied = true;
@@ -345,5 +387,6 @@ export async function POST(request: NextRequest) {
       : "회원가입이 완료되었습니다.",
     credits: DEFAULT_SIGNUP_CREDITS + promoBonusCredits,
     promo_applied: promoApplied,
+    promo_error: promoApplied ? null : promoErrorCode,
   });
 }

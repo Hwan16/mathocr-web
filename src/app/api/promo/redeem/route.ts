@@ -1,6 +1,7 @@
 import { getAuthUser } from "@/lib/supabase/auth-helper";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { normalizeEmailAlias } from "@/lib/email";
 import { NextRequest, NextResponse } from "next/server";
 
 // 무차별 대입 방지: 계정당 분당 시도 횟수 제한
@@ -19,7 +20,21 @@ const REDEEM_ERROR_MESSAGES: Record<string, { message: string; status: number }>
   already_redeemed: { message: "이미 사용한 코드입니다.", status: 409 },
   exhausted: { message: "사용 가능 횟수가 모두 소진된 코드입니다.", status: 409 },
   user_not_found: { message: "사용자 정보를 찾을 수 없습니다.", status: 404 },
+  // 0013 어뷰징 가드: 같은 네트워크(IP)에서 같은 코드 24시간 내 2회 초과
+  ip_limit: {
+    message: "같은 네트워크에서 이 코드의 참여 한도를 초과했습니다. 24시간 후 다시 시도해주세요.",
+    status: 429,
+  },
 };
+
+function getClientIp(request: NextRequest): string | null {
+  const forwarded = request.headers.get("x-forwarded-for");
+  if (forwarded) {
+    const first = forwarded.split(",")[0]?.trim();
+    if (first) return first;
+  }
+  return request.headers.get("x-real-ip");
+}
 
 // 마이페이지: 프로모션 코드 입력 → 크레딧 지급 (계정당 코드 1회)
 export async function POST(request: NextRequest) {
@@ -57,6 +72,9 @@ export async function POST(request: NextRequest) {
     p_user_id: user.id,
     p_code: code,
     p_source: "mypage",
+    // 어뷰징 가드(0013): 가입 경로와 동일하게 알리아스·IP를 기록해 우회를 막는다
+    p_normalized_email: user.email ? normalizeEmailAlias(user.email) : null,
+    p_ip: getClientIp(request),
   });
 
   if (error) {
