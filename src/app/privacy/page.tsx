@@ -20,8 +20,9 @@ export default function PrivacyPage() {
           </a>
           <h1 className="text-2xl font-bold mt-4">개인정보처리방침</h1>
           <p className="text-zinc-500 text-sm mt-2">
-            시행일: 2026년 7월 11일 (최초 시행 2026년 7월 8일 · 2026년 7월 11일
-            개정: 제7조의2 온라인 맞춤형 광고 고지 신설)
+            시행일: 2026년 7월 12일 (최초 시행 2026년 7월 8일 · 7월 11일 개정:
+            제7조의2 온라인 맞춤형 광고 고지 신설 · 7월 12일 개정: 수탁자 표에
+            나이스페이먼츠·Upstash 추가)
           </p>
         </div>
 
@@ -182,6 +183,8 @@ function PrivacyContent() {
                 ["Anthropic, PBC", "인공지능 이미지 분석(Claude)", "미국"],
                 ["Resend, Inc.", "이메일(인증·안내 메일) 발송", "미국"],
                 ["Google LLC", "서비스 이용 통계 분석(Google Analytics)", "미국"],
+                ["Upstash, Inc.", "API 요청 횟수 제한(비정상 접근 방지) 처리", "미국"],
+                ["나이스페이먼츠(주)", "신용카드 등 결제 처리", "대한민국"],
                 ["토스페이먼츠(주)", "신용카드 등 결제 처리", "대한민국"],
               ].map(([name, work, country]) => (
                 <tr key={name} className="border-b border-zinc-100">
@@ -202,8 +205,9 @@ function PrivacyContent() {
         </h2>
         <p className="mb-2">
           서비스는 위 제5조의 수탁자 중 국외에 소재한 자(Supabase, Vercel,
-          Mathpix, Anthropic, Resend, Google 등)에게 개인정보 처리를 위탁함에
-          따라, 서비스 제공에 필요한 범위에서 개인정보가 국외로 이전됩니다.
+          Mathpix, Anthropic, Resend, Google, Upstash 등)에게 개인정보 처리를
+          위탁함에 따라, 서비스 제공에 필요한 범위에서 개인정보가 국외로
+          이전됩니다.
         </p>
         <ul className="list-disc pl-5 space-y-2">
           <li>

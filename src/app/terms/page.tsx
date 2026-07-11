@@ -14,7 +14,7 @@ export default function TermsPage() {
           </a>
           <h1 className="text-2xl font-bold mt-4">서비스 이용약관</h1>
           <p className="text-zinc-500 text-sm mt-2">
-            최종 수정일: 2026년 7월 11일
+            최종 수정일: 2026년 7월 12일
           </p>
         </div>
 
@@ -72,8 +72,9 @@ export function TermsContent() {
           </li>
           <li>
             <strong className="text-zinc-900">크레딧:</strong> 서비스 이용을 위해
-            사전에 충전하는 유료 이용권으로, 문제 1건 변환 시 1크레딧이
-            차감됩니다.
+            사전에 충전하는 유료 이용권으로, 문제 영역 1건 또는 해설(답안·풀이)
+            영역 1건 변환 시 각 1크레딧이 차감됩니다. 그림 영역의 변환에는
+            크레딧이 차감되지 않습니다.
           </li>
         </ul>
       </section>

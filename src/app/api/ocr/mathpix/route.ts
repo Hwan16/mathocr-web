@@ -123,6 +123,9 @@ export async function POST(request: NextRequest) {
       math_inline_delimiters: ["$", "$"],
       math_display_delimiters: ["$$", "$$"],
       rm_spaces: true,
+      // Mathpix 기본값은 입력 이미지를 최대 90일 보존(품질 개선 활용) —
+      // 개인정보처리방침(목적 달성 시 삭제)과 맞추기 위해 서버에서 opt-out 고정.
+      metadata: { improve_mathpix: false },
     };
 
     const response = await fetch(MATHPIX_API_URL, {
