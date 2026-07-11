@@ -96,7 +96,7 @@ export default function EarlyBirdPopup() {
           <p className="mt-3 text-sm leading-relaxed">
             <span className="font-semibold text-zinc-800">AI MathOCR</span>{" "}
             <span className="font-semibold text-violet-700">
-              7월 중 정식 Open!
+              정식 오픈!
             </span>
             <br />
             <span className="text-zinc-600">
