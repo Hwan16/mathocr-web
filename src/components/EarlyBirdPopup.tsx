@@ -96,7 +96,7 @@ export default function EarlyBirdPopup() {
             <span className="text-violet-700">30문제 무료!</span>
           </h2>
           <p className="mt-3 text-sm leading-relaxed text-zinc-600">
-            얼리버드 혜택 — 회원가입만 해도 30문제 크레딧이 즉시 지급돼요.
+            얼리버드 혜택 — 회원가입만 해도 30크레딧이 즉시 지급돼요.
           </p>
 
           <a
@@ -104,7 +104,7 @@ export default function EarlyBirdPopup() {
             onClick={() => trackEvent("earlybird_popup_cta_click")}
             className="mt-5 w-full flex items-center justify-center gap-2 rounded-xl bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white text-sm font-semibold py-3 transition-colors"
           >
-            가입하고 30문제 받기
+            가입하고 30크레딧 받기
           </a>
         </div>
 
