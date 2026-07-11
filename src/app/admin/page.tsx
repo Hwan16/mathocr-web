@@ -11,7 +11,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 
-type Tab = "users" | "logs" | "stats" | "reports" | "refunds" | "promos" | "earlybird";
+type Tab = "users" | "logs" | "stats" | "reports" | "refunds" | "promos";
 
 interface AdminUser {
   id: string;
@@ -168,7 +168,6 @@ export default function AdminPage() {
   const tabs: { key: Tab; label: string }[] = [
     { key: "users", label: "유저 관리" },
     { key: "promos", label: "프로모션 코드" },
-    { key: "earlybird", label: "얼리버드" },
     { key: "reports", label: "변환 리포트" },
     { key: "refunds", label: "크레딧 반환" },
     { key: "logs", label: "오류 로그" },
@@ -222,278 +221,10 @@ export default function AdminPage() {
 
         {tab === "users" && <UsersTab />}
         {tab === "promos" && <PromosTab />}
-        {tab === "earlybird" && <EarlybirdTab />}
         {tab === "reports" && <ReportsTab />}
         {tab === "refunds" && <RefundsTab />}
         {tab === "logs" && <LogsTab />}
         {tab === "stats" && <StatsTab />}
-      </div>
-    </div>
-  );
-}
-
-/* ── 얼리버드 탭 (0015 신청제) — 사전 신청자 명단 + 오픈 안내 메일 발송 ── */
-interface EarlybirdApplicant {
-  email: string;
-  created_at: string;
-  utm_source: string | null;
-  mail_sent_at: string | null;
-  unsubscribed_at: string | null;
-}
-
-interface EarlybirdData {
-  summary: {
-    applied: number;
-    apply_cap: number;
-    mail_sent: number;
-    unsubscribed: number;
-    mail_pending: number;
-    earlybird_redeemed: number | null;
-    earlybird_cap: number | null;
-    earlybird_code_active: boolean | null;
-  };
-  applicants: EarlybirdApplicant[];
-}
-
-function EarlybirdTab() {
-  const [data, setData] = useState<EarlybirdData | null>(null);
-  const [loadError, setLoadError] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [sendResult, setSendResult] = useState("");
-
-  async function load() {
-    setLoadError("");
-    const res = await fetch("/api/admin/earlybird");
-    if (!res.ok) {
-      setLoadError("명단을 불러오지 못했습니다.");
-      return;
-    }
-    setData((await res.json()) as EarlybirdData);
-  }
-
-  useEffect(() => {
-    load();
-  }, []);
-
-  // 발송 전 점검 (dry) — 대상 수·Resend 키·수신거부 서명 설정 여부 확인
-  async function handleDryRun() {
-    setBusy(true);
-    setSendResult("");
-    try {
-      const res = await fetch("/api/admin/earlybird/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dry: true }),
-      });
-      const r = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setSendResult(`점검 실패: ${r.error ?? res.status}`);
-        return;
-      }
-      setSendResult(
-        `[발송 전 점검] 미발송 ${r.pending}명 (1회 최대 ${r.batch_size}명) · ` +
-          `코드 ${r.code_active ? "활성 ✓" : "❌ 보관 중 — 발송 전 프로모션 탭에서 활성화 필요"} · ` +
-          `Resend 키 ${r.resend_key_configured ? "설정됨" : "❌ 미설정(Vercel env 필요)"} · ` +
-          `수신거부 서명 ${r.unsubscribe_configured ? "설정됨" : "❌ 미설정(CRON_SECRET)"} · ` +
-          `제목: ${r.preview_subject}`
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function handleSend() {
-    const pending = data?.summary.mail_pending ?? 0;
-    if (
-      !window.confirm(
-        `미발송 ${pending}명에게 오픈 안내 메일을 발송합니다.\n` +
-          `(한 번에 최대 90명 — Resend 무료 티어 일 100통 보호. 남으면 내일 다시 누르면 이어서 발송)\n\n진행할까요?`
-      )
-    ) {
-      return;
-    }
-    setBusy(true);
-    setSendResult("발송 중... (1초에 1~2명씩 천천히 보냅니다)");
-    try {
-      const res = await fetch("/api/admin/earlybird/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dry: false }),
-      });
-      const r = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setSendResult(`발송 실패: ${r.error ?? res.status}`);
-        return;
-      }
-      setSendResult(
-        `발송 완료: ${r.sent}명 성공` +
-          (r.failed?.length ? ` · 실패 ${r.failed.length}명 (${r.failed.join(", ")})` : "") +
-          (r.remaining > 0 ? ` · 남은 대상 ${r.remaining}명 — 내일 다시 발송 버튼을 누르세요` : " · 전원 발송 끝")
-      );
-      await load();
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  // 명단 CSV 다운로드 (엑셀용 BOM 포함)
-  function downloadCsv() {
-    if (!data) return;
-    const header = "이메일,신청일,유입출처,메일발송,수신거부\n";
-    const body = data.applicants
-      .map((s) =>
-        [
-          s.email,
-          s.created_at.slice(0, 10),
-          s.utm_source ?? "직접",
-          s.mail_sent_at ? s.mail_sent_at.slice(0, 10) : "미발송",
-          s.unsubscribed_at ? s.unsubscribed_at.slice(0, 10) : "",
-        ].join(",")
-      )
-      .join("\n");
-    const blob = new Blob(["﻿" + header + body], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `earlybird_${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  if (loadError) {
-    return <div className="text-red-600 text-sm">{loadError}</div>;
-  }
-  if (!data) {
-    return <div className="text-zinc-500">불러오는 중...</div>;
-  }
-
-  const s = data.summary;
-  const cards = [
-    { label: "얼리버드 신청", value: `${fmtInt(s.applied)} / ${fmtInt(s.apply_cap)}명` },
-    { label: "오픈 메일 발송", value: `${fmtInt(s.mail_sent)} / ${fmtInt(s.applied)}명` },
-    {
-      label: "코드 사용 (오픈 후)",
-      value:
-        s.earlybird_redeemed !== null
-          ? `${fmtInt(s.earlybird_redeemed)} / ${s.earlybird_cap ?? "∞"}명`
-          : "—",
-    },
-    {
-      label: "코드 상태",
-      value:
-        s.earlybird_code_active === null
-          ? "—"
-          : s.earlybird_code_active
-            ? "활성"
-            : "보관 중 (오픈 대기)",
-    },
-  ];
-
-  return (
-    <div className="space-y-6">
-      {/* 요약 카드 */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {cards.map((c) => (
-          <div key={c.label} className="bezel-card rounded-2xl p-5">
-            <p className="text-xs text-zinc-500 mb-1">{c.label}</p>
-            <p className="text-xl font-bold text-zinc-900">{c.value}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* 발송 컨트롤 */}
-      <div className="bezel-card rounded-2xl p-5">
-        <h3 className="text-sm font-semibold text-zinc-800 mb-1">
-          오픈 안내 메일 — 30문제 코드 발송 (결제 오픈 날 사용)
-        </h3>
-        <p className="text-xs text-zinc-500 mb-4 leading-relaxed">
-          오픈 날 순서: ① 프로모션 탭에서 earlybird 코드 <b>활성화</b> → ② [발송 전
-          점검] → ③ [오픈 메일 발송]. 신청자 중 미발송자에게만 나가고, 보낸 사람은
-          다시 발송되지 않습니다. 코드가 보관 중이면 실발송이 자동 차단됩니다.
-        </p>
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={handleDryRun}
-            disabled={busy}
-            className="px-4 py-2 rounded-lg border border-zinc-300 text-sm text-zinc-700 hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:opacity-40 transition-colors"
-          >
-            발송 전 점검
-          </button>
-          <button
-            onClick={handleSend}
-            disabled={busy || s.mail_pending === 0}
-            className="px-4 py-2 rounded-lg bg-[var(--accent)] text-white text-sm font-semibold hover:bg-[var(--accent-hover)] disabled:opacity-40 transition-colors"
-          >
-            {busy ? "처리 중..." : `오픈 메일 발송 (미발송 ${fmtInt(s.mail_pending)}명)`}
-          </button>
-          <button
-            onClick={downloadCsv}
-            className="px-4 py-2 rounded-lg border border-zinc-300 text-sm text-zinc-700 hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors"
-          >
-            명단 CSV 다운로드
-          </button>
-        </div>
-        {sendResult && (
-          <p className="mt-3 text-xs text-zinc-600 bg-zinc-50 border border-zinc-200 rounded-lg p-3 leading-relaxed">
-            {sendResult}
-          </p>
-        )}
-      </div>
-
-      {/* 명단 테이블 */}
-      <div className="bezel-card rounded-2xl overflow-hidden">
-        <div className="px-6 py-3 border-b border-[var(--border-subtle)]">
-          <h3 className="text-sm font-medium text-zinc-700">
-            신청자 명단 ({fmtInt(s.applied)}명)
-          </h3>
-        </div>
-        <div className="overflow-x-auto max-h-96 overflow-y-auto">
-          <table className="w-full text-sm">
-            <thead className="sticky top-0 bg-white">
-              <tr className="text-left text-zinc-500 border-b border-[var(--border-subtle)]">
-                <th className="px-6 py-2.5 font-medium">이메일</th>
-                <th className="px-4 py-2.5 font-medium">신청일</th>
-                <th className="px-4 py-2.5 font-medium">유입</th>
-                <th className="px-4 py-2.5 font-medium">오픈 메일</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.applicants.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center text-zinc-400">
-                    아직 신청자가 없습니다 — 얼리버드 신청이 들어오면 여기에 쌓입니다.
-                  </td>
-                </tr>
-              ) : (
-                data.applicants.map((sub, i) => (
-                  <tr
-                    key={`${sub.email}-${i}`}
-                    className="border-b border-[var(--border-subtle)] last:border-0 text-zinc-700"
-                  >
-                    <td className="px-6 py-2">{sub.email}</td>
-                    <td className="px-4 py-2 text-zinc-500">
-                      {sub.created_at.slice(0, 10)}
-                    </td>
-                    <td className="px-4 py-2 text-xs text-zinc-500">
-                      {sub.utm_source ?? "직접"}
-                    </td>
-                    <td className="px-4 py-2 text-xs">
-                      {sub.unsubscribed_at ? (
-                        <span className="text-red-500">수신거부</span>
-                      ) : sub.mail_sent_at ? (
-                        <span className="text-emerald-600">
-                          ✓ {sub.mail_sent_at.slice(0, 10)}
-                        </span>
-                      ) : (
-                        <span className="text-zinc-400">미발송</span>
-                      )}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
       </div>
     </div>
   );
@@ -888,6 +619,8 @@ function UsersTab() {
   const [total, setTotal] = useState(0);
   const [creditModal, setCreditModal] = useState<AdminUser | null>(null);
   const [creditAmount, setCreditAmount] = useState("");
+  // 행 클릭 → 유저 상세(마이페이지 뷰 + CS 정보) 모달
+  const [detailUser, setDetailUser] = useState<AdminUser | null>(null);
   const limit = 20;
 
   const loadUsers = useCallback(async () => {
@@ -928,6 +661,8 @@ function UsersTab() {
     if (res.ok) {
       setCreditModal(null);
       setCreditAmount("");
+      // 상세 모달이 열려 있으면 닫는다 — 요약 수치가 갱신 전 값으로 남지 않게
+      setDetailUser(null);
       loadUsers();
     }
   }
@@ -968,7 +703,8 @@ function UsersTab() {
               {users.map((u) => (
                 <tr
                   key={u.id}
-                  className="border-b border-[var(--border-subtle)] last:border-0 hover:bg-zinc-50"
+                  onClick={() => setDetailUser(u)}
+                  className="border-b border-[var(--border-subtle)] last:border-0 hover:bg-zinc-50 cursor-pointer"
                 >
                   <td className="px-6 py-3 text-zinc-800">{u.email}</td>
                   <td className="px-6 py-3 text-center">
@@ -995,7 +731,10 @@ function UsersTab() {
                   </td>
                   <td className="px-6 py-3 text-center">
                     <button
-                      onClick={() => setCreditModal(u)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCreditModal(u);
+                      }}
                       className="text-xs text-[var(--accent)] hover:underline"
                     >
                       크레딧 부여
@@ -1030,6 +769,15 @@ function UsersTab() {
         )}
       </div>
 
+      {/* User Detail Modal */}
+      {detailUser && (
+        <UserDetailModal
+          user={detailUser}
+          onClose={() => setDetailUser(null)}
+          onGrant={() => setCreditModal(detailUser)}
+        />
+      )}
+
       {/* Credit Modal */}
       {creditModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
@@ -1062,6 +810,315 @@ function UsersTab() {
         </div>
       )}
     </>
+  );
+}
+
+/* ── 유저 상세 모달 — 해당 유저의 마이페이지 뷰 + CS 정보(지급 내역·변환 이력·오류 로그) ── */
+interface UserCreditEvent {
+  type: string;
+  label: string;
+  detail: string | null;
+  delta: number;
+  refunded: boolean;
+  at: string;
+}
+
+interface UserConversion {
+  id: string;
+  pdf_name: string | null;
+  problem_count: number;
+  solution_count?: number | null;
+  credits_used: number;
+  refunded_credits: number;
+  status: string;
+  created_at: string;
+}
+
+const CONV_STATUS_LABELS: Record<string, string> = {
+  completed: "완료",
+  failed: "실패",
+  pending: "진행 중",
+};
+
+function DetailSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="px-6 py-4 border-t border-[var(--border-subtle)]">
+      <h4 className="text-sm font-semibold text-zinc-900 mb-3">{title}</h4>
+      {children}
+    </div>
+  );
+}
+
+function UserDetailModal({
+  user,
+  onClose,
+  onGrant,
+}: {
+  user: AdminUser;
+  onClose: () => void;
+  onGrant: () => void;
+}) {
+  const [events, setEvents] = useState<UserCreditEvent[] | null>(null);
+  const [convs, setConvs] = useState<UserConversion[] | null>(null);
+  const [logs, setLogs] = useState<ErrorLogEntry[] | null>(null);
+  const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const [ev, cv, lg] = await Promise.all([
+        fetch(`/api/credits/history?user_id=${user.id}`).then((r) =>
+          r.ok ? r.json() : null
+        ),
+        fetch(`/api/admin/users/${user.id}/conversions`).then((r) =>
+          r.ok ? r.json() : null
+        ),
+        fetch(`/api/admin/logs?user_id=${user.id}&limit=20`).then((r) =>
+          r.ok ? r.json() : null
+        ),
+      ]);
+      if (cancelled) return;
+      setEvents(ev?.events ?? []);
+      setConvs(cv?.conversions ?? []);
+      setLogs(lg?.logs ?? []);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user.id]);
+
+  const isExpired =
+    user.expires_at && new Date(user.expires_at) < new Date();
+  const fmtDateTime = (iso: string) =>
+    new Date(iso).toLocaleString("ko-KR", {
+      dateStyle: "short",
+      timeStyle: "short",
+    });
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bezel-card rounded-2xl w-full max-w-3xl max-h-[85vh] overflow-y-auto bg-[var(--surface)]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* 헤더 */}
+        <div className="px-6 py-4 border-b border-[var(--border-subtle)] flex items-center justify-between gap-4 sticky top-0 bg-[var(--surface)] z-10">
+          <div className="min-w-0">
+            <h3 className="text-lg font-semibold truncate">{user.email}</h3>
+            <p className="text-xs text-zinc-500">
+              가입일 {new Date(user.created_at).toLocaleDateString("ko-KR")} ·
+              권한 {user.role}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={onGrant}
+              className="text-xs px-3 py-1.5 rounded-lg border border-[var(--border-light)] text-[var(--accent)] hover:bg-zinc-50 transition-colors"
+            >
+              크레딧 부여
+            </button>
+            <button
+              onClick={onClose}
+              className="text-zinc-400 hover:text-zinc-700 text-xl leading-none px-1"
+              aria-label="닫기"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+
+        {/* 요약 */}
+        <div className="px-6 py-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="rounded-xl bg-zinc-50 p-3">
+            <div className="text-xs text-zinc-500 mb-0.5">잔여 크레딧</div>
+            <div className="text-xl font-bold text-[var(--accent)]">
+              {user.credits}
+            </div>
+          </div>
+          <div className="rounded-xl bg-zinc-50 p-3">
+            <div className="text-xs text-zinc-500 mb-0.5">유효기간</div>
+            <div
+              className={`text-sm font-semibold ${isExpired ? "text-red-600" : "text-zinc-900"}`}
+            >
+              {user.expires_at
+                ? new Date(user.expires_at).toLocaleDateString("ko-KR")
+                : "무제한"}
+              {isExpired && <span className="ml-1 text-xs">만료</span>}
+            </div>
+          </div>
+          <div className="rounded-xl bg-zinc-50 p-3">
+            <div className="text-xs text-zinc-500 mb-0.5">오류 로그</div>
+            <div className="text-sm font-semibold text-zinc-900">
+              {logs === null ? "…" : `${logs.length}건`}
+            </div>
+          </div>
+        </div>
+
+        {/* 크레딧 지급 내역 */}
+        <DetailSection title="크레딧 지급 내역">
+          {events === null ? (
+            <p className="text-sm text-zinc-400">불러오는 중…</p>
+          ) : events.length === 0 ? (
+            <p className="text-sm text-zinc-500">지급 내역이 없습니다.</p>
+          ) : (
+            <ul className="divide-y divide-[var(--border-subtle)]">
+              {events.map((e, i) => (
+                <li
+                  key={`${e.at}-${i}`}
+                  className="py-2 flex items-center justify-between gap-3 text-sm"
+                >
+                  <div className="min-w-0">
+                    <span className="text-zinc-800">{e.label}</span>
+                    {e.detail && (
+                      <span className="ml-2 text-zinc-400">{e.detail}</span>
+                    )}
+                    {e.refunded && (
+                      <span className="ml-2 inline-block px-1.5 py-0.5 rounded text-xs bg-red-50 text-red-600">
+                        환불됨
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span
+                      className={`font-medium ${
+                        e.refunded
+                          ? "text-zinc-300 line-through"
+                          : e.delta >= 0
+                            ? "text-emerald-600"
+                            : "text-red-600"
+                      }`}
+                    >
+                      {e.delta >= 0 ? `+${e.delta}` : e.delta}
+                    </span>
+                    <span className="text-zinc-400 text-xs w-20 text-right">
+                      {new Date(e.at).toLocaleDateString("ko-KR")}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </DetailSection>
+
+        {/* 변환 이력 */}
+        <DetailSection title="변환 이력 (최근 20건)">
+          {convs === null ? (
+            <p className="text-sm text-zinc-400">불러오는 중…</p>
+          ) : convs.length === 0 ? (
+            <p className="text-sm text-zinc-500">변환 이력이 없습니다.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-left text-zinc-500 border-b border-[var(--border-subtle)]">
+                    <th className="py-2 pr-3 font-medium">날짜</th>
+                    <th className="py-2 pr-3 font-medium">시험지명</th>
+                    <th className="py-2 pr-3 font-medium text-center">
+                      문제(해설)
+                    </th>
+                    <th className="py-2 pr-3 font-medium text-center">
+                      크레딧
+                    </th>
+                    <th className="py-2 pr-3 font-medium text-center">반환</th>
+                    <th className="py-2 font-medium text-center">상태</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {convs.map((c) => (
+                    <tr
+                      key={c.id}
+                      className="border-b border-[var(--border-subtle)] last:border-0"
+                    >
+                      <td className="py-2 pr-3 text-zinc-500 whitespace-nowrap">
+                        {new Date(c.created_at).toLocaleDateString("ko-KR")}
+                      </td>
+                      <td className="py-2 pr-3 text-zinc-800 max-w-[180px] truncate">
+                        {c.pdf_name || "—"}
+                      </td>
+                      <td className="py-2 pr-3 text-center text-zinc-700">
+                        {c.problem_count}
+                        {(c.solution_count ?? 0) > 0
+                          ? `(+${c.solution_count})`
+                          : ""}
+                      </td>
+                      <td className="py-2 pr-3 text-center">
+                        {c.credits_used > 0 ? (
+                          <span className="text-red-600">
+                            -{c.credits_used}
+                          </span>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td className="py-2 pr-3 text-center">
+                        {c.refunded_credits > 0 ? (
+                          <span className="text-emerald-600">
+                            +{c.refunded_credits}
+                          </span>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td className="py-2 text-center text-zinc-600">
+                        {CONV_STATUS_LABELS[c.status] ?? c.status}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </DetailSection>
+
+        {/* 오류 로그 */}
+        <DetailSection title="오류 로그 (최근 20건)">
+          {logs === null ? (
+            <p className="text-sm text-zinc-400">불러오는 중…</p>
+          ) : logs.length === 0 ? (
+            <p className="text-sm text-zinc-500">오류 로그가 없습니다.</p>
+          ) : (
+            <ul className="divide-y divide-[var(--border-subtle)]">
+              {logs.map((log) => (
+                <li key={log.id} className="py-2 text-sm">
+                  <button
+                    className="w-full text-left"
+                    onClick={() =>
+                      setExpandedLogId(expandedLogId === log.id ? null : log.id)
+                    }
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-zinc-800 truncate">
+                        <span className="text-xs px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-600 mr-2">
+                          {log.error_type}
+                        </span>
+                        {log.error_message}
+                      </span>
+                      <span className="text-zinc-400 text-xs whitespace-nowrap">
+                        {fmtDateTime(log.created_at)}
+                      </span>
+                    </div>
+                  </button>
+                  {expandedLogId === log.id && log.metadata && (
+                    <div className="mt-2 p-3 rounded-lg bg-zinc-50 space-y-1">
+                      <LogMetadata metadata={log.metadata} />
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </DetailSection>
+      </div>
+    </div>
   );
 }
 
