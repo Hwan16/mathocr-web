@@ -248,6 +248,55 @@ export default function EarlybirdPage() {
           )}
         </div>
 
+        {/* ── 처음 방문자용 제품 요약 ──
+            검색광고 랜딩이 이 페이지라(AD_SETUP_GUIDE A-4·D-2) 방문자 다수가
+            서비스를 처음 본다 — 소개 없이 이메일 폼만 있으면 신뢰가 떨어진다.
+            문구는 홈 히어로·핵심 사실 스트립의 요약판. */}
+        <div className="mt-5 card rounded-2xl px-7 py-6">
+          <div className="text-xs font-semibold text-[var(--accent)] mb-2">
+            AI MathOCR은 이런 서비스예요
+          </div>
+          <p className="text-sm text-zinc-700 leading-relaxed">
+            수학 시험지 PDF·사진을{" "}
+            <strong className="font-semibold text-zinc-900">
+              편집 가능한 한글(HWP) 시험지
+            </strong>
+            로 변환하는 AI — 타이핑 없이 몇 분이면 끝나요.
+          </p>
+          <ul className="mt-4 space-y-3">
+            {[
+              [
+                "진짜 한글 수식편집기 객체",
+                "수식이 이미지가 아니라, 더블클릭해 바로 수정하는 한글 수식으로 들어가요.",
+              ],
+              [
+                "평가원 스타일 그대로",
+                "조건 [박스]와 <보기>까지 원본처럼 재현돼요.",
+              ],
+              [
+                "문제 속 그림은 무료",
+                "그래프·도형은 추가 비용 없이 원본 그대로 함께 담겨요.",
+              ],
+            ].map(([title, desc]) => (
+              <li key={title} className="flex items-start gap-2.5">
+                <iconify-icon
+                  icon="solar:check-circle-bold"
+                  width="18"
+                  className="shrink-0 mt-0.5"
+                  style={{ color: "var(--accent)" }}
+                />
+                <p className="text-sm leading-relaxed text-zinc-600">
+                  <strong className="font-semibold text-zinc-900">
+                    {title}
+                  </strong>
+                  {" — "}
+                  {desc}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </div>
+
         <div className="mt-5 text-center">
           <a
             href="/"
