@@ -90,18 +90,13 @@ export default function EarlyBirdPopup() {
         {/* 본문 */}
         <div className="px-7 pb-6 pt-1">
           <h2 className="text-2xl font-bold leading-snug text-zinc-900">
-            지금 가입하면{" "}
+            AI MathOCR <span className="text-violet-700">정식 오픈!</span>
+            <br />
+            회원가입만 해도{" "}
             <span className="text-violet-700">30문제 무료!</span>
           </h2>
-          <p className="mt-3 text-sm leading-relaxed">
-            <span className="font-semibold text-zinc-800">AI MathOCR</span>{" "}
-            <span className="font-semibold text-violet-700">
-              정식 오픈!
-            </span>
-            <br />
-            <span className="text-zinc-600">
-              얼리버드 혜택 — 회원가입만 해도 30문제 크레딧이 즉시 지급돼요.
-            </span>
+          <p className="mt-3 text-sm leading-relaxed text-zinc-600">
+            얼리버드 혜택 — 회원가입만 해도 30문제 크레딧이 즉시 지급돼요.
           </p>
 
           <a
