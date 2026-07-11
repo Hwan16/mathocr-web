@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { trackEvent } from "@/lib/analytics";
 import { metaPixelTrack } from "@/lib/meta-pixel";
 import { getStoredUtm } from "@/lib/utm";
@@ -12,6 +12,15 @@ import { getStoredUtm } from "@/lib/utm";
 const CONSENT_VERSION = "2026-07-11";
 
 export default function SignupPage() {
+  // useSearchParams는 Suspense 경계가 필요하다 (Next.js 규칙)
+  return (
+    <Suspense fallback={null}>
+      <SignupForm />
+    </Suspense>
+  );
+}
+
+function SignupForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
@@ -29,9 +38,22 @@ export default function SignupPage() {
   // 이메일 인증(Confirm email)이 켜진 경우: 가입 후 "메일 확인" 안내 화면으로 전환
   const [confirmEmailSent, setConfirmEmailSent] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // 혜택 링크(?promo=코드) 경유 — 얼리버드 팝업/배너가 이 형태로 연결된다.
+  const promoFromLink = searchParams.get("promo")?.trim() ?? "";
+  const benefitName =
+    promoFromLink.toLowerCase() === "earlybird" ? "얼리버드 혜택" : "프로모션 혜택";
 
-  async function handleValidatePromo() {
-    const trimmed = promoCode.trim();
+  // 혜택 링크로 진입하면 코드를 자동 입력하고 즉시 검증한다.
+  useEffect(() => {
+    if (!promoFromLink) return;
+    setPromoCode(promoFromLink);
+    handleValidatePromo(promoFromLink);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function handleValidatePromo(codeOverride?: string) {
+    const trimmed = (codeOverride ?? promoCode).trim();
     if (!trimmed) return;
 
     setPromoStatus("checking");
@@ -176,6 +198,32 @@ export default function SignupPage() {
           <p className="text-zinc-500 text-sm mt-2">새 계정을 만드세요</p>
         </div>
 
+        {/* 혜택 링크 배너 (얼리버드 등 — ?promo= 경유 시) */}
+        {promoFromLink && !confirmEmailSent && (
+          <div
+            className={`mb-5 rounded-xl border px-4 py-3 text-sm leading-relaxed ${
+              promoStatus === "invalid" || promoStatus === "error"
+                ? "bg-zinc-100 border-zinc-200 text-zinc-600"
+                : "bg-violet-50 border-violet-200 text-violet-800"
+            }`}
+          >
+            {promoStatus === "valid" ? (
+              <>
+                🎁 {benefitName} 적용 중 — 가입 완료 시{" "}
+                <strong>+{promoBonusCredits}크레딧</strong>이 즉시 지급됩니다
+                {promoValidityDays ? ` (유효기간 ${promoValidityDays}일)` : ""}.
+              </>
+            ) : promoStatus === "invalid" || promoStatus === "error" ? (
+              <>
+                아쉽지만 {benefitName}이 마감되었어요. 가입 시 기본 무료
+                크레딧은 그대로 받을 수 있어요.
+              </>
+            ) : (
+              <>🎁 {benefitName}을 확인하고 있어요…</>
+            )}
+          </div>
+        )}
+
         {confirmEmailSent ? (
           /* 이메일 인증 안내 (Confirm email 활성 시) */
           <div className="card rounded-xl p-8 shadow-sm text-center">
@@ -263,7 +311,7 @@ export default function SignupPage() {
                 />
                 <button
                   type="button"
-                  onClick={handleValidatePromo}
+                  onClick={() => handleValidatePromo()}
                   disabled={!promoCode.trim() || promoStatus === "checking"}
                   className="px-4 py-3 rounded-lg border border-zinc-300 text-zinc-600 text-sm hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
