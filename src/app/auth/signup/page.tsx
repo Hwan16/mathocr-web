@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { trackEvent } from "@/lib/analytics";
+import { SIGNUP_FREE_CREDITS } from "@/lib/plans";
 import { metaPixelTrack } from "@/lib/meta-pixel";
 import { getStoredUtm } from "@/lib/utm";
 
@@ -210,7 +211,10 @@ function SignupForm() {
             {promoStatus === "valid" ? (
               <>
                 🎁 {benefitName} 적용 중 — 가입 완료 시{" "}
-                <strong>+{promoBonusCredits}크레딧</strong>이 즉시 지급됩니다
+                <strong>
+                  {SIGNUP_FREE_CREDITS}+{promoBonusCredits}크레딧
+                </strong>
+                이 즉시 지급됩니다
                 {promoValidityDays ? ` (유효기간 ${promoValidityDays}일)` : ""}.
               </>
             ) : promoStatus === "invalid" || promoStatus === "error" ? (
@@ -328,8 +332,9 @@ function SignupForm() {
               )}
               {promoStatus === "valid" && (
                 <p className="mt-1.5 text-xs text-emerald-600">
-                  ✓ 사용 가능한 코드입니다. 가입 시 +{promoBonusCredits}크레딧 보너스가
-                  적용됩니다{promoValidityDays ? ` (유효기간 ${promoValidityDays}일)` : ""}.
+                  ✓ 사용 가능한 코드입니다. 가입 시 {SIGNUP_FREE_CREDITS}+
+                  {promoBonusCredits}크레딧 보너스가 적용됩니다
+                  {promoValidityDays ? ` (유효기간 ${promoValidityDays}일)` : ""}.
                 </p>
               )}
               {promoStatus === "invalid" && (
