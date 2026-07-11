@@ -82,6 +82,11 @@ export default function Home() {
             <a href="#guide" onClick={() => trackEvent("nav_click", { label: "guide" })} className="hover:text-zinc-900 transition-colors">사용법</a>
             <a href="#pricing" onClick={() => trackEvent("nav_click", { label: "pricing" })} className="hover:text-zinc-900 transition-colors">가격</a>
             <a href="#download" onClick={() => trackEvent("nav_click", { label: "download" })} className="hover:text-zinc-900 transition-colors">다운로드</a>
+            {/* md·lg(768~1279px)에서는 전체 표기가 헤더를 넘치게 해(실측 36~47px) 짧은 표기로 전환 */}
+            <a href="#faq" onClick={() => trackEvent("nav_click", { label: "faq" })} className="hover:text-zinc-900 transition-colors">
+              <span className="xl:hidden">FAQ</span>
+              <span className="hidden xl:inline">자주 묻는 질문</span>
+            </a>
           </nav>
 
           <div className="flex items-center gap-2 md:gap-3 ml-auto shrink-0">
@@ -790,7 +795,7 @@ export default function Home() {
       </section>
 
       {/* ── FAQ ── */}
-      <section className="py-20 lg:py-28">
+      <section id="faq" className="py-20 lg:py-28">
         {/* 홈 전용 FAQPage 구조화 데이터 (질문/답은 아래 화면과 동일한 @/lib/faqs 출처) */}
         <FaqStructuredData />
         <div className="max-w-screen-2xl mx-auto px-6 lg:px-12">
