@@ -250,12 +250,12 @@ export default function EarlybirdPage() {
 
         {/* ── 처음 방문자용 차별점 요약 ──
             검색광고 랜딩이 이 페이지라(AD_SETUP_GUIDE A-4·D-2) 방문자 다수가
-            서비스를 처음 본다 — "다른 서비스와 뭐가 다른가"에 답하는 5개 꼭지.
-            주장 범위 주의: 표는 이미지로 대체되므로(PRD) '표 변환'은 말하지 않고,
-            연필 자국을 '지우는' 기능은 없으므로(생성형 제거 기각) '원문만 골라 복원'으로 쓴다. */}
+            서비스를 처음 본다 — "뭐가 다른가"에 답하는 5개 꼭지.
+            주장 범위 주의: 연필 자국을 '지우는' 기능은 없으므로(생성형 제거 기각)
+            '원문만 골라 복원'으로 쓴다. 격자형 표는 실제 표로 변환됨(hwp_writer TableCreate). */}
         <div className="mt-5 card rounded-2xl px-7 py-6">
           <h2 className="text-[15px] font-bold text-zinc-900">
-            🤔 AI MathOCR은 다른 데와 뭐가 다른가요?
+            🤔 AI MathOCR은 뭐가 다른가요?
           </h2>
           <ul className="mt-5 space-y-5">
             {[
@@ -265,7 +265,7 @@ export default function EarlybirdPage() {
               ],
               [
                 "문제지 형식 그대로",
-                "조건 [박스]와 <보기>까지, 평가원 스타일 그대로 한글 파일에 재현돼요.",
+                "조건 [박스]와 <보기>, 표까지 원본 그대로 한글 파일에 재현돼요.",
               ],
               [
                 "학생이 푼 흔적은 깨끗하게",
