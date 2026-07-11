@@ -307,13 +307,13 @@ function SignupForm() {
                     if (promoStatus !== "idle") setPromoStatus("idle");
                   }}
                   placeholder="있다면 입력하세요"
-                  className="flex-1 px-4 py-3 rounded-lg bg-white border border-zinc-300 text-zinc-900 placeholder-zinc-400 text-sm focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-border)] transition-colors"
+                  className="flex-1 min-w-0 px-4 py-3 rounded-lg bg-white border border-zinc-300 text-zinc-900 placeholder-zinc-400 text-sm focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-border)] transition-colors"
                 />
                 <button
                   type="button"
                   onClick={() => handleValidatePromo()}
                   disabled={!promoCode.trim() || promoStatus === "checking"}
-                  className="px-4 py-3 rounded-lg border border-zinc-300 text-zinc-600 text-sm hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="shrink-0 px-4 py-3 rounded-lg border border-zinc-300 text-zinc-600 text-sm hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                   확인
                 </button>
