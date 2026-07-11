@@ -505,12 +505,12 @@ function PromoRedeemCard({ onRedeemed }: { onRedeemed: () => void }) {
             if (e.key === "Enter") handleRedeem();
           }}
           placeholder="코드 입력"
-          className="flex-1 px-4 py-2.5 rounded-xl bg-white border border-zinc-300 text-zinc-900 placeholder-zinc-400 text-sm focus:outline-none focus:border-[var(--accent)] transition-colors"
+          className="flex-1 min-w-0 px-4 py-2.5 rounded-xl bg-white border border-zinc-300 text-zinc-900 placeholder-zinc-400 text-sm focus:outline-none focus:border-[var(--accent)] transition-colors"
         />
         <button
           onClick={handleRedeem}
           disabled={!code.trim() || status === "submitting"}
-          className="px-5 py-2.5 rounded-xl bg-[var(--accent)] text-white text-sm font-medium hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+          className="shrink-0 px-5 py-2.5 rounded-xl bg-[var(--accent)] text-white text-sm font-medium hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
         >
           {status === "submitting" ? "적용 중..." : "적용"}
         </button>

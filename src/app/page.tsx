@@ -38,9 +38,18 @@ export default function Home() {
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setIsLoggedIn(!!user);
+    // getSession()은 브라우저에 저장된 세션을 즉시 읽는다. 이전의 getUser()는
+    // 인증 서버 왕복이라 모바일에서 수 초간(통신 불안 시 계속) 로그아웃 상태로
+    // 보이는 문제가 있었다. 상태 변화(onAuthStateChange)도 구독해 항상 동기화.
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsLoggedIn(!!session);
     });
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsLoggedIn(!!session);
+    });
+    return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
