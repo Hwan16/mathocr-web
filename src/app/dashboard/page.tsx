@@ -268,6 +268,9 @@ export default function DashboardPage() {
           )}
         </div>
 
+        {/* Credit Grant History */}
+        <CreditHistoryCard />
+
         {/* Account Settings */}
         <div className="bezel-card rounded-2xl p-6 mt-10">
           <h2 className="text-lg font-semibold mb-1">계정 설정</h2>
@@ -517,6 +520,102 @@ function PromoRedeemCard({ onRedeemed }: { onRedeemed: () => void }) {
       )}
       {status === "error" && (
         <p className="mt-2 text-sm text-red-600">✗ {message}</p>
+      )}
+    </div>
+  );
+}
+
+interface CreditEventRow {
+  type: "purchase" | "promo" | "admin" | "signup" | "expiry";
+  label: string;
+  detail: string | null;
+  delta: number;
+  refunded: boolean;
+  at: string;
+}
+
+// 크레딧 지급 내역 — 가입/프로모션/구매/운영자 지급/만료를 시간순으로 보여준다.
+// 데이터 조립은 /api/credits/history 가 담당(기존 payments·promo 기록 + 합성 이벤트).
+function CreditHistoryCard() {
+  const [events, setEvents] = useState<CreditEventRow[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/credits/history")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setEvents(d?.events ?? []))
+      .catch(() => {})
+      .finally(() => setLoaded(true));
+  }, []);
+
+  const shown = expanded ? events : events.slice(0, 8);
+
+  return (
+    <div className="bezel-card rounded-2xl overflow-hidden mt-10">
+      <div className="px-6 py-4 border-b border-[var(--border-subtle)]">
+        <h2 className="text-lg font-semibold">크레딧 지급 내역</h2>
+        <p className="text-xs text-zinc-400 mt-0.5">
+          변환에 사용·반환된 크레딧은 위 변환 이력에서 확인할 수 있어요.
+        </p>
+      </div>
+      {!loaded ? (
+        <div className="px-6 py-8 text-center text-zinc-400 text-sm">
+          불러오는 중…
+        </div>
+      ) : events.length === 0 ? (
+        <div className="px-6 py-8 text-center text-zinc-500 text-sm">
+          지급 내역이 없습니다.
+        </div>
+      ) : (
+        <>
+          <ul className="divide-y divide-[var(--border-subtle)]">
+            {shown.map((e, i) => (
+              <li
+                key={`${e.at}-${i}`}
+                className="px-6 py-3 flex items-center justify-between gap-4 text-sm"
+              >
+                <div className="min-w-0">
+                  <span className="text-zinc-800">{e.label}</span>
+                  {e.detail && (
+                    <span className="ml-2 text-zinc-400">{e.detail}</span>
+                  )}
+                  {e.refunded && (
+                    <span className="ml-2 inline-block px-1.5 py-0.5 rounded text-xs bg-red-50 text-red-600">
+                      환불됨
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-4 shrink-0">
+                  <span
+                    className={`font-medium ${
+                      e.refunded
+                        ? "text-zinc-300 line-through"
+                        : e.delta >= 0
+                          ? "text-emerald-600"
+                          : "text-red-600"
+                    }`}
+                  >
+                    {e.delta >= 0 ? `+${e.delta}` : e.delta}
+                  </span>
+                  <span className="text-zinc-400 text-xs w-24 text-right">
+                    {new Date(e.at).toLocaleDateString("ko-KR")}
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ul>
+          {events.length > 8 && (
+            <div className="px-6 py-3 border-t border-[var(--border-subtle)] text-center">
+              <button
+                onClick={() => setExpanded((v) => !v)}
+                className="text-sm text-zinc-500 hover:text-zinc-900 transition-colors"
+              >
+                {expanded ? "접기" : `전체 보기 (${events.length}건)`}
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
