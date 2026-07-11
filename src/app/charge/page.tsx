@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import Script from "next/script";
 import { loadTossPayments } from "@tosspayments/tosspayments-sdk";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
@@ -9,7 +10,15 @@ import { PLANS } from "@/lib/plans";
 import { buildOrderId, getPlan } from "@/lib/payments";
 import { trackEvent } from "@/lib/analytics";
 
-const CLIENT_KEY = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY;
+// PG 선택 — 기본은 나이스페이(포스타트). 토스 심사 통과 후 되돌리려면
+// NEXT_PUBLIC_PG_PROVIDER=toss 로 전환한다(토스 경로 보존).
+const TOSS_CLIENT_KEY = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY;
+const NICE_CLIENT_KEY = process.env.NEXT_PUBLIC_NICEPAY_CLIENT_KEY;
+const PG: "nice" | "toss" =
+  process.env.NEXT_PUBLIC_PG_PROVIDER === "toss" || !NICE_CLIENT_KEY
+    ? "toss"
+    : "nice";
+const CLIENT_KEY = PG === "nice" ? NICE_CLIENT_KEY : TOSS_CLIENT_KEY;
 const PAYMENTS_ENABLED =
   process.env.NEXT_PUBLIC_PAYMENTS_ENABLED === "true" && !!CLIENT_KEY;
 
@@ -27,6 +36,9 @@ function ChargeInner() {
   const [user, setUser] = useState<User | null>(null);
   const [credits, setCredits] = useState<number | null>(null);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
+  // 결제 비공개(PAYMENTS_ENABLED=false) 기간에도 관리자에게는 결제 UI를 노출한다
+  // — 실도메인 결제 테스트·카드사 심사용 결제경로 캡처 목적.
+  const [role, setRole] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string>(
     getPlan(preselect ?? "") ? (preselect as string) : "basic"
   );
@@ -46,12 +58,13 @@ function ChargeInner() {
       if (user) {
         const { data: profile } = await supabase
           .from("profiles")
-          .select("credits, expires_at")
+          .select("credits, expires_at, role")
           .eq("id", user.id)
           .single();
         if (profile) {
           setCredits(profile.credits);
           setExpiresAt(profile.expires_at);
+          setRole(profile.role);
         }
       }
       setLoadingUser(false);
@@ -59,6 +72,8 @@ function ChargeInner() {
   }, []);
 
   const selectedPlan = getPlan(selectedId);
+  // 공개 전이라도 관리자는 결제 UI 접근 가능 (실도메인 테스트·심사 캡처용)
+  const payAllowed = (PAYMENTS_ENABLED || role === "admin") && !!CLIENT_KEY;
 
   const onPay = async () => {
     const plan = getPlan(selectedId);
@@ -66,6 +81,38 @@ function ChargeInner() {
     setError(null);
     setPaying(true);
     trackEvent("cta_click", { label: "charge_pay", location: `charge_${plan.id}` });
+
+    if (PG === "nice") {
+      // 나이스 결제창 — 인증 완료 시 returnUrl(서버)이 승인·지급까지 처리한다.
+      const AUTHNICE = (
+        window as unknown as {
+          AUTHNICE?: { requestPay: (options: Record<string, unknown>) => void };
+        }
+      ).AUTHNICE;
+      if (!AUTHNICE) {
+        setError("결제 모듈을 불러오지 못했습니다. 새로고침 후 다시 시도해주세요.");
+        setPaying(false);
+        return;
+      }
+      AUTHNICE.requestPay({
+        clientId: CLIENT_KEY,
+        method: "cardAndEasyPay",
+        orderId: buildOrderId(plan.id, user.id),
+        amount: plan.price,
+        goodsName: `AI MathOCR ${plan.name} ${plan.credits}크레딧`,
+        returnUrl: `${window.location.origin}/api/payments/nice/return`,
+        buyerEmail: user.email ?? undefined,
+        fnError: (result: { errorMsg?: string }) => {
+          setError(result?.errorMsg ?? "결제창을 여는 중 문제가 발생했습니다.");
+          setPaying(false);
+        },
+      });
+      // 결제창(레이어)이 열린 뒤 버튼을 다시 활성화 — 사용자가 창을 닫아도 재시도할
+      // 수 있게 한다. 승인·지급은 서버에서 멱등 처리라 중복 결제 위험은 없다.
+      window.setTimeout(() => setPaying(false), 3000);
+      return;
+    }
+
     try {
       const tossPayments = await loadTossPayments(CLIENT_KEY);
       const payment = tossPayments.payment({ customerKey: user.id });
@@ -90,6 +137,9 @@ function ChargeInner() {
 
   return (
     <main className="min-h-screen bg-zinc-50">
+      {PG === "nice" && (
+        <Script src="https://pay.nicepay.co.kr/v1/js/" strategy="afterInteractive" />
+      )}
       <div className="max-w-3xl mx-auto px-6 py-12">
         <a href="/" className="inline-flex items-center gap-2 mb-10">
           <img src="/mathocr-icon.png" alt="" width={22} height={22} />
@@ -105,20 +155,11 @@ function ChargeInner() {
           만료 전에 충전하면 남은 크레딧도 새 유효기간으로 함께 연장됩니다.
         </p>
 
-        {!PAYMENTS_ENABLED ? (
-          <div className="card rounded-xl p-8 bg-white text-center">
-            <p className="text-zinc-700 font-medium mb-1">
-              결제 기능을 준비하고 있어요.
-            </p>
-            <p className="text-sm text-zinc-500">
-              오픈 소식은 홈페이지와 이메일로 안내드릴게요.
-            </p>
-          </div>
-        ) : loadingUser ? (
+        {loadingUser ? (
           <div className="card rounded-xl p-8 bg-white text-center text-zinc-500">
             불러오는 중…
           </div>
-        ) : !user ? (
+        ) : !user && PAYMENTS_ENABLED ? (
           <div className="card rounded-xl p-8 bg-white text-center">
             <p className="text-zinc-700 font-medium mb-4">
               크레딧 충전에는 로그인이 필요합니다.
@@ -130,8 +171,23 @@ function ChargeInner() {
               로그인하고 계속하기
             </a>
           </div>
+        ) : !user || !payAllowed ? (
+          <div className="card rounded-xl p-8 bg-white text-center">
+            <p className="text-zinc-700 font-medium mb-1">
+              결제 기능을 준비하고 있어요.
+            </p>
+            <p className="text-sm text-zinc-500">
+              오픈 소식은 홈페이지와 이메일로 안내드릴게요.
+            </p>
+          </div>
         ) : (
           <>
+            {!PAYMENTS_ENABLED && (
+              <div className="mb-6 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
+                관리자 미리보기 — 일반 사용자에게는 아직 결제가 공개되지
+                않았습니다.
+              </div>
+            )}
             <div className="card rounded-xl p-5 bg-white mb-6 flex flex-wrap items-center gap-x-6 gap-y-1 text-sm">
               <span className="text-zinc-500">
                 보유 크레딧{" "}

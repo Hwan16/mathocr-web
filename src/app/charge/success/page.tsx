@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
 type State =
   | { phase: "confirming" }
@@ -24,6 +25,32 @@ function SuccessInner() {
     // (서버도 멱등이지만 불필요한 왕복을 줄인다)
     if (requested.current) return;
     requested.current = true;
+
+    // 나이스페이 경로 — 승인·지급은 return 라우트(서버)에서 이미 끝났다.
+    // 여기서는 갱신된 잔액만 조회해 보여준다.
+    if (sp.get("pg") === "nice") {
+      (async () => {
+        const supabase = createClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) {
+          setState({ phase: "done" });
+          return;
+        }
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("credits, expires_at")
+          .eq("id", user.id)
+          .single();
+        setState({
+          phase: "done",
+          credits: profile?.credits,
+          expiresAt: profile?.expires_at,
+        });
+      })();
+      return;
+    }
 
     const paymentKey = sp.get("paymentKey");
     const orderId = sp.get("orderId");
