@@ -14,7 +14,7 @@ export default function TermsPage() {
           </a>
           <h1 className="text-2xl font-bold mt-4">서비스 이용약관</h1>
           <p className="text-zinc-500 text-sm mt-2">
-            최종 수정일: 2026년 7월 10일
+            최종 수정일: 2026년 7월 11일
           </p>
         </div>
 
@@ -132,7 +132,10 @@ export function TermsContent() {
         <ol className="list-decimal pl-5 space-y-2">
           <li>
             본 프로그램에 대한 소스코드, 디자인, 상표권 등 프로그램 자체에 관한
-            지식재산권은 제공자에게 귀속됩니다.
+            지식재산권은 제공자에게 귀속됩니다. 다만 본 프로그램에 포함된
+            제3자 오픈소스 소프트웨어에 대한 권리는 각 권리자에게 귀속되며,
+            해당 구성요소에는 설치 폴더에 동봉된 THIRD_PARTY_NOTICES.txt 및
+            licenses 폴더에 기재된 각 라이선스 조건이 적용됩니다.
           </li>
           <li>
             이용자가 본 서비스를 통해 생성한 변환 결과물(HWP 파일 등)에 대한
@@ -277,7 +280,11 @@ export function TermsContent() {
         </p>
         <ol className="list-decimal pl-5 space-y-2">
           <li>
-            본 프로그램의 리버스 엔지니어링, 소스코드 추출 시도.
+            본 프로그램의 리버스 엔지니어링, 소스코드 추출 시도. 다만 본
+            프로그램에 포함된 LGPL 등 오픈소스 라이선스가 적용되는
+            구성요소(Qt, PySide6 등)에 대하여, 해당 라이선스가 이용자에게
+            보장하는 범위(그 구성요소의 수정·디버깅을 위한 분석 및
+            라이브러리 교체 등)의 행위는 금지되지 않습니다.
           </li>
           <li>
             자동화된 수단(봇, 스크립트 등)을 이용하여 서비스에 과부하를 주는
