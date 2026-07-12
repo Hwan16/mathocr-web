@@ -822,6 +822,15 @@ export default function Home() {
                   </summary>
                   {/* whitespace-pre-line: 답변 문자열의 \n을 줄바꿈으로 렌더 (조작법 FAQ처럼 단계식 답변용) */}
                   <p className="text-zinc-600 leading-relaxed mt-3 pr-8 whitespace-pre-line">{item.a}</p>
+                  {item.linkHref && (
+                    <a
+                      href={item.linkHref}
+                      onClick={() => trackEvent("nav_click", { label: `faq_link:${item.linkHref}` })}
+                      className="inline-flex items-center gap-1 mt-3 text-sm font-semibold text-[var(--accent)] hover:underline"
+                    >
+                      {item.linkLabel} →
+                    </a>
+                  )}
                 </details>
               ))}
             </div>

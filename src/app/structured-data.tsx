@@ -72,7 +72,10 @@ const faqPage = {
     name: item.q,
     acceptedAnswer: {
       "@type": "Answer",
-      text: item.a,
+      // 링크가 있는 답변은 화면과 내용이 일치하도록 전체 URL을 텍스트로 덧붙인다
+      text: item.linkHref
+        ? `${item.a}\n\n해결 가이드: ${SITE_URL}${item.linkHref}`
+        : item.a,
     },
   })),
 };
