@@ -63,9 +63,22 @@ function LoginForm() {
 
       // 인증 후 프로모션 지급 (LA-02) — 가입 때 보관된 얼리버드 등 pending
       // 코드가 있으면 지금 지급된다. 실패해도 로그인은 계속 진행
-      // (pending 이 남아 다음 로그인 때 재시도).
+      // (pending 이 남아 다음 로그인 때 재시도). 결과는 sessionStorage에 담아
+      // 대시보드가 1회성 배너로 보여준다 (지급/마감/IP 제한을 사용자가 알 수 있게).
       try {
-        await fetch("/api/promo/claim-pending", { method: "POST" });
+        const claimRes = await fetch("/api/promo/claim-pending", { method: "POST" });
+        const claim = await claimRes.json().catch(() => null);
+        if (claim?.applied) {
+          sessionStorage.setItem(
+            "mathocr_promo_notice",
+            JSON.stringify({ type: "applied", credits: claim.credits_granted ?? 0 })
+          );
+        } else if (claim?.error === "exhausted" || claim?.error === "ip_limit") {
+          sessionStorage.setItem(
+            "mathocr_promo_notice",
+            JSON.stringify({ type: claim.error })
+          );
+        }
       } catch {
         // 지급 재시도는 다음 로그인에서 — 로그인 흐름을 막지 않는다
       }

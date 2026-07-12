@@ -617,11 +617,13 @@ export default function Home() {
                 }`}
               >
                 {plan.featured && (
+                  // "가장 인기"는 판매량 근거가 필요한 최상급 표현이라 주관적
+                  // 추천 표현으로 교체 (Codex 리뷰 — 판매 데이터 쌓이면 재검토)
                   <div
                     className="absolute -top-3 left-8 text-white text-xs font-semibold px-3 py-1 rounded-full"
                     style={{ backgroundColor: plan.color }}
                   >
-                    가장 인기
+                    추천
                   </div>
                 )}
                 <div className="mb-2">

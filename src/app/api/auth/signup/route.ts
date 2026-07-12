@@ -302,7 +302,9 @@ export async function POST(request: NextRequest) {
       : "회원가입이 완료되었습니다.",
     credits: DEFAULT_SIGNUP_CREDITS + promoBonusCredits,
     promo_applied: promoApplied,
-    // 인증 후 지급 대기 중인 코드 존재 여부 — 가입 화면이 안내 문구에 사용
-    promo_pending: !promoApplied && !!normalizedPromoCode && needsConfirmation,
+    // 인증 후 지급 대기 중인 코드 존재 여부 — 가입 화면이 안내 문구에 사용.
+    // Confirm email이 꺼진 환경에서 프로필 지연으로 즉시 지급을 건너뛴 경우에도
+    // pending은 metadata에 남아 다음 로그인 때 지급되므로 true가 정확하다.
+    promo_pending: !promoApplied && !!normalizedPromoCode,
   });
 }

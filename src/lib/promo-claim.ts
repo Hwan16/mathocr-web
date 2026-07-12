@@ -77,7 +77,22 @@ export async function claimPendingPromo(
   }
 
   const success = data?.success === true;
-  const errorCode = typeof data?.error === "string" ? data.error : null;
+  let errorCode = typeof data?.error === "string" ? data.error : null;
+
+  // already_redeemed는 두 경우가 섞여 있다: (a) 이 계정이 이미 받음 — 예:
+  // 지난 지급 성공 후 metadata 정리만 실패하고 재로그인한 경우, (b) 별칭
+  // 이메일 등 다른 계정이 받아서 차단. (a)를 실패로 기록하면 감사 기록이
+  // 부정확하므로 본인 상환 이력을 확인해 구분한다 (Codex 리뷰 반영).
+  let ownRedemption = false;
+  if (!success && errorCode === "already_redeemed") {
+    const { data: redemption } = await admin
+      .from("promo_redemptions")
+      .select("id, promo_codes!inner(code)")
+      .eq("user_id", user.id)
+      .eq("promo_codes.code", code)
+      .maybeSingle();
+    ownRedemption = !!redemption;
+  }
 
   if (success || (errorCode && PERMANENT_ERRORS.has(errorCode))) {
     // 성공했거나 재시도 의미가 없는 실패 → pending 정리 (감사용 결과도 남긴다)
@@ -86,7 +101,7 @@ export async function claimPendingPromo(
       user_metadata: {
         ...existingMetadata,
         pending_promo_code: null,
-        ...(success
+        ...(success || ownRedemption
           ? { promo_code: code }
           : { promo_pending_error: errorCode }),
       },

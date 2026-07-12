@@ -8,9 +8,15 @@ import { trackEvent } from "@/lib/analytics";
 // (?promo=earlybird)로 직행한다. 선착순은 코드의 max_uses로 제어.
 // 2026-07-12 지급 시점 변경(LA-02): 지급은 "이메일 인증 완료 후 첫 로그인"으로
 // 이동 — 미인증 가입이 선착순을 소진하지 못하게 하고, 문구도 이에 맞춤.
+// 2026-07-12 소진 자동 숨김(Codex 리뷰): 표시 전에 validate-promo로 코드 상태를
+// 확인해 소진·비활성이면 띄우지 않는다 — 지급 불가 상태의 혜택 광고(표시광고
+// 리스크)가 수동 배포 전까지 노출되는 문제 차단. 확인 실패 시에도 띄우지 않는다
+// (fail-closed — 잘못된 약속보다 노출 손실이 낫다).
 // 숨김 옵션은 "오늘 하루"만 둔다 (장기 숨김은 기회 노출 손해).
-// 얼리버드 프로모션을 끝낼 때: POPUP_ENABLED=false + 관리자에서 earlybird 코드 비활성.
+// 얼리버드 프로모션을 끝낼 때: POPUP_ENABLED=false + 관리자에서 earlybird 코드 비활성
+// (코드만 비활성해도 팝업은 자동으로 숨는다).
 const POPUP_ENABLED = true;
+const PROMO_CODE = "earlybird";
 // [오늘 하루 보지 않기]로 숨긴 만료 시각(epoch ms)을 브라우저에 저장
 const STORAGE_KEY = "mathocr_earlybird_popup_hide_until";
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -24,13 +30,34 @@ export default function EarlyBirdPopup() {
       const hideUntil = Number(localStorage.getItem(STORAGE_KEY) ?? 0);
       if (Number.isFinite(hideUntil) && Date.now() < hideUntil) return;
     } catch {
-      // localStorage 접근 불가(시크릿 모드 등)여도 팝업은 띄운다
+      // localStorage 접근 불가(시크릿 모드 등)는 노출 판단에 영향 없음
     }
-    const t = setTimeout(() => {
-      setVisible(true);
-      trackEvent("earlybird_popup_shown");
-    }, 800);
-    return () => clearTimeout(t);
+
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    // 코드가 아직 지급 가능한지 확인한 뒤에만 노출
+    fetch("/api/auth/validate-promo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: PROMO_CODE }),
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((result) => {
+        if (cancelled || !result?.valid) return;
+        timer = setTimeout(() => {
+          setVisible(true);
+          trackEvent("earlybird_popup_shown");
+        }, 800);
+      })
+      .catch(() => {
+        // 확인 실패 → 미노출 (fail-closed)
+      });
+
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
   }, []);
 
   useEffect(() => {
@@ -110,10 +137,12 @@ export default function EarlyBirdPopup() {
             가입하고 30크레딧 받기
           </a>
 
-          {/* 혜택 조건 — CTA와 같은 화면에 상시 노출 (표시광고 중요정보 근접 표시) */}
+          {/* 혜택 조건 — CTA와 같은 화면에 상시 노출 (표시광고 중요정보 근접 표시).
+              "선착순"의 확정 시점은 인증 후 첫 로그인의 지급 처리 순서이므로
+              특정 기준 시점을 단정하는 표현은 쓰지 않는다 (Codex 리뷰 반영) */}
           <p className="mt-3 text-[11px] leading-relaxed text-zinc-400 text-center">
-            이메일 인증 완료 기준 선착순 200명 · 기본 5 + 보너스 25 = 총
-            30크레딧(1크레딧 = 1문제) · 인증 완료 후 7일간 사용 · 1인 1회
+            선착순 200명 · 이메일 인증 완료 후 지급 · 기본 5 + 보너스 25 = 총
+            30크레딧(1크레딧 = 1문제) · 지급 후 7일간 사용 · 1인 1회
           </p>
         </div>
 

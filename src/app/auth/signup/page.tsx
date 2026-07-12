@@ -219,7 +219,7 @@ function SignupForm() {
                 .
                 {benefitName === "얼리버드 혜택" && (
                   <span className="mt-1 block text-xs text-violet-600">
-                    이메일 인증 완료 기준 선착순 200명 · 1인 1회
+                    선착순 200명 · 이메일 인증 완료 후 지급 · 1인 1회
                   </span>
                 )}
               </>

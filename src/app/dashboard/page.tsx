@@ -22,6 +22,12 @@ interface Conversion {
   created_at: string;
 }
 
+// 로그인 직후 프로모션 지급 결과 1회성 안내 (login/page.tsx가 sessionStorage에 기록)
+type PromoNotice =
+  | { type: "applied"; credits: number }
+  | { type: "exhausted" }
+  | { type: "ip_limit" };
+
 export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -30,9 +36,23 @@ export default function DashboardPage() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [promoNotice, setPromoNotice] = useState<PromoNotice | null>(null);
   const router = useRouter();
   const supabase = createClient();
   const limit = 10;
+
+  // 프로모션 지급 결과 배너 — 읽는 즉시 지워 새로고침 시 반복 표시하지 않는다
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("mathocr_promo_notice");
+      if (raw) {
+        sessionStorage.removeItem("mathocr_promo_notice");
+        setPromoNotice(JSON.parse(raw));
+      }
+    } catch {
+      // 파싱·접근 실패 시 배너 없이 진행
+    }
+  }, []);
 
   const loadData = useCallback(async () => {
     const {
@@ -121,6 +141,45 @@ export default function DashboardPage() {
 
       <div className="max-w-6xl mx-auto px-6 py-10">
         <h1 className="text-2xl font-bold mb-8">마이페이지</h1>
+
+        {/* 프로모션 지급 결과 안내 (로그인 직후 1회) */}
+        {promoNotice && (
+          <div
+            className={`mb-6 flex items-start justify-between gap-3 rounded-xl border px-4 py-3 text-sm leading-relaxed ${
+              promoNotice.type === "applied"
+                ? "bg-violet-50 border-violet-200 text-violet-800"
+                : "bg-zinc-50 border-zinc-200 text-zinc-600"
+            }`}
+          >
+            <span>
+              {promoNotice.type === "applied" ? (
+                <>
+                  🎉 프로모션 보너스 <strong>{promoNotice.credits}크레딧</strong>이
+                  지급되었습니다. 잔여 크레딧에 반영되어 있어요.
+                </>
+              ) : promoNotice.type === "exhausted" ? (
+                <>
+                  아쉽지만 프로모션 선착순이 마감되어 보너스는 지급되지
+                  않았어요. 가입 기본 크레딧은 정상 지급되었습니다.
+                </>
+              ) : (
+                <>
+                  같은 네트워크(IP)에서 이미 지급된 이력이 있어 보너스가 아직
+                  지급되지 않았어요. 24시간이 지난 뒤 다시 로그인하면 자동으로
+                  재시도됩니다.
+                </>
+              )}
+            </span>
+            <button
+              type="button"
+              onClick={() => setPromoNotice(null)}
+              className="shrink-0 text-zinc-400 hover:text-zinc-600"
+              aria-label="닫기"
+            >
+              ✕
+            </button>
+          </div>
+        )}
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">

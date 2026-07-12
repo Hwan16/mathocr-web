@@ -138,6 +138,12 @@ export async function POST(request: NextRequest) {
         status: 404,
         message: "사용자를 찾을 수 없습니다.",
       },
+      // 0017: 같은 request_id 를 다른 내용으로 재사용 — 정상 앱에선 발생하지
+      // 않으며, 발생 시 새로 시도하라는 안내가 맞다 (기존 결과 반환 금지)
+      request_mismatch: {
+        status: 409,
+        message: "요청 정보가 이전 시도와 일치하지 않습니다. 변환을 다시 시작해주세요.",
+      },
     };
 
     const info = statusMap[data.error] ?? { status: 400, message: data.error };
