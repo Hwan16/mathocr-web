@@ -23,7 +23,9 @@ export type OcrProvider = "claude" | "mathpix";
 // 구버전 앱 호환을 위해 v1.4.0·v1.6.0 시절 해시도 포함 (v1.7.0부터 현행).
 // 프롬프트를 부득이 바꾸는 릴리스에서는 여기에 새 해시를 먼저 추가·배포할 것.
 const ALLOWED_SYSTEM_PROMPT_HASHES = new Set<string>([
-  // SYSTEM_PROMPT (v1.7.0~현행)
+  // SYSTEM_PROMPT (v2.0.7~현행) — 테두리 박스 정의 확장(일반 박스 포함)
+  "f3fabf2e91e747aec4fef74df9bf366c7b0613c5d25cb5ba4b06969e4c094549",
+  // SYSTEM_PROMPT (v1.7.0~v2.0.6)
   "1d5489828e6424494da64a44a2e2c5df339fde16374df0b72f33d976d0f82ceb",
   // SOLUTION_SYSTEM_PROMPT (v1.4.0~현행, 변경 이력 없음)
   "a53e24e2b599c75cb107d476ce1887cefc4ab34895c719b472e5927ea6572980",
