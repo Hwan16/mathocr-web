@@ -9,7 +9,7 @@ import { PLANS, SIGNUP_FREE_CREDITS, SIGNUP_FREE_VALIDITY_DAYS, CREDIT_RULE } fr
 import EarlyBirdPopup from "@/components/EarlyBirdPopup";
 
 const DOWNLOAD_URL =
-  "https://github.com/Hwan16/mathocr-web/releases/download/v2.0.7/MathOCR-Setup-v2.0.7.exe";
+  "https://github.com/Hwan16/mathocr-web/releases/download/v2.0.8/MathOCR-Setup-v2.0.8.exe";
 const DOWNLOAD_LABEL = "v2.0.7 (115MB)";
 
 // 결제 오픈 게이트 — Vercel 환경변수에 NEXT_PUBLIC_PAYMENTS_ENABLED=true 를
