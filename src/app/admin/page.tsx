@@ -44,6 +44,7 @@ const LOG_STEP_LABELS: Record<string, string> = {
 const LOG_CATEGORY_LABELS: Record<string, string> = {
   hwp_server_fault: "한글 내부 오류 (자동화 중 예외)",
   hwp_not_installed: "한글 미설치 / 뷰어",
+  hwp_typelib_not_registered: "한글 설치 손상 (복구 설치 필요)",
   hwp_launch_failed: "한글 실행 실패",
   hwp_com_error: "한글 연동 오류",
   other: "기타 (한글 무관)",
