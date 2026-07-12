@@ -2,7 +2,6 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { NextRequest, NextResponse } from "next/server";
 
-const PROMO_BONUS_CREDITS = 100;
 const VALIDATION_DELAY_MS = 200;
 // 무차별 대입 방지: IP당 분당 시도 횟수 제한 (인증 없는 공개 엔드포인트)
 const PROMO_RATE_LIMIT = 10;
@@ -22,13 +21,6 @@ type ValidateBody = {
 
 function normalizePromoCode(value: unknown): string {
   return typeof value === "string" ? value.trim().toLowerCase() : "";
-}
-
-function promoCodesFromEnv(): string[] {
-  return (process.env.PROMO_CODES ?? "")
-    .split(",")
-    .map((code) => code.trim().toLowerCase())
-    .filter(Boolean);
 }
 
 function sleep(ms: number): Promise<void> {
@@ -83,7 +75,10 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // 1) DB 관리 코드 우선 (관리자가 생성, 코드별 크레딧 지정)
+    // DB 관리 코드만 유효 — 레거시 환경변수(PROMO_CODES) 코드는 2026-07-12에
+    // 폐기했다. env 경로는 계정당 1회·알리아스·IP 가드와 지급 이력을 모두
+    // 우회하고 100크레딧을 고정 지급하는 구멍이었다(감사 LA-02). 기존 env
+    // 코드를 계속 쓰려면 관리자 페이지에서 DB 코드로 등록하면 된다.
     const dbBonus = await dbPromoBonusCredits(normalized);
     if (dbBonus !== null) {
       return NextResponse.json({
@@ -91,15 +86,6 @@ export async function POST(request: NextRequest) {
         bonus_credits: dbBonus.credits,
         // null = 계정 만료일 따름, n = 사용 시 만료일이 최소 now()+n일로 연장
         validity_days: dbBonus.validityDays,
-      });
-    }
-
-    // 2) 레거시 환경변수 코드 폴백 (100크레딧 고정)
-    const matched = promoCodesFromEnv().includes(normalized);
-    if (matched) {
-      return NextResponse.json({
-        valid: true,
-        bonus_credits: PROMO_BONUS_CREDITS,
       });
     }
     return NextResponse.json({ valid: false });

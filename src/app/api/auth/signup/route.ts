@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { normalizeEmailAlias } from "@/lib/email";
+import { claimPendingPromo } from "@/lib/promo-claim";
+import { CONSENT_VERSION } from "@/lib/consent";
 import { NextRequest, NextResponse } from "next/server";
 
 // IP당 가입 시도 제한 (B3 — 무료 크레딧 파밍 봇 방어의 1차 저지선).
@@ -10,14 +11,8 @@ import { NextRequest, NextResponse } from "next/server";
 const SIGNUP_IP_LIMIT = 5;
 const SIGNUP_IP_WINDOW_MS = 60 * 60 * 1000; // 1시간
 
-const PROMO_BONUS_CREDITS = 100;
 const DEFAULT_SIGNUP_CREDITS = 5;
 const PROFILE_RETRY_DELAYS_MS = [100, 200, 400, 800, 1200];
-// 서버가 인정하는 현재 약관/개인정보 문서 버전(시행일). 동의 이력은 클라이언트
-// 값이 아니라 반드시 이 서버 상수로 기록한다(감사 신뢰성).
-// 2026-07-09: 제6조 환불 규정 구체화(7일 후 10% 공제·유효기간 소멸 명시)
-// 2026-07-11: 개인정보처리방침 제7조의2 신설(온라인 맞춤형 광고 행태정보 고지 — 메타 픽셀 대비)
-const CONSENT_VERSION = "2026-07-11";
 
 type SignupBody = {
   email?: string;
@@ -57,13 +52,6 @@ function normalizeUtm(value: unknown): string | null {
   }
   cleaned = cleaned.trim().toLowerCase().slice(0, 100);
   return cleaned || null;
-}
-
-function promoCodesFromEnv(): string[] {
-  return (process.env.PROMO_CODES ?? "")
-    .split(",")
-    .map((code) => code.trim().toLowerCase())
-    .filter(Boolean);
 }
 
 function sleep(ms: number): Promise<void> {
@@ -169,8 +157,13 @@ export async function POST(request: NextRequest) {
     });
   }
 
+  const normalizedPromoCode = normalizePromoCode(promo_code);
+
   // 계정 생성과 원자적으로 동의 도장을 user_metadata 에 남긴다.
   // (별도 user_consents 기록이 실패하더라도 '동의 없는 계정'은 생기지 않는다.)
+  // 프로모션 코드는 여기서 지급하지 않고 pending 으로만 보관한다(LA-02) —
+  // 실제 지급은 이메일 인증 후 첫 로그인 시점(claimPendingPromo)에 수행해,
+  // 미인증 가입이 선착순 자리를 소진하지 못하게 한다.
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
     email,
@@ -186,6 +179,9 @@ export async function POST(request: NextRequest) {
         consent_privacy: true,
         consented_at: new Date().toISOString(),
         ...(marketingOptIn ? { marketing_opt_in: true } : {}),
+        ...(normalizedPromoCode
+          ? { pending_promo_code: normalizedPromoCode }
+          : {}),
         // 가입 출처 원본 스탬프 — profiles 기록(아래)이 실패해도 백필할 수 있는 사본
         ...(utmSource
           ? {
@@ -203,14 +199,8 @@ export async function POST(request: NextRequest) {
   }
 
   const userId = data.user?.id;
-  const normalizedPromoCode = normalizePromoCode(promo_code);
-  const promoMatchedEnv =
-    normalizedPromoCode.length > 0 &&
-    promoCodesFromEnv().includes(normalizedPromoCode);
   let promoApplied = false;
   let promoBonusCredits = 0;
-  // 코드 미적용 사유 (얼리버드 페이지가 exhausted/already_redeemed/ip_limit 안내에 사용)
-  let promoErrorCode: string | null = null;
 
   // 프로필 생성(트리거) 이후에 (1) 동의 이력 기록, (2) 프로모션 보너스를 수행.
   if (userId) {
@@ -275,90 +265,15 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // (2) 프로모션 보너스: DB 관리 코드 우선(코드별 크레딧 + 사용 이력 기록),
-        // 레거시 환경변수 코드 폴백(100크레딧 고정, 이력 없음).
-        if (normalizedPromoCode) {
-          const { data: redeemData, error: redeemError } = await admin.rpc(
-            "redeem_promo_code",
-            {
-              p_user_id: userId,
-              p_code: normalizedPromoCode,
-              p_source: "signup",
-              // 어뷰징 가드(0013): 알리아스 접은 이메일 + 요청 IP
-              p_normalized_email: normalizeEmailAlias(email),
-              p_ip: clientIp,
-            }
-          );
-
-          if (!redeemData?.success) {
-            promoErrorCode =
-              typeof redeemData?.error === "string"
-                ? redeemData.error
-                : redeemError
-                  ? "rpc_failed"
-                  : null;
-          }
-
-          if (redeemData?.success) {
+        // (2) 프로모션: 이메일 인증(Confirm email)이 꺼진 환경에서는 가입 즉시
+        // 세션과 함께 인증이 완료되므로 여기서 바로 지급한다. 인증이 켜진
+        // 환경(현재 프로덕션)에서는 pending 으로 남고, 인증 후 첫 로그인 때
+        // claim-pending / token 라우트가 지급한다.
+        if (normalizedPromoCode && data.session && data.user) {
+          const claim = await claimPendingPromo(data.user, clientIp);
+          if (claim.applied) {
             promoApplied = true;
-            promoBonusCredits =
-              typeof redeemData.credits_granted === "number"
-                ? redeemData.credits_granted
-                : 0;
-            console.info("[signup] db promo bonus applied", { user_id: userId });
-          } else if (
-            promoMatchedEnv &&
-            (redeemError || redeemData?.error === "invalid_code")
-          ) {
-            // DB에 없는(또는 RPC 실패한) 코드만 환경변수 폴백. DB 코드가
-            // 비활성/소진 상태라면 관리자 설정을 존중해 폴백하지 않는다.
-            if (redeemError) {
-              console.warn("[signup] promo redeem rpc failed, falling back to env", {
-                user_id: userId,
-                error: redeemError.message,
-              });
-            }
-
-            const { error: bonusError } = await admin.rpc("add_credits_raw", {
-              p_user_id: userId,
-              p_credits: PROMO_BONUS_CREDITS,
-            });
-
-            if (bonusError) {
-              console.warn("[signup] promo bonus failed", {
-                user_id: userId,
-                error: bonusError.message,
-              });
-            } else {
-              promoApplied = true;
-              promoBonusCredits = PROMO_BONUS_CREDITS;
-              console.info("[signup] promo bonus applied", { user_id: userId });
-            }
-          } else if (redeemError) {
-            console.warn("[signup] promo redeem rpc failed", {
-              user_id: userId,
-              error: redeemError.message,
-            });
-          }
-
-          if (promoApplied) {
-            const existingMetadata = data.user?.user_metadata ?? {};
-            const { error: metadataError } = await admin.auth.admin.updateUserById(
-              userId,
-              {
-                user_metadata: {
-                  ...existingMetadata,
-                  promo_code: normalizedPromoCode,
-                },
-              }
-            );
-
-            if (metadataError) {
-              console.warn("[signup] promo metadata update failed", {
-                user_id: userId,
-                error: metadataError.message,
-              });
-            }
+            promoBonusCredits = claim.credits_granted;
           }
         }
       } else {
@@ -387,6 +302,7 @@ export async function POST(request: NextRequest) {
       : "회원가입이 완료되었습니다.",
     credits: DEFAULT_SIGNUP_CREDITS + promoBonusCredits,
     promo_applied: promoApplied,
-    promo_error: promoApplied ? null : promoErrorCode,
+    // 인증 후 지급 대기 중인 코드 존재 여부 — 가입 화면이 안내 문구에 사용
+    promo_pending: !promoApplied && !!normalizedPromoCode && needsConfirmation,
   });
 }

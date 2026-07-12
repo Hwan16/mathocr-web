@@ -1,5 +1,15 @@
 import { createClient } from "@/lib/supabase/server";
+import { claimPendingPromo } from "@/lib/promo-claim";
 import { NextRequest, NextResponse } from "next/server";
+
+function getClientIp(request: NextRequest): string | null {
+  const forwarded = request.headers.get("x-forwarded-for");
+  if (forwarded) {
+    const first = forwarded.split(",")[0]?.trim();
+    if (first) return first;
+  }
+  return request.headers.get("x-real-ip");
+}
 
 export async function POST(request: NextRequest) {
   const { email, password } = await request.json();
@@ -34,7 +44,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "이메일 또는 비밀번호가 올바르지 않습니다." }, { status: 401 });
   }
 
-  // 프로필 정보 함께 반환
+  // 인증 후 프로모션 지급 (LA-02) — pending 코드가 있으면 여기서 지급
+  try {
+    await claimPendingPromo(data.user, getClientIp(request));
+  } catch {
+    // 지급 실패가 로그인을 막지 않는다 — pending 유지, 다음 로그인 때 재시도
+  }
+
+  // 프로필 정보 함께 반환 (프로모션 지급 이후 잔액 기준)
   const { data: profile } = await supabase
     .from("profiles")
     .select("role, credits, expires_at")

@@ -61,6 +61,15 @@ function LoginForm() {
         localStorage.removeItem(SAVED_EMAIL_KEY);
       }
 
+      // 인증 후 프로모션 지급 (LA-02) — 가입 때 보관된 얼리버드 등 pending
+      // 코드가 있으면 지금 지급된다. 실패해도 로그인은 계속 진행
+      // (pending 이 남아 다음 로그인 때 재시도).
+      try {
+        await fetch("/api/promo/claim-pending", { method: "POST" });
+      } catch {
+        // 지급 재시도는 다음 로그인에서 — 로그인 흐름을 막지 않는다
+      }
+
       trackEvent("login", { method: "password" });
       router.push(redirect);
       router.refresh();

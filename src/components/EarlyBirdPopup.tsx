@@ -5,8 +5,10 @@ import { trackEvent } from "@/lib/analytics";
 
 // ── 얼리버드 안내 팝업 (홈페이지 진입 시) ──
 // 2026-07-11 가입 직결 개편(사용자 결정): 신청제 폐기 — 팝업 CTA가 가입 페이지
-// (?promo=earlybird)로 직행하고, 가입 즉시 30크레딧이 지급된다(선착순은 코드의
-// max_uses로 제어). 숨김 옵션은 "오늘 하루"만 둔다 (장기 숨김은 기회 노출 손해).
+// (?promo=earlybird)로 직행한다. 선착순은 코드의 max_uses로 제어.
+// 2026-07-12 지급 시점 변경(LA-02): 지급은 "이메일 인증 완료 후 첫 로그인"으로
+// 이동 — 미인증 가입이 선착순을 소진하지 못하게 하고, 문구도 이에 맞춤.
+// 숨김 옵션은 "오늘 하루"만 둔다 (장기 숨김은 기회 노출 손해).
 // 얼리버드 프로모션을 끝낼 때: POPUP_ENABLED=false + 관리자에서 earlybird 코드 비활성.
 const POPUP_ENABLED = true;
 // [오늘 하루 보지 않기]로 숨긴 만료 시각(epoch ms)을 브라우저에 저장
@@ -56,7 +58,7 @@ export default function EarlyBirdPopup() {
       className="fixed inset-0 z-[100] flex items-center justify-center px-4"
       role="dialog"
       aria-modal="true"
-      aria-label="얼리버드 혜택 — 가입 즉시 30문제 무료"
+      aria-label="얼리버드 혜택 — 가입하고 이메일 인증하면 30문제 무료"
     >
       {/* 배경 클릭 = 이번만 닫기 */}
       <div
@@ -92,11 +94,12 @@ export default function EarlyBirdPopup() {
           <h2 className="text-2xl font-bold leading-snug text-zinc-900">
             AI MathOCR <span className="text-violet-700">정식 오픈!</span>
             <br />
-            회원가입만 해도{" "}
+            가입하고 인증만 하면{" "}
             <span className="text-violet-700">30문제 무료!</span>
           </h2>
           <p className="mt-3 text-sm leading-relaxed text-zinc-600">
-            얼리버드 혜택 — 회원가입만 해도 30크레딧이 즉시 지급돼요.
+            얼리버드 혜택 — 가입 후 이메일 인증을 마치면 30크레딧이 바로
+            들어와요.
           </p>
 
           <a
@@ -106,6 +109,12 @@ export default function EarlyBirdPopup() {
           >
             가입하고 30크레딧 받기
           </a>
+
+          {/* 혜택 조건 — CTA와 같은 화면에 상시 노출 (표시광고 중요정보 근접 표시) */}
+          <p className="mt-3 text-[11px] leading-relaxed text-zinc-400 text-center">
+            이메일 인증 완료 기준 선착순 200명 · 기본 5 + 보너스 25 = 총
+            30크레딧(1크레딧 = 1문제) · 인증 완료 후 7일간 사용 · 1인 1회
+          </p>
         </div>
 
         {/* 하단: 오늘 하루만 숨김 (장기 숨김 옵션은 두지 않는다) */}

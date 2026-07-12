@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyUnsubscribeToken, type UnsubscribeKind } from "@/lib/unsubscribe";
+import { CONSENT_VERSION } from "@/lib/consent";
 import { NextRequest, NextResponse } from "next/server";
 
 // 마케팅 메일 수신거부 (0014/0015) — 메일 하단 링크의 목적지.
@@ -103,7 +104,7 @@ export async function POST(request: NextRequest) {
         );
       }
       await admin.from("user_consents").insert([
-        { user_id: null, email: row.email, doc_type: "marketing", version: "2026-07-11", agreed: false, ip, user_agent: userAgent },
+        { user_id: null, email: row.email, doc_type: "marketing", version: CONSENT_VERSION, agreed: false, ip, user_agent: userAgent },
       ]);
     }
     return donePage();
@@ -133,7 +134,7 @@ export async function POST(request: NextRequest) {
     }
     // 철회 감사 기록 (agreed=false)
     await admin.from("user_consents").insert([
-      { user_id: uid, email: profile.email, doc_type: "marketing", version: "2026-07-11", agreed: false, ip, user_agent: userAgent },
+      { user_id: uid, email: profile.email, doc_type: "marketing", version: CONSENT_VERSION, agreed: false, ip, user_agent: userAgent },
     ]);
   }
 

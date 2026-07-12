@@ -8,7 +8,10 @@ const ALLOWED_MODELS = ["claude-sonnet-4-6"] as const;
 const DEFAULT_MODEL = "claude-sonnet-4-6";
 const RATE_LIMIT = 60;
 const RATE_LIMIT_WINDOW_MS = 60_000;
-const MAX_TOKENS = 4096;
+// 데스크톱의 해설 분석 단계(structure_analyzer.analyze_solution)가 8192를 요청한다.
+// 4096으로 캡하면 긴 해설이 중간에서 잘려 품질·재시도 비용이 나빠진다(감사 LA-13).
+// 서버가 여전히 상한을 소유한다 — 클라이언트가 이 이상 요청해도 8192로 캡.
+const MAX_TOKENS = 8192;
 const MAX_IMAGE_BASE64_LENGTH = 2_800_000;
 const ALLOWED_BODY_KEYS = new Set(["system", "messages", "max_tokens", "model"]);
 

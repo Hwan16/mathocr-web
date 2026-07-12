@@ -636,16 +636,17 @@ export default function Home() {
                   {plan.credits} 크레딧 · 유효기간 {plan.validityDays}일
                 </div>
 
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-sm text-zinc-400 line-through">
-                    {plan.listPrice.toLocaleString()}원
-                  </span>
-                  <span
-                    className="text-xs font-semibold px-2 py-0.5 rounded-full"
-                    style={{ color: plan.color, backgroundColor: plan.color + "1a" }}
-                  >
-                    {plan.discountPct}% 할인
-                  </span>
+                {/* 절약률은 실재하는 우리 판매가(Starter 단가) 대비 비교만 표시 —
+                    가상 정가 취소선·할인율은 표시광고법 리스크로 제거(LA-01) */}
+                <div className="flex items-center gap-2 mb-1 min-h-[22px]">
+                  {plan.savePctVsStarter && (
+                    <span
+                      className="text-xs font-semibold px-2 py-0.5 rounded-full"
+                      style={{ color: plan.color, backgroundColor: plan.color + "1a" }}
+                    >
+                      Starter 대비 크레딧당 {plan.savePctVsStarter}% 절약
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-baseline gap-1.5 mb-1">
                   <span className="text-4xl font-bold">

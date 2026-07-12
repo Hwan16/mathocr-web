@@ -42,10 +42,30 @@ export async function POST(request: NextRequest) {
   let problem_count: unknown;
   let solution_count: unknown;
   let pdf_name: unknown;
+  let request_id: unknown;
   try {
-    ({ problem_count, solution_count, pdf_name } = await request.json());
+    ({ problem_count, solution_count, pdf_name, request_id } = await request.json());
   } catch {
     return NextResponse.json({ error: "요청 JSON을 읽을 수 없습니다." }, { status: 400 });
+  }
+
+  // 멱등키(0016, LA-06): 앱이 변환 시도마다 UUID를 보낸다. 같은 키 재요청은
+  // 서버가 새로 차감하지 않고 기존 결과를 돌려준다 — 응답 유실 후 재시도가
+  // 이중 차감으로 이어지지 않는다. 선택 값(구버전 앱은 보내지 않음).
+  let requestId: string | null = null;
+  if (request_id !== undefined && request_id !== null) {
+    if (
+      typeof request_id !== "string" ||
+      request_id.length === 0 ||
+      request_id.length > 64 ||
+      !/^[A-Za-z0-9-]+$/.test(request_id)
+    ) {
+      return NextResponse.json(
+        { error: "request_id 형식이 올바르지 않습니다." },
+        { status: 400 }
+      );
+    }
+    requestId = request_id;
   }
 
   if (
@@ -84,14 +104,20 @@ export async function POST(request: NextRequest) {
   //  - 구버전 앱: problem_count 에 이미 합계가 담겨 오고 solution=0 → total=합계(기존과 동일)
   const total = problem_count + solution;
 
-  // DB 함수로 원자적 크레딧 차감 (총액 차감, 해설 수는 표시용으로 분리 저장)
+  // DB 함수로 원자적 크레딧 차감 (총액 차감, 해설 수는 표시용으로 분리 저장).
+  // p_request_id 는 값이 있을 때만 전달 — 0016 마이그레이션 적용 전 함수(4-인수)
+  // 와도 기존 앱 호출이 계속 동작하게 하기 위함.
   const admin = createAdminClient();
-  const { data, error } = await admin.rpc("deduct_credits", {
+  const rpcParams: Record<string, unknown> = {
     p_user_id: user.id,
     p_amount: total,
     p_pdf_name: typeof pdf_name === "string" ? pdf_name.slice(0, 255) : null,
     p_solution_count: solution,
-  });
+  };
+  if (requestId) {
+    rpcParams.p_request_id = requestId;
+  }
+  const { data, error } = await admin.rpc("deduct_credits", rpcParams);
 
   if (error) {
     console.error("[credits:POST] deduct_credits failed", error);

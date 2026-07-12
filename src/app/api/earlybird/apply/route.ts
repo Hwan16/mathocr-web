@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { normalizeEmailAlias } from "@/lib/email";
+import { CONSENT_VERSION } from "@/lib/consent";
 import { NextRequest, NextResponse } from "next/server";
 
 // 얼리버드 사전 신청 (0015 — 신청제 전환, 2026-07-11)
@@ -13,7 +14,6 @@ export const dynamic = "force-dynamic";
 const APPLY_CAP = 200; // 선착순
 const APPLY_IP_LIMIT = 5;
 const APPLY_IP_WINDOW_MS = 60 * 60 * 1000; // 1시간
-const CONSENT_VERSION = "2026-07-11";
 
 function getClientIp(request: NextRequest): string | null {
   const forwarded = request.headers.get("x-forwarded-for");

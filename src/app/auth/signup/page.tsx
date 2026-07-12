@@ -7,10 +7,8 @@ import { trackEvent } from "@/lib/analytics";
 import { SIGNUP_FREE_CREDITS } from "@/lib/plans";
 import { metaPixelTrack } from "@/lib/meta-pixel";
 import { getStoredUtm } from "@/lib/utm";
-
-// 동의받은 약관/방침의 버전(시행일). 문서 개정 시 함께 갱신한다.
-// 서버(api/auth/signup/route.ts)의 CONSENT_VERSION과 반드시 일치시킬 것.
-const CONSENT_VERSION = "2026-07-11";
+// 동의받은 약관/방침의 버전(시행일) — lib/consent.ts 단일 출처 (서버와 자동 일치)
+import { CONSENT_VERSION } from "@/lib/consent";
 
 export default function SignupPage() {
   // useSearchParams는 Suspense 경계가 필요하다 (Next.js 규칙)
@@ -210,12 +208,20 @@ function SignupForm() {
           >
             {promoStatus === "valid" ? (
               <>
-                🎁 {benefitName} 적용 중 — 가입 완료 시{" "}
-                <strong>
-                  {SIGNUP_FREE_CREDITS}+{promoBonusCredits}크레딧
-                </strong>
-                이 즉시 지급됩니다
-                {promoValidityDays ? ` (유효기간 ${promoValidityDays}일)` : ""}.
+                🎁 {benefitName} 적용 중 — 가입 후{" "}
+                <strong>이메일 인증을 마치면</strong> 기본 {SIGNUP_FREE_CREDITS} +
+                보너스 {promoBonusCredits} ={" "}
+                <strong>총 {SIGNUP_FREE_CREDITS + promoBonusCredits}크레딧</strong>
+                이 지급됩니다
+                {promoValidityDays
+                  ? ` (인증 완료 후 ${promoValidityDays}일간 사용 가능)`
+                  : ""}
+                .
+                {benefitName === "얼리버드 혜택" && (
+                  <span className="mt-1 block text-xs text-violet-600">
+                    이메일 인증 완료 기준 선착순 200명 · 1인 1회
+                  </span>
+                )}
               </>
             ) : promoStatus === "invalid" || promoStatus === "error" ? (
               <>
@@ -241,6 +247,12 @@ function SignupForm() {
               <strong className="text-zinc-900">{email}</strong> 주소로 보낸
               메일의 인증 링크를 누르면 가입이 완료됩니다.
             </p>
+            {promoStatus === "valid" && (
+              <p className="text-sm text-violet-700 leading-relaxed mb-1">
+                🎁 인증을 마치고 로그인하면 {benefitName} 크레딧이 자동으로
+                지급됩니다.
+              </p>
+            )}
             <p className="text-xs text-zinc-400 leading-relaxed mb-6">
               메일이 안 보이면 스팸함을 확인해주세요. 이미 가입된 이메일이라면
               메일이 오지 않을 수 있어요 — 바로 로그인해 보세요.
@@ -332,9 +344,12 @@ function SignupForm() {
               )}
               {promoStatus === "valid" && (
                 <p className="mt-1.5 text-xs text-emerald-600">
-                  ✓ 사용 가능한 코드입니다. 가입 시 {SIGNUP_FREE_CREDITS}+
-                  {promoBonusCredits}크레딧 보너스가 적용됩니다
-                  {promoValidityDays ? ` (유효기간 ${promoValidityDays}일)` : ""}.
+                  ✓ 사용 가능한 코드입니다. 이메일 인증을 마치면{" "}
+                  {SIGNUP_FREE_CREDITS}+{promoBonusCredits}크레딧이 지급됩니다
+                  {promoValidityDays
+                    ? ` (인증 완료 후 ${promoValidityDays}일간 사용 가능)`
+                    : ""}
+                  .
                 </p>
               )}
               {promoStatus === "invalid" && (
