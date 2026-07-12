@@ -9,6 +9,7 @@ interface Profile {
   credits: number;
   expires_at: string | null;
   role: string;
+  marketing_opt_in: boolean | null;
 }
 
 interface Conversion {
@@ -67,7 +68,7 @@ export default function DashboardPage() {
     // 프로필
     const { data: profileData } = await supabase
       .from("profiles")
-      .select("credits, expires_at, role")
+      .select("credits, expires_at, role, marketing_opt_in")
       .eq("id", user.id)
       .single();
     setProfile(profileData);
@@ -350,6 +351,11 @@ export default function DashboardPage() {
                 변경하기
               </a>
             </div>
+            {profile && (
+              <MarketingConsentRow
+                initialOptIn={profile.marketing_opt_in === true}
+              />
+            )}
             <div className="py-4 flex items-center justify-between gap-4">
               <div>
                 <div className="text-sm font-medium text-zinc-800">
@@ -377,6 +383,70 @@ export default function DashboardPage() {
           onClose={() => setShowDeleteModal(false)}
         />
       )}
+    </div>
+  );
+}
+
+// 마케팅 수신 설정 토글 (LA-09) — /api/account/marketing-consent가
+// profiles.marketing_opt_in 갱신 + user_consents 동의/철회 감사 기록을 함께 처리.
+function MarketingConsentRow({ initialOptIn }: { initialOptIn: boolean }) {
+  const [optIn, setOptIn] = useState(initialOptIn);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleToggle() {
+    if (saving) return;
+    const next = !optIn;
+    setSaving(true);
+    setError("");
+    try {
+      const res = await fetch("/api/account/marketing-consent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ opt_in: next }),
+      });
+      const result = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setOptIn(result.opt_in === true);
+      } else {
+        setError(result.error ?? "설정 변경에 실패했습니다.");
+      }
+    } catch {
+      setError("설정 변경에 실패했습니다. 잠시 후 다시 시도해주세요.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="py-4 flex items-center justify-between gap-4">
+      <div>
+        <div className="text-sm font-medium text-zinc-800">
+          할인·혜택 소식 메일 받기
+        </div>
+        <p className="text-sm text-zinc-500">
+          충전 혜택·할인 안내 메일 수신 여부입니다. 크레딧 만료 예정 등 필수
+          안내는 이 설정과 관계없이 발송됩니다.
+        </p>
+        {error && <p className="mt-1 text-sm text-red-600">✗ {error}</p>}
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={optIn}
+        aria-label="할인·혜택 소식 메일 받기"
+        onClick={handleToggle}
+        disabled={saving}
+        className={`relative shrink-0 w-11 h-6 rounded-full transition-colors disabled:opacity-50 ${
+          optIn ? "bg-[var(--accent)]" : "bg-zinc-300"
+        }`}
+      >
+        <span
+          className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+            optIn ? "translate-x-5" : ""
+          }`}
+        />
+      </button>
     </div>
   );
 }

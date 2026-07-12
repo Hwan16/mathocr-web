@@ -21,7 +21,8 @@ type SignupBody = {
   agreed_terms?: boolean;
   agreed_privacy?: boolean;
   consent_version?: string;
-  // 얼리버드 등 혜택 조건부 마케팅 수신 동의 (0013). 일반 가입은 보내지 않는다.
+  // 마케팅 수신 동의 (0013·LA-09) — 가입 화면의 순수 선택 체크박스(기본 해제).
+  // 혜택 지급 조건이 아니며, true일 때만 동의 기록·프로필 갱신이 일어난다.
   marketing_opt_in?: boolean;
   utm_source?: string;
   utm_medium?: string;

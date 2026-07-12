@@ -33,6 +33,9 @@ function SignupForm() {
   const [error, setError] = useState("");
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [agreePrivacy, setAgreePrivacy] = useState(false);
+  // 마케팅 수신 동의 (LA-09) — 순수 선택·기본 해제. 얼리버드 등 혜택 지급과
+  // 무관하며, 체크하지 않아도 가입·혜택에 아무 영향이 없다.
+  const [agreeMarketing, setAgreeMarketing] = useState(false);
   const [loading, setLoading] = useState(false);
   // 이메일 인증(Confirm email)이 켜진 경우: 가입 후 "메일 확인" 안내 화면으로 전환
   const [confirmEmailSent, setConfirmEmailSent] = useState(false);
@@ -135,6 +138,7 @@ function SignupForm() {
           promo_code: promoCode,
           agreed_terms: agreeTerms,
           agreed_privacy: agreePrivacy,
+          marketing_opt_in: agreeMarketing,
           consent_version: CONSENT_VERSION,
           // 가입 출처(M4) — 방문 시 저장해둔 first-touch UTM (없으면 직접 유입)
           ...(getStoredUtm() ?? {}),
@@ -404,6 +408,23 @@ function SignupForm() {
                     개인정보 수집·이용
                   </a>
                   에 동의합니다.
+                </label>
+              </div>
+              <div className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  id="agree-marketing"
+                  checked={agreeMarketing}
+                  onChange={(e) => setAgreeMarketing(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded border-zinc-300 accent-[var(--accent)] cursor-pointer shrink-0"
+                />
+                <label
+                  htmlFor="agree-marketing"
+                  className="text-xs text-zinc-600 leading-relaxed cursor-pointer"
+                >
+                  <span className="text-zinc-400">(선택)</span> 할인·혜택
+                  소식을 이메일로 받아볼게요. 마이페이지에서 언제든 바꿀 수
+                  있어요.
                 </label>
               </div>
             </div>
