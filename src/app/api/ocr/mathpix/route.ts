@@ -1,6 +1,13 @@
 import { getAuthUser } from "@/lib/supabase/auth-helper";
 import { ensureUsableCredits } from "@/lib/supabase/credit-guard";
 import { checkRateLimit } from "@/lib/rate-limit";
+import {
+  checkAndCountUserCall,
+  isDailyCostBlocked,
+  recordCost,
+  mathpixCostPerCallUsd,
+  logOcrUsage,
+} from "@/lib/ocr-guard";
 import { NextRequest, NextResponse } from "next/server";
 
 const MATHPIX_API_URL = "https://api.mathpix.com/v3/text";
@@ -85,7 +92,8 @@ export async function POST(request: NextRequest) {
     return errorResponse("인증되지 않았습니다.", 401);
   }
 
-  const rateLimit = await checkRateLimit(user.id, RATE_LIMIT, RATE_LIMIT_WINDOW_MS);
+  // 키를 프록시별로 분리 — claude와 분당 한도를 공유하던 문제 해소 (감사 지적)
+  const rateLimit = await checkRateLimit(`ocr:mathpix:${user.id}`, RATE_LIMIT, RATE_LIMIT_WINDOW_MS);
   if (!rateLimit.allowed) {
     return errorResponse(
       "잠시 후 다시 시도해주세요. (분당 시도 횟수 초과)",
@@ -118,6 +126,29 @@ export async function POST(request: NextRequest) {
       return errorResponse(validated.message, validated.status);
     }
 
+    // 사용자별 일일 호출 상한 (LA-04)
+    const callCheck = await checkAndCountUserCall("mathpix", user.id);
+    if (!callCheck.allowed) {
+      logOcrUsage({
+        provider: "mathpix", user_id: user.id, ok: false, status: 429,
+        duration_ms: 0, blocked_reason: "user_daily_call_limit",
+      });
+      return errorResponse("오늘 처리 가능한 횟수를 초과했습니다. 내일 다시 시도해주세요.", 429);
+    }
+
+    // 공급자 일일 비용 상한 (LA-04) — 도달 시 자정(KST)까지 차단
+    const costGate = await isDailyCostBlocked("mathpix");
+    if (costGate.blocked) {
+      logOcrUsage({
+        provider: "mathpix", user_id: user.id, ok: false, status: 503,
+        duration_ms: 0, blocked_reason: "daily_cost_limit",
+      });
+      return errorResponse(
+        "일일 처리 한도에 도달했습니다. 내일 다시 시도해주세요. 문의: aimathocr.official@gmail.com",
+        503
+      );
+    }
+
     const mathpixBody = {
       ...validated.value,
       math_inline_delimiters: ["$", "$"],
@@ -128,6 +159,7 @@ export async function POST(request: NextRequest) {
       metadata: { improve_mathpix: false },
     };
 
+    const startedAt = Date.now();
     const response = await fetch(MATHPIX_API_URL, {
       method: "POST",
       headers: {
@@ -139,13 +171,26 @@ export async function POST(request: NextRequest) {
     });
 
     const data = await response.json();
+    const durationMs = Date.now() - startedAt;
 
     if (!response.ok) {
+      logOcrUsage({
+        provider: "mathpix", user_id: user.id, ok: false,
+        status: response.status, duration_ms: durationMs,
+      });
       return NextResponse.json(
         { error: data.error ?? `Mathpix API 오류 (HTTP ${response.status})` },
         { status: response.status }
       );
     }
+
+    // Mathpix는 응답에 비용 정보가 없어 건당 고정 추정치로 적립 (LA-04)
+    const estCostUsd = mathpixCostPerCallUsd();
+    await recordCost("mathpix", estCostUsd);
+    logOcrUsage({
+      provider: "mathpix", user_id: user.id, ok: true, status: 200,
+      duration_ms: durationMs, est_cost_usd: estCostUsd,
+    });
 
     return NextResponse.json(data);
   } catch (error) {

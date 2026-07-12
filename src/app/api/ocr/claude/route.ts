@@ -1,6 +1,14 @@
 import { getAuthUser } from "@/lib/supabase/auth-helper";
 import { ensureUsableCredits } from "@/lib/supabase/credit-guard";
 import { checkRateLimit } from "@/lib/rate-limit";
+import {
+  isAllowedSystemPrompt,
+  checkAndCountUserCall,
+  isDailyCostBlocked,
+  recordCost,
+  estimateClaudeCostUsd,
+  logOcrUsage,
+} from "@/lib/ocr-guard";
 import { NextRequest, NextResponse } from "next/server";
 
 const CLAUDE_API_URL = "https://api.anthropic.com/v1/messages";
@@ -47,24 +55,61 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function findOversizedClaudeImage(messages: unknown): boolean {
-  if (!Array.isArray(messages)) {
-    return false;
+// 데스크톱 앱이 보내는 유일한 형태(LA-04에서 강제): user 메시지 1개,
+// content = [이미지 1개 + 텍스트 블록들]. 이 형태가 아니면 수학문제 변환이
+// 아니라 프록시를 범용 LLM처럼 쓰려는 시도다.
+function validateClaudeMessages(
+  messages: unknown[]
+): { ok: true } | { ok: false; message: string; status: number } {
+  if (messages.length !== 1) {
+    return { ok: false, message: "messages는 1개여야 합니다.", status: 400 };
+  }
+  const message = messages[0];
+  if (!isRecord(message) || message.role !== "user" || !Array.isArray(message.content)) {
+    return { ok: false, message: "요청 형식이 올바르지 않습니다.", status: 400 };
+  }
+  if (message.content.length < 1 || message.content.length > 4) {
+    return { ok: false, message: "요청 형식이 올바르지 않습니다.", status: 400 };
   }
 
-  return messages.some((message) => {
-    if (!isRecord(message) || !Array.isArray(message.content)) {
-      return false;
+  let imageCount = 0;
+  for (const part of message.content) {
+    if (!isRecord(part)) {
+      return { ok: false, message: "요청 형식이 올바르지 않습니다.", status: 400 };
     }
-
-    return message.content.some((part) => {
-      if (!isRecord(part) || !isRecord(part.source)) {
-        return false;
+    if (part.type === "image") {
+      if (
+        !isRecord(part.source) ||
+        part.source.type !== "base64" ||
+        typeof part.source.media_type !== "string" ||
+        !part.source.media_type.startsWith("image/") ||
+        typeof part.source.data !== "string" ||
+        part.source.data.length === 0
+      ) {
+        return { ok: false, message: "이미지 형식이 올바르지 않습니다.", status: 400 };
       }
-      const data = part.source.data;
-      return typeof data === "string" && data.length > MAX_IMAGE_BASE64_LENGTH;
-    });
-  });
+      if (part.source.data.length > MAX_IMAGE_BASE64_LENGTH) {
+        return {
+          ok: false,
+          message: "이미지 크기가 너무 큽니다. 2MB 이하 이미지로 다시 시도해주세요.",
+          status: 413,
+        };
+      }
+      imageCount += 1;
+    } else if (part.type === "text") {
+      if (typeof part.text !== "string") {
+        return { ok: false, message: "요청 형식이 올바르지 않습니다.", status: 400 };
+      }
+    } else {
+      return { ok: false, message: "허용되지 않은 콘텐츠 형식입니다.", status: 400 };
+    }
+  }
+
+  // 이미지 필수 — 텍스트 전용 요청은 문제 변환이 아니다
+  if (imageCount !== 1) {
+    return { ok: false, message: "문제 이미지가 포함되어야 합니다.", status: 400 };
+  }
+  return { ok: true };
 }
 
 function validateClaudeBody(body: unknown):
@@ -92,8 +137,9 @@ function validateClaudeBody(body: unknown):
   if (typeof body.max_tokens !== "number" || !Number.isFinite(body.max_tokens) || body.max_tokens <= 0) {
     return { ok: false, message: "max_tokens 필드는 양수여야 합니다.", status: 400 };
   }
-  if (findOversizedClaudeImage(body.messages)) {
-    return { ok: false, message: "이미지 크기가 너무 큽니다. 2MB 이하 이미지로 다시 시도해주세요.", status: 413 };
+  const messagesCheck = validateClaudeMessages(body.messages);
+  if (!messagesCheck.ok) {
+    return messagesCheck;
   }
 
   const requestedTokens = Math.floor(body.max_tokens);
@@ -117,7 +163,9 @@ export async function POST(request: NextRequest) {
     return errorResponse("인증되지 않았습니다.", 401);
   }
 
-  const rateLimit = await checkRateLimit(user.id, RATE_LIMIT, RATE_LIMIT_WINDOW_MS);
+  // 키를 프록시별로 분리 — mathpix와 분당 한도를 공유해 50문제 변환(양쪽 합산
+  // 100호출)이 60회/분에 걸리던 문제 해소 (감사 지적)
+  const rateLimit = await checkRateLimit(`ocr:claude:${user.id}`, RATE_LIMIT, RATE_LIMIT_WINDOW_MS);
   if (!rateLimit.allowed) {
     return errorResponse(
       "잠시 후 다시 시도해주세요. (분당 시도 횟수 초과)",
@@ -156,6 +204,39 @@ export async function POST(request: NextRequest) {
       return errorResponse(validated.message, validated.status);
     }
 
+    // 서버가 아는 프롬프트만 통과 — 임의 지시문으로 프록시를 범용 LLM처럼
+    // 쓰는 것을 차단한다 (LA-04)
+    if (!isAllowedSystemPrompt(validated.value.system)) {
+      logOcrUsage({
+        provider: "claude", user_id: user.id, ok: false, status: 403,
+        duration_ms: 0, blocked_reason: "system_prompt_not_allowed",
+      });
+      return errorResponse("허용되지 않은 요청입니다. 앱을 최신 버전으로 업데이트해주세요.", 403);
+    }
+
+    // 사용자별 일일 호출 상한 (LA-04)
+    const callCheck = await checkAndCountUserCall("claude", user.id);
+    if (!callCheck.allowed) {
+      logOcrUsage({
+        provider: "claude", user_id: user.id, ok: false, status: 429,
+        duration_ms: 0, blocked_reason: "user_daily_call_limit",
+      });
+      return errorResponse("오늘 처리 가능한 횟수를 초과했습니다. 내일 다시 시도해주세요.", 429);
+    }
+
+    // 공급자 일일 비용 상한 (LA-04) — 도달 시 자정(KST)까지 차단
+    const costGate = await isDailyCostBlocked("claude");
+    if (costGate.blocked) {
+      logOcrUsage({
+        provider: "claude", user_id: user.id, ok: false, status: 503,
+        duration_ms: 0, blocked_reason: "daily_cost_limit",
+      });
+      return errorResponse(
+        "일일 처리 한도에 도달했습니다. 내일 다시 시도해주세요. 문의: aimathocr.official@gmail.com",
+        503
+      );
+    }
+
     // body.model is intentionally ignored; the server owns model selection.
     // validated.value.system(문자열)을 5분 ephemeral cache 가능한 array 블록으로 변환.
     const anthropicBody = {
@@ -167,6 +248,7 @@ export async function POST(request: NextRequest) {
       ? { "X-Max-Tokens-Capped": "true" }
       : {};
 
+    const startedAt = Date.now();
     const response = await fetch(CLAUDE_API_URL, {
       method: "POST",
       headers: {
@@ -178,26 +260,30 @@ export async function POST(request: NextRequest) {
     });
 
     const data = await response.json();
+    const durationMs = Date.now() - startedAt;
 
     if (!response.ok) {
+      logOcrUsage({
+        provider: "claude", user_id: user.id, ok: false,
+        status: response.status, duration_ms: durationMs,
+      });
       return NextResponse.json(
         { error: data.error?.message ?? `Claude API 오류 (HTTP ${response.status})` },
         { status: response.status, headers: responseHeaders }
       );
     }
 
-    // Cache 적용 검증용 로그 (Vercel function logs에서 확인).
-    // 1차 호출: cache_creation_input_tokens > 0, 2차 호출(5분 내): cache_read_input_tokens > 0.
-    const usage = data.usage;
-    if (usage) {
-      const creation = usage.cache_creation_input_tokens ?? 0;
-      const read = usage.cache_read_input_tokens ?? 0;
-      const input = usage.input_tokens ?? 0;
-      const output = usage.output_tokens ?? 0;
-      console.log(
-        `[claude proxy] usage user=${user.id} input=${input} output=${output} cache_creation=${creation} cache_read=${read}`
-      );
-    }
+    // 사용량 구조화 기록 + 일일 비용 적립 (50/80/100% 경보 포함, LA-04)
+    const usage = data.usage ?? {};
+    const estCostUsd = estimateClaudeCostUsd(usage);
+    await recordCost("claude", estCostUsd);
+    logOcrUsage({
+      provider: "claude", user_id: user.id, ok: true, status: 200,
+      duration_ms: durationMs, est_cost_usd: Number(estCostUsd.toFixed(6)),
+      input_tokens: usage.input_tokens ?? 0,
+      output_tokens: usage.output_tokens ?? 0,
+      cache_read_tokens: usage.cache_read_input_tokens ?? 0,
+    });
 
     return NextResponse.json(data, { headers: responseHeaders });
   } catch (error) {
