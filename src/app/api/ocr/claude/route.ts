@@ -21,6 +21,17 @@ const RATE_LIMIT_WINDOW_MS = 60_000;
 // 서버가 여전히 상한을 소유한다 — 클라이언트가 이 이상 요청해도 8192로 캡.
 const MAX_TOKENS = 8192;
 const MAX_IMAGE_BASE64_LENGTH = 2_800_000;
+// OCR 텍스트(USER_PROMPT_TEMPLATE + Mathpix 결과) 최대치 대비 여유 상한 —
+// 허용 프롬프트 하에서 임의 장문 주입으로 토큰 비용을 불리는 것을 차단 (코덱스 2차)
+const MAX_TEXT_LENGTH = 40_000;
+// 데스크톱 structure_analyzer._read_image_base64 의 mime_map 과 일치
+const ALLOWED_IMAGE_MEDIA_TYPES = new Set([
+  "image/png",
+  "image/jpeg",
+  "image/gif",
+  "image/bmp",
+  "image/webp",
+]);
 const ALLOWED_BODY_KEYS = new Set(["system", "messages", "max_tokens", "model"]);
 
 function resolveClaudeModel(): string {
@@ -56,8 +67,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 // 데스크톱 앱이 보내는 유일한 형태(LA-04에서 강제): user 메시지 1개,
-// content = [이미지 1개 + 텍스트 블록들]. 이 형태가 아니면 수학문제 변환이
-// 아니라 프록시를 범용 LLM처럼 쓰려는 시도다.
+// content = [이미지 정확히 1개 + 텍스트 정확히 1개] (structure_analyzer._call_api
+// 가 이 고정 형태로만 호출). 이 형태가 아니면 수학문제 변환이 아니라 프록시를
+// 범용 LLM처럼 쓰려는 시도다. (코덱스 2차: 텍스트 0~3개 허용·길이 무제한이던
+// 것을 정확히 1개·40,000자 상한·media_type 화이트리스트로 조임)
 function validateClaudeMessages(
   messages: unknown[]
 ): { ok: true } | { ok: false; message: string; status: number } {
@@ -68,11 +81,12 @@ function validateClaudeMessages(
   if (!isRecord(message) || message.role !== "user" || !Array.isArray(message.content)) {
     return { ok: false, message: "요청 형식이 올바르지 않습니다.", status: 400 };
   }
-  if (message.content.length < 1 || message.content.length > 4) {
+  if (message.content.length !== 2) {
     return { ok: false, message: "요청 형식이 올바르지 않습니다.", status: 400 };
   }
 
   let imageCount = 0;
+  let textCount = 0;
   for (const part of message.content) {
     if (!isRecord(part)) {
       return { ok: false, message: "요청 형식이 올바르지 않습니다.", status: 400 };
@@ -82,7 +96,7 @@ function validateClaudeMessages(
         !isRecord(part.source) ||
         part.source.type !== "base64" ||
         typeof part.source.media_type !== "string" ||
-        !part.source.media_type.startsWith("image/") ||
+        !ALLOWED_IMAGE_MEDIA_TYPES.has(part.source.media_type) ||
         typeof part.source.data !== "string" ||
         part.source.data.length === 0
       ) {
@@ -100,13 +114,17 @@ function validateClaudeMessages(
       if (typeof part.text !== "string") {
         return { ok: false, message: "요청 형식이 올바르지 않습니다.", status: 400 };
       }
+      if (part.text.length > MAX_TEXT_LENGTH) {
+        return { ok: false, message: "요청 텍스트가 너무 깁니다.", status: 413 };
+      }
+      textCount += 1;
     } else {
       return { ok: false, message: "허용되지 않은 콘텐츠 형식입니다.", status: 400 };
     }
   }
 
-  // 이미지 필수 — 텍스트 전용 요청은 문제 변환이 아니다
-  if (imageCount !== 1) {
+  // 이미지 1 + 텍스트 1 고정 — 텍스트 전용/이미지 전용 요청은 문제 변환이 아니다
+  if (imageCount !== 1 || textCount !== 1) {
     return { ok: false, message: "문제 이미지가 포함되어야 합니다.", status: 400 };
   }
   return { ok: true };

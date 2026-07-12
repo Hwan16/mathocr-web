@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { claimPendingPromo } from "@/lib/promo-claim";
+import { claimPendingMarketingConsent } from "@/lib/marketing-consent";
 import { NextRequest, NextResponse } from "next/server";
 
 function getClientIp(request: NextRequest): string | null {
@@ -62,6 +63,20 @@ export async function POST(request: NextRequest) {
     console.warn("[auth/token] promo claim skipped", {
       user_id: data.user.id,
       error: claimError instanceof Error ? claimError.message : String(claimError),
+    });
+  }
+
+  // 인증 후 마케팅 동의 활성화 (LA-09 보강) — pending 플래그가 있으면 여기서 기록
+  try {
+    await claimPendingMarketingConsent(
+      data.user,
+      getClientIp(request),
+      request.headers.get("user-agent")
+    );
+  } catch (consentError) {
+    console.warn("[auth/token] marketing consent claim skipped", {
+      user_id: data.user.id,
+      error: consentError instanceof Error ? consentError.message : String(consentError),
     });
   }
 

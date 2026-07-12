@@ -85,12 +85,21 @@ export async function claimPendingPromo(
   // 부정확하므로 본인 상환 이력을 확인해 구분한다 (Codex 리뷰 반영).
   let ownRedemption = false;
   if (!success && errorCode === "already_redeemed") {
-    const { data: redemption } = await admin
+    const { data: redemption, error: lookupError } = await admin
       .from("promo_redemptions")
       .select("id, promo_codes!inner(code)")
       .eq("user_id", user.id)
       .eq("promo_codes.code", code)
       .maybeSingle();
+    if (lookupError) {
+      // 조회가 실패하면 (a)/(b) 구분이 불가능하다 — 확정 기록(already_redeemed)을
+      // 남기지 않고 pending 을 유지해 다음 로그인 때 재판정한다 (코덱스 2차).
+      console.warn("[promo-claim] redemption lookup failed", {
+        user_id: user.id,
+        error: lookupError.message,
+      });
+      return { applied: false, credits_granted: 0, error: "rpc_failed" };
+    }
     ownRedemption = !!redemption;
   }
 

@@ -422,8 +422,11 @@ function SignupForm() {
                   htmlFor="agree-marketing"
                   className="text-xs text-zinc-600 leading-relaxed cursor-pointer"
                 >
-                  <span className="text-zinc-400">(선택)</span> 할인·혜택
-                  소식을 이메일로 받아볼게요. 마이페이지에서 언제든 바꿀 수
+                  <span className="text-zinc-400">(선택)</span>{" "}
+                  <span className="font-medium text-zinc-700">
+                    광고성 정보 수신 동의(이메일)
+                  </span>{" "}
+                  — 할인·혜택 소식을 받아볼게요. 마이페이지에서 언제든 바꿀 수
                   있어요.
                 </label>
               </div>

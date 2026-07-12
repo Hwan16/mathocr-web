@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { claimPendingPromo } from "@/lib/promo-claim";
+import { claimPendingMarketingConsent } from "@/lib/marketing-consent";
 import { CONSENT_VERSION } from "@/lib/consent";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -179,7 +180,11 @@ export async function POST(request: NextRequest) {
         consent_terms: true,
         consent_privacy: true,
         consented_at: new Date().toISOString(),
-        ...(marketingOptIn ? { marketing_opt_in: true } : {}),
+        // 마케팅 수신 체크는 이메일 인증 전에는 pending 으로만 보관한다 (LA-09
+        // 보강) — 실제 활성화(user_consents·profiles)는 인증 후 첫 로그인
+        // 시점에 claimPendingMarketingConsent 가 수행한다. 타인 이메일 가입이
+        // '동의자'로 기록되는 것을 막는다.
+        ...(marketingOptIn ? { pending_marketing_opt_in: true } : {}),
         ...(normalizedPromoCode
           ? { pending_promo_code: normalizedPromoCode }
           : {}),
@@ -226,32 +231,18 @@ export async function POST(request: NextRequest) {
           });
         }
 
-        // (1.2) 마케팅 수신 동의 감사 기록 (0013 — 얼리버드 혜택 조건).
-        // 약관·개인정보 행과 분리 삽입: 이 행이 실패해도 필수 동의 기록은 남는다.
-        if (marketingOptIn) {
-          const { error: marketingConsentError } = await admin
-            .from("user_consents")
-            .insert([
-              { user_id: userId, email, doc_type: "marketing", version: CONSENT_VERSION, agreed: true, ip: clientIp, user_agent: userAgent },
-            ]);
-          if (marketingConsentError) {
-            console.warn("[signup] marketing consent record failed", {
-              user_id: userId,
-              error: marketingConsentError.message,
-            });
-          }
-        }
+        // (1.2) 마케팅 수신 동의: 여기서는 기록하지 않는다 (LA-09 보강).
+        // user_consents 감사 행·profiles.marketing_opt_in 은 이메일 인증 후
+        // 첫 로그인 때 claimPendingMarketingConsent 가 기록한다 — 위 signUp
+        // user_metadata 의 pending_marketing_opt_in 이 그때까지의 보관소다.
 
-        // (1.5) 가입 출처(M4)·마케팅 수신 여부(0013)를 프로필에 기록.
+        // (1.5) 가입 출처(M4)를 프로필에 기록.
         // user_metadata에 사본이 있으므로 실패해도 가입은 막지 않는다.
         const profilePatch: Record<string, unknown> = {};
         if (utmSource) {
           profilePatch.utm_source = utmSource;
           profilePatch.utm_medium = utmMedium;
           profilePatch.utm_campaign = utmCampaign;
-        }
-        if (marketingOptIn) {
-          profilePatch.marketing_opt_in = true;
         }
         if (Object.keys(profilePatch).length > 0) {
           const { error: patchError } = await admin
@@ -266,16 +257,19 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // (2) 프로모션: 이메일 인증(Confirm email)이 꺼진 환경에서는 가입 즉시
-        // 세션과 함께 인증이 완료되므로 여기서 바로 지급한다. 인증이 켜진
-        // 환경(현재 프로덕션)에서는 pending 으로 남고, 인증 후 첫 로그인 때
-        // claim-pending / token 라우트가 지급한다.
+        // (2) 프로모션·마케팅 동의: 이메일 인증(Confirm email)이 꺼진 환경에서는
+        // 가입 즉시 세션과 함께 인증이 완료되므로 여기서 바로 처리한다. 인증이
+        // 켜진 환경(현재 프로덕션)에서는 pending 으로 남고, 인증 후 첫 로그인 때
+        // claim-pending / token / login 라우트가 처리한다.
         if (normalizedPromoCode && data.session && data.user) {
           const claim = await claimPendingPromo(data.user, clientIp);
           if (claim.applied) {
             promoApplied = true;
             promoBonusCredits = claim.credits_granted;
           }
+        }
+        if (marketingOptIn && data.session && data.user) {
+          await claimPendingMarketingConsent(data.user, clientIp, userAgent);
         }
       } else {
         console.warn("[signup] profile was not ready after signup", {

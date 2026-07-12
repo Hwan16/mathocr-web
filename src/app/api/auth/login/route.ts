@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { claimPendingPromo } from "@/lib/promo-claim";
+import { claimPendingMarketingConsent } from "@/lib/marketing-consent";
 import { NextRequest, NextResponse } from "next/server";
 
 function getClientIp(request: NextRequest): string | null {
@@ -49,6 +50,17 @@ export async function POST(request: NextRequest) {
     await claimPendingPromo(data.user, getClientIp(request));
   } catch {
     // 지급 실패가 로그인을 막지 않는다 — pending 유지, 다음 로그인 때 재시도
+  }
+
+  // 인증 후 마케팅 동의 활성화 (LA-09 보강) — pending 플래그가 있으면 여기서 기록
+  try {
+    await claimPendingMarketingConsent(
+      data.user,
+      getClientIp(request),
+      request.headers.get("user-agent")
+    );
+  } catch {
+    // 실패가 로그인을 막지 않는다 — pending 유지, 다음 로그인 때 재시도
   }
 
   // 프로필 정보 함께 반환 (프로모션 지급 이후 잔액 기준)

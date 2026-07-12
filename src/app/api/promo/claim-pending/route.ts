@@ -1,6 +1,7 @@
 import { getAuthUser } from "@/lib/supabase/auth-helper";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { claimPendingPromo } from "@/lib/promo-claim";
+import { claimPendingMarketingConsent } from "@/lib/marketing-consent";
 import { NextRequest, NextResponse } from "next/server";
 
 // ── 인증 후 프로모션 지급 청구 (LA-02) ──
@@ -39,6 +40,17 @@ export async function POST(request: NextRequest) {
   }
 
   const result = await claimPendingPromo(user, getClientIp(request));
+
+  // 인증 후 마케팅 동의 활성화 (LA-09 보강) — pending 플래그가 있으면 여기서 기록
+  try {
+    await claimPendingMarketingConsent(
+      user,
+      getClientIp(request),
+      request.headers.get("user-agent")
+    );
+  } catch {
+    // 실패해도 프로모션 응답은 정상 반환 — pending 유지, 다음 로그인 때 재시도
+  }
 
   return NextResponse.json({
     applied: result.applied,

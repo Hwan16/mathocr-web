@@ -257,6 +257,8 @@ async function sendCostAlert(
 ): Promise<void> {
   // 동시 요청이 같은 문턱을 함께 넘는 드문 경우의 중복 메일을 SETNX로 억제.
   // Redis 불능이면 그냥 보낸다 (경보 누락보다 중복이 낫다).
+  // 발송이 실패하면 키를 지워 다음 문턱 통과 호출이 재시도하게 한다 —
+  // SETNX 선점 후 발송 실패 시 경보가 영영 유실되던 문제 수정 (코덱스 2차).
   const dedupeKey = `ocrcost:alerted:${provider}:${kstDayKey()}:${pct}`;
   const results = await redisPipeline([
     ["SET", dedupeKey, "1", "NX", "EX", TWO_DAYS_S],
@@ -267,9 +269,10 @@ async function sendCostAlert(
   console.error(`[ocr-guard] ${summary}`);
 
   const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return;
+  if (!apiKey) return; // 키 미설정은 재시도 무의미 — 콘솔 경보만 남긴다
+  let delivered = false;
   try {
-    await fetch("https://api.resend.com/emails", {
+    const resp = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -287,10 +290,17 @@ async function sendCostAlert(
 </div>`,
       }),
     });
+    delivered = resp.ok;
+    if (!resp.ok) {
+      console.error("[ocr-guard] alert mail rejected", { status: resp.status });
+    }
   } catch (error) {
     console.error("[ocr-guard] alert mail failed", {
       error: error instanceof Error ? error.message : String(error),
     });
+  }
+  if (!delivered) {
+    await redisPipeline([["DEL", dedupeKey]]);
   }
 }
 
