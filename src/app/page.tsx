@@ -840,29 +840,37 @@ export default function Home() {
                 자주 묻는 질문
               </h2>
             </div>
-            <div className="divide-y divide-zinc-200">
-              {FAQS.map((item) => (
-                <details key={item.q} className="group py-5">
-                  <summary className="flex items-center justify-between cursor-pointer list-none font-semibold text-lg text-zinc-900">
-                    {item.q}
-                    <iconify-icon
-                      icon="solar:alt-arrow-down-linear"
-                      width="20"
-                      className="text-zinc-400 group-open:rotate-180 transition-transform shrink-0 ml-4"
-                    />
-                  </summary>
-                  {/* whitespace-pre-line: 답변 문자열의 \n을 줄바꿈으로 렌더 (조작법 FAQ처럼 단계식 답변용) */}
-                  <p className="text-zinc-600 leading-relaxed mt-3 pr-8 whitespace-pre-line">{item.a}</p>
-                  {item.linkHref && (
-                    <a
-                      href={item.linkHref}
-                      onClick={() => trackEvent("nav_click", { label: `faq_link:${item.linkHref}` })}
-                      className="inline-flex items-center gap-1 mt-3 text-sm font-semibold text-[var(--accent)] hover:underline"
-                    >
-                      {item.linkLabel} →
-                    </a>
-                  )}
-                </details>
+            {/* group(faqs.ts) 단위로 소제목을 붙여 유저 여정 순으로 묶어 보여준다 */}
+            <div className="space-y-10">
+              {Array.from(new Set(FAQS.map((f) => f.group))).map((group) => (
+                <div key={group}>
+                  <div className="text-sm font-semibold text-zinc-400 mb-1">{group}</div>
+                  <div className="divide-y divide-zinc-200">
+                    {FAQS.filter((f) => f.group === group).map((item) => (
+                      <details key={item.q} className="group py-5">
+                        <summary className="flex items-center justify-between cursor-pointer list-none font-semibold text-lg text-zinc-900">
+                          {item.q}
+                          <iconify-icon
+                            icon="solar:alt-arrow-down-linear"
+                            width="20"
+                            className="text-zinc-400 group-open:rotate-180 transition-transform shrink-0 ml-4"
+                          />
+                        </summary>
+                        {/* whitespace-pre-line: 답변 문자열의 \n을 줄바꿈으로 렌더 (조작법 FAQ처럼 단계식 답변용) */}
+                        <p className="text-zinc-600 leading-relaxed mt-3 pr-8 whitespace-pre-line">{item.a}</p>
+                        {item.linkHref && (
+                          <a
+                            href={item.linkHref}
+                            onClick={() => trackEvent("nav_click", { label: `faq_link:${item.linkHref}` })}
+                            className="inline-flex items-center gap-1 mt-3 text-sm font-semibold text-[var(--accent)] hover:underline"
+                          >
+                            {item.linkLabel} →
+                          </a>
+                        )}
+                      </details>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           </div>
