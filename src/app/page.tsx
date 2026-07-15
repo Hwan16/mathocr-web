@@ -7,6 +7,7 @@ import { FAQS } from "@/lib/faqs";
 import { FaqStructuredData } from "./structured-data";
 import { PLANS, SIGNUP_FREE_CREDITS, SIGNUP_FREE_VALIDITY_DAYS, CREDIT_RULE } from "@/lib/plans";
 import EarlyBirdPopup from "@/components/EarlyBirdPopup";
+import DownloadGuideModal from "@/components/DownloadGuideModal";
 
 const DOWNLOAD_URL =
   "https://github.com/Hwan16/mathocr-web/releases/download/v2.0.9/MathOCR-Setup-v2.0.9.exe";
@@ -35,6 +36,8 @@ export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   // 구매 버튼 placeholder 안내(결제 연동 전). 클릭 시 잠깐 토스트로 안내한다.
   const [purchaseNotice, setPurchaseNotice] = useState(false);
+  // 다운로드 클릭 시 SmartScreen 경고 대처 안내 모달 (다운로드는 그대로 진행)
+  const [downloadGuideOpen, setDownloadGuideOpen] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -773,7 +776,11 @@ export default function Home() {
               </p>
               <a
                 href={DOWNLOAD_URL}
-                onClick={() => trackEvent("app_download", { version: DOWNLOAD_LABEL })}
+                onClick={() => {
+                  // 다운로드는 그대로 진행하면서 SmartScreen 경고 대처 안내를 띄운다
+                  trackEvent("app_download", { version: DOWNLOAD_LABEL });
+                  setDownloadGuideOpen(true);
+                }}
                 className="btn-primary inline-flex items-center gap-2.5 px-10 py-4 text-lg rounded-lg"
               >
                 <iconify-icon icon="solar:download-minimalistic-linear" width="22" />
@@ -975,6 +982,12 @@ export default function Home() {
 
       {/* ── 얼리버드 안내 팝업 (결제 오픈 후 컴포넌트 내 POPUP_ENABLED=false) ── */}
       <EarlyBirdPopup />
+
+      {/* ── 다운로드 보안 경고 안내 모달 (다운로드 버튼 클릭 시) ── */}
+      <DownloadGuideModal
+        open={downloadGuideOpen}
+        onClose={() => setDownloadGuideOpen(false)}
+      />
     </>
   );
 }
