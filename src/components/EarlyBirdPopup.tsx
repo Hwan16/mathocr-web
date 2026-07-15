@@ -45,6 +45,10 @@ export default function EarlyBirdPopup() {
       .then((res) => (res.ok ? res.json() : null))
       .then((result) => {
         if (cancelled || !result?.valid) return;
+        // 노출이 확정된 순간 마스코트를 선로딩 — 0.8초 대기 동안 받아 두면
+        // 팝업이 뜰 때 이미지가 즉시 그려진다 (모바일 LCP가 이 이미지였음, LA-11)
+        const preload = new window.Image();
+        preload.src = "/earlybird-mascot.webp";
         timer = setTimeout(() => {
           setVisible(true);
           trackEvent("earlybird_popup_shown");
@@ -108,6 +112,9 @@ export default function EarlyBirdPopup() {
           <img
             src="/earlybird-mascot.webp"
             alt="AI MathOCR 마스코트"
+            width={800}
+            height={758}
+            fetchPriority="high"
             className="w-full h-56 object-contain"
           />
           <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-b from-transparent to-white" />

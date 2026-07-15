@@ -385,7 +385,7 @@ export default function Home() {
                   </figcaption>
                   <div className="p-5">
                     <img
-                      src="/showcase/pencil-before.png"
+                      src="/showcase/pencil-before.webp"
                       alt="연필 필기가 가득한 수학 문제 사진"
                       width={613}
                       height={216}
@@ -401,7 +401,7 @@ export default function Home() {
                   </figcaption>
                   <div className="p-5">
                     <img
-                      src="/showcase/pencil-after.png"
+                      src="/showcase/pencil-after.webp"
                       alt="필기가 제거되고 문제만 남은 HWP 변환 결과"
                       width={617}
                       height={363}
@@ -431,7 +431,7 @@ export default function Home() {
                     원본
                   </figcaption>
                   <img
-                    src="/showcase/box14-before.png"
+                    src="/showcase/box14-before.webp"
                     alt="조건 박스가 포함된 수학 시험지 원본"
                     width={772}
                     height={418}
@@ -445,7 +445,7 @@ export default function Home() {
                     변환된 HWP
                   </figcaption>
                   <img
-                    src="/showcase/box14-after.png"
+                    src="/showcase/box14-after.webp"
                     alt="조건 박스가 그대로 재현된 HWP 변환 결과"
                     width={650}
                     height={587}
@@ -464,7 +464,7 @@ export default function Home() {
                     원본
                   </figcaption>
                   <img
-                    src="/showcase/box7-before.png"
+                    src="/showcase/box7-before.webp"
                     alt="보기 박스가 포함된 수학 시험지 원본"
                     width={673}
                     height={508}
@@ -478,7 +478,7 @@ export default function Home() {
                     변환된 HWP
                   </figcaption>
                   <img
-                    src="/showcase/box7-after.png"
+                    src="/showcase/box7-after.webp"
                     alt="보기 박스가 그대로 재현된 HWP 변환 결과"
                     width={632}
                     height={610}
