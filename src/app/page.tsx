@@ -384,7 +384,9 @@ export default function Home() {
                     <img
                       src="/showcase/pencil-before.png"
                       alt="연필 필기가 가득한 수학 문제 사진"
-                      className="w-full rounded-md"
+                      width={613}
+                      height={216}
+                      className="w-full h-auto rounded-md"
                       loading="lazy"
                     />
                   </div>
@@ -398,7 +400,9 @@ export default function Home() {
                     <img
                       src="/showcase/pencil-after.png"
                       alt="필기가 제거되고 문제만 남은 HWP 변환 결과"
-                      className="w-full rounded-md"
+                      width={617}
+                      height={363}
+                      className="w-full h-auto rounded-md"
                       loading="lazy"
                     />
                   </div>
@@ -426,7 +430,9 @@ export default function Home() {
                   <img
                     src="/showcase/box14-before.png"
                     alt="조건 박스가 포함된 수학 시험지 원본"
-                    className="w-full"
+                    width={772}
+                    height={418}
+                    className="w-full h-auto"
                     loading="lazy"
                   />
                 </figure>
@@ -438,7 +444,9 @@ export default function Home() {
                   <img
                     src="/showcase/box14-after.png"
                     alt="조건 박스가 그대로 재현된 HWP 변환 결과"
-                    className="w-full"
+                    width={650}
+                    height={587}
+                    className="w-full h-auto"
                     loading="lazy"
                   />
                 </figure>
@@ -455,7 +463,9 @@ export default function Home() {
                   <img
                     src="/showcase/box7-before.png"
                     alt="보기 박스가 포함된 수학 시험지 원본"
-                    className="w-full"
+                    width={673}
+                    height={508}
+                    className="w-full h-auto"
                     loading="lazy"
                   />
                 </figure>
@@ -467,7 +477,9 @@ export default function Home() {
                   <img
                     src="/showcase/box7-after.png"
                     alt="보기 박스가 그대로 재현된 HWP 변환 결과"
-                    className="w-full"
+                    width={632}
+                    height={610}
+                    className="w-full h-auto"
                     loading="lazy"
                   />
                 </figure>
@@ -520,6 +532,8 @@ export default function Home() {
                 title: "회원가입 후 프로그램 설치",
                 desc: "홈페이지에서 회원가입하면 무료 크레딧 5개가 지급됩니다. Windows용 설치 파일을 다운로드해 실행하세요.",
                 img: "step-1.webp",
+                imgW: 1600,
+                imgH: 1104,
                 imgLabel: "설치 후 로그인된 AI MathOCR 첫 화면 — PDF·이미지 파일을 끌어다 놓는 업로드 영역",
               },
               {
@@ -527,6 +541,8 @@ export default function Home() {
                 title: "로그인하고 PDF 또는 이미지 열기",
                 desc: "프로그램을 실행해 가입한 계정으로 로그인합니다. 시험지 PDF나 핸드폰으로 찍은 문제 이미지(JPG/PNG, 최대 10장)를 드래그해서 놓거나, [파일 열기]로 업로드하세요. PDF와 이미지 모두 여러 개를 함께 첨부할 수 있고, 회전된 이미지도 프로그램 안에서 바로 회전시킬 수 있으니 방향 걱정 없이 자유롭게 올리면 됩니다.",
                 img: "step-2.webp",
+                imgW: 1600,
+                imgH: 1105,
                 imgLabel: "시험지 이미지 2장을 연 화면 — 왼쪽 목록에서 순서 변경·회전·삭제 가능",
               },
               {
@@ -534,6 +550,8 @@ export default function Home() {
                 title: "문제 영역을 드래그로 지정",
                 desc: "변환할 문제를 마우스 드래그로 감싸면 파란 박스가 생깁니다. 문제 안에 그래프나 도형이 있으면 [그림] 모드로 그림 영역을, 해설이 있으면 [해설] 모드로 해설 영역을 따로 지정하세요. 우측 목록에 답안도 미리 입력할 수 있으며, 입력한 답안과 해설은 모두 해당 문제에 미주로 연결됩니다.",
                 img: "step-3.webp",
+                imgW: 1600,
+                imgH: 1104,
                 imgLabel: "문제 6개가 파란 박스로, 그림 영역이 초록 박스로 지정된 화면과 우측 답안 입력 목록",
               },
               {
@@ -541,6 +559,8 @@ export default function Home() {
                 title: "변환하기 버튼 클릭",
                 desc: "시험지 명을 입력하고 [변환하기]를 누르면 AI가 문제별로 수식을 인식합니다. 진행률이 실시간으로 표시되고, 문제 수에 따라 수십 초 안에 완료됩니다.",
                 img: "step-4.webp",
+                imgW: 1600,
+                imgH: 1103,
                 imgLabel: "변환 진행 중 화면 — 진행률 50%와 문제별 OCR 완료 표시, 변환 취소 버튼",
               },
               {
@@ -548,6 +568,8 @@ export default function Home() {
                 title: "완성된 HWP 확인",
                 desc: "변환이 끝나면 시험지 명으로 저장된 HWP 파일이 열립니다. 수식을 더블클릭해 보세요 — 수식편집기에서 바로 수정할 수 있습니다.",
                 img: "step-5.webp",
+                imgW: 1600,
+                imgH: 1316,
                 imgLabel: "변환된 HWP를 한/글에서 연 모습 — 2단 시험지에 수식과 문항 배치",
               },
             ].map((step, i) => (
@@ -571,7 +593,9 @@ export default function Home() {
                   <img
                     src={`/guide/${step.img}`}
                     alt={step.imgLabel}
-                    className="w-full"
+                    width={step.imgW}
+                    height={step.imgH}
+                    className="w-full h-auto"
                     loading="lazy"
                   />
                 </figure>
