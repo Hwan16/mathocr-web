@@ -138,19 +138,52 @@ export async function GET(req: NextRequest) {
   ).toISOString();
 
   const supabase = createAdminClient();
-  const { data: profiles, error } = await supabase
+  // onboarding_welcome_sent_at(0018)은 온보딩 환영 메일과의 중복 방지용.
+  // 0018 미적용 환경에서는 컬럼 없이 재조회해 기존 동작을 유지한다(폴백).
+  let { data: profiles, error } = await supabase
     .from("profiles")
-    .select("id, email, credits, expires_at, marketing_opt_in")
+    .select("id, email, credits, expires_at, marketing_opt_in, onboarding_welcome_sent_at")
     .gt("credits", 0)
     .gte("expires_at", windowStart)
     .lt("expires_at", windowEnd)
     .limit(MAX_PER_RUN);
 
+  if (error && /onboarding_welcome_sent_at/.test(error.message)) {
+    console.warn("[expiry-reminder] 0018 미적용 — 온보딩 중복 방지 없이 진행");
+    const legacy = await supabase
+      .from("profiles")
+      .select("id, email, credits, expires_at, marketing_opt_in")
+      .gt("credits", 0)
+      .gte("expires_at", windowStart)
+      .lt("expires_at", windowEnd)
+      .limit(MAX_PER_RUN);
+    profiles = (legacy.data ?? []).map((p) => ({
+      ...p,
+      onboarding_welcome_sent_at: null,
+    }));
+    error = legacy.error;
+  }
+
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const candidates = (profiles ?? []).filter((p) => p.email && p.expires_at);
+  // 온보딩 환영 메일(0018)을 최근 7일 안에 받은 사용자는 건너뛴다 — 환영 메일이
+  // 같은 만료일을 이미 고지했기 때문. 얼리버드 무료 크레딧(유효 7일)은 지급
+  // 다음 날 곧바로 이 "만료 7일 전" 창에 걸리므로, 이 예외가 없으면 환영 메일과
+  // 만료 안내가 하루 이틀 사이에 연달아 나간다. 충전으로 만료일이 미래로 옮겨진
+  // 경우에는 새 만료가 다가올 때쯤 환영 발송이 7일보다 오래전이라 정상 발송된다.
+  const welcomeRecentCutoff = Date.now() - 7 * dayMs;
+  function welcomeRecent(p: { onboarding_welcome_sent_at?: string | null }): boolean {
+    return (
+      !!p.onboarding_welcome_sent_at &&
+      Date.parse(p.onboarding_welcome_sent_at) > welcomeRecentCutoff
+    );
+  }
+
+  const candidates = (profiles ?? []).filter(
+    (p) => p.email && p.expires_at && !welcomeRecent(p)
+  );
 
   // (1) 이메일 인증 확인 — 미인증(또는 조회 실패)이면 어떤 메일도 보내지 않는다.
   const confirmedById = new Map<string, boolean>();
