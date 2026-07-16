@@ -47,6 +47,7 @@ const LOG_CATEGORY_LABELS: Record<string, string> = {
   hwp_typelib_not_registered: "한글 설치 손상 (복구 설치 필요)",
   hwp_launch_failed: "한글 실행 실패",
   hwp_com_error: "한글 연동 오류",
+  hwp_api_missing: "한글 구버전 (기능 없음 — 업데이트 필요)",
   other: "기타 (한글 무관)",
 };
 
