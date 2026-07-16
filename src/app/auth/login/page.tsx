@@ -15,7 +15,13 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirect = searchParams.get("redirect") || "/dashboard";
+  const rawRedirect = searchParams.get("redirect") || "/dashboard";
+  // 오픈 리다이렉트 방지(LA-10): 내부 경로만 허용. "https://..." 같은 외부
+  // 주소와 "//host"·"/\host"(프로토콜 상대 URL·백슬래시 변종)는 대시보드로 대체.
+  const redirect =
+    rawRedirect.startsWith("/") && !rawRedirect.startsWith("//") && !rawRedirect.startsWith("/\\")
+      ? rawRedirect
+      : "/dashboard";
   // 이메일 인증 링크를 타고 돌아온 경우 (signup의 emailRedirectTo)
   const justConfirmed = searchParams.get("confirmed") === "1";
 
