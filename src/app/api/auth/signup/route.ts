@@ -4,6 +4,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { claimPendingPromo } from "@/lib/promo-claim";
 import { claimPendingMarketingConsent } from "@/lib/marketing-consent";
 import { CONSENT_VERSION } from "@/lib/consent";
+import { DEFAULT_SIGNUP_PROMO } from "@/lib/promo";
 import { NextRequest, NextResponse } from "next/server";
 
 // IP당 가입 시도 제한 (B3 — 무료 크레딧 파밍 봇 방어의 1차 저지선).
@@ -159,7 +160,12 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  const normalizedPromoCode = normalizePromoCode(promo_code);
+  // 코드를 입력하지 않은 가입에도 기본 프로모션(얼리버드)을 무조건 적용한다
+  // (2026-07-16 사용자 결정 — 가입 경로에 따라 혜택이 누락되던 사고 재발 방지).
+  // 소진·비활성 코드는 인증 후 지급 단계(claimPendingPromo)에서 조용히
+  // 걸러지므로 가입 자체는 영향받지 않는다. 종료 방법은 lib/promo.ts 참조.
+  const normalizedPromoCode =
+    normalizePromoCode(promo_code) || DEFAULT_SIGNUP_PROMO;
 
   // 계정 생성과 원자적으로 동의 도장을 user_metadata 에 남긴다.
   // (별도 user_consents 기록이 실패하더라도 '동의 없는 계정'은 생기지 않는다.)

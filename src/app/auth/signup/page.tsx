@@ -9,6 +9,8 @@ import { metaPixelTrack } from "@/lib/meta-pixel";
 import { getStoredUtm } from "@/lib/utm";
 // 동의받은 약관/방침의 버전(시행일) — lib/consent.ts 단일 출처 (서버와 자동 일치)
 import { CONSENT_VERSION } from "@/lib/consent";
+// 가입 기본 프로모션(얼리버드) — 서버(/api/auth/signup)와 같은 상수를 공유
+import { DEFAULT_SIGNUP_PROMO } from "@/lib/promo";
 
 export default function SignupPage() {
   // useSearchParams는 Suspense 경계가 필요하다 (Next.js 규칙)
@@ -43,14 +45,51 @@ function SignupForm() {
   const searchParams = useSearchParams();
   // 혜택 링크(?promo=코드) 경유 — 얼리버드 팝업/배너가 이 형태로 연결된다.
   const promoFromLink = searchParams.get("promo")?.trim() ?? "";
-  const benefitName =
-    promoFromLink.toLowerCase() === "earlybird" ? "얼리버드 혜택" : "프로모션 혜택";
 
-  // 혜택 링크로 진입하면 코드를 자동 입력하고 즉시 검증한다.
+  // ── 자동 적용 프로모션 (2026-07-16) ──
+  // 링크 코드가 없어도 기본 프로모션(얼리버드)을 모든 방문자에게 적용한다.
+  // 입력칸(promoCode)과는 분리된 상태를 쓴다 — 자동 코드가 소진·비활성이어도
+  // 입력칸 검증 게이트에 걸려 가입이 막히는 일이 없게 (fail-open).
+  const autoPromoCode = (promoFromLink || DEFAULT_SIGNUP_PROMO).toLowerCase();
+  const [autoPromoStatus, setAutoPromoStatus] = useState<
+    "none" | "checking" | "valid" | "closed"
+  >(autoPromoCode ? "checking" : "none");
+  const [autoPromoBonus, setAutoPromoBonus] = useState<number>(0);
+  const [autoPromoDays, setAutoPromoDays] = useState<number | null>(null);
+  const benefitName =
+    autoPromoCode === "earlybird" ? "얼리버드 혜택" : "프로모션 혜택";
+
+  // 진입 시 자동 프로모션이 아직 지급 가능한지 확인해 배너에 반영한다.
   useEffect(() => {
-    if (!promoFromLink) return;
-    setPromoCode(promoFromLink);
-    handleValidatePromo(promoFromLink);
+    if (!autoPromoCode) return;
+    let cancelled = false;
+    fetch("/api/auth/validate-promo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: autoPromoCode }),
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((result) => {
+        if (cancelled) return;
+        if (result?.valid) {
+          setAutoPromoBonus(
+            typeof result.bonus_credits === "number" ? result.bonus_credits : 0
+          );
+          setAutoPromoDays(
+            typeof result.validity_days === "number" ? result.validity_days : null
+          );
+          setAutoPromoStatus("valid");
+        } else {
+          setAutoPromoStatus("closed");
+        }
+      })
+      .catch(() => {
+        // 확인 실패 시 혜택을 약속하지 않는다 (지급은 서버가 알아서 시도)
+        if (!cancelled) setAutoPromoStatus("closed");
+      });
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -135,7 +174,9 @@ function SignupForm() {
         body: JSON.stringify({
           email,
           password,
-          promo_code: promoCode,
+          // 직접 입력한 코드가 우선, 없으면 자동 프로모션(서버도 같은 기본값을
+          // 적용하므로 빈 값이어도 얼리버드는 누락되지 않는다)
+          promo_code: promoCode.trim() || autoPromoCode,
           agreed_terms: agreeTerms,
           agreed_privacy: agreePrivacy,
           marketing_opt_in: agreeMarketing,
@@ -201,24 +242,28 @@ function SignupForm() {
           <p className="text-zinc-500 text-sm mt-2">새 계정을 만드세요</p>
         </div>
 
-        {/* 혜택 링크 배너 (얼리버드 등 — ?promo= 경유 시) */}
-        {promoFromLink && !confirmEmailSent && (
+        {/* 자동 프로모션 배너 — 모든 방문자에게 표시 (2026-07-16 자동 적용).
+            마감 안내는 혜택 링크로 온 방문자에게만 보여준다 (조용한 fail-open —
+            혜택을 본 적 없는 방문자에게 '마감' 문구는 혼란만 준다). */}
+        {!confirmEmailSent &&
+          autoPromoStatus !== "none" &&
+          (autoPromoStatus !== "closed" || !!promoFromLink) && (
           <div
             className={`mb-5 rounded-xl border px-4 py-3 text-sm leading-relaxed ${
-              promoStatus === "invalid" || promoStatus === "error"
+              autoPromoStatus === "closed"
                 ? "bg-zinc-100 border-zinc-200 text-zinc-600"
                 : "bg-violet-50 border-violet-200 text-violet-800"
             }`}
           >
-            {promoStatus === "valid" ? (
+            {autoPromoStatus === "valid" ? (
               <>
-                🎁 {benefitName} 적용 중 — 가입 후{" "}
+                🎁 {benefitName} 자동 적용 중 — 가입 후{" "}
                 <strong>이메일 인증을 마치면</strong> 기본 {SIGNUP_FREE_CREDITS} +
-                보너스 {promoBonusCredits} ={" "}
-                <strong>총 {SIGNUP_FREE_CREDITS + promoBonusCredits}크레딧</strong>
+                보너스 {autoPromoBonus} ={" "}
+                <strong>총 {SIGNUP_FREE_CREDITS + autoPromoBonus}크레딧</strong>
                 이 지급됩니다
-                {promoValidityDays
-                  ? ` (인증 완료 후 ${promoValidityDays}일간 사용 가능)`
+                {autoPromoDays
+                  ? ` (인증 완료 후 ${autoPromoDays}일간 사용 가능)`
                   : ""}
                 .
                 {benefitName === "얼리버드 혜택" && (
@@ -227,7 +272,7 @@ function SignupForm() {
                   </span>
                 )}
               </>
-            ) : promoStatus === "invalid" || promoStatus === "error" ? (
+            ) : autoPromoStatus === "closed" ? (
               <>
                 아쉽지만 {benefitName}이 마감되었어요. 가입 시 기본 무료
                 크레딧은 그대로 받을 수 있어요.
@@ -251,10 +296,11 @@ function SignupForm() {
               <strong className="text-zinc-900">{email}</strong> 주소로 보낸
               메일의 인증 링크를 누르면 가입이 완료됩니다.
             </p>
-            {promoStatus === "valid" && (
+            {(promoStatus === "valid" || autoPromoStatus === "valid") && (
               <p className="text-sm text-violet-700 leading-relaxed mb-1">
-                🎁 인증을 마치고 로그인하면 {benefitName} 크레딧이 자동으로
-                지급됩니다.
+                🎁 인증을 마치고 로그인하면{" "}
+                {promoStatus === "valid" ? "프로모션" : benefitName} 크레딧이
+                자동으로 지급됩니다.
               </p>
             )}
             <p className="text-xs text-zinc-400 leading-relaxed mb-6">
@@ -340,7 +386,9 @@ function SignupForm() {
               </div>
               {promoStatus === "idle" && (
                 <p className="mt-1.5 text-xs text-zinc-500">
-                  프로모션 코드를 입력하면 추가 크레딧을 받을 수 있습니다.
+                  {autoPromoStatus === "valid"
+                    ? `${benefitName}은 자동 적용돼요 — 다른 코드가 있을 때만 입력하세요.`
+                    : "프로모션 코드를 입력하면 추가 크레딧을 받을 수 있습니다."}
                 </p>
               )}
               {promoStatus === "checking" && (
