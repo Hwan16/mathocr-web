@@ -93,6 +93,18 @@ export async function POST(request: NextRequest) {
     return fail(request, "결제 금액이 플랜 가격과 일치하지 않습니다.");
   }
 
+  // kill switch 재검사 (LA-06): 최초 검사(라우트 진입) 이후 본문 파싱·서명
+  // 검증 사이에 관리자가 차단을 켰을 수 있다. 실제 카드 출금이 일어나는
+  // 외부 승인 API 호출 "직전"에 한 번 더 확인해 TOCTOU 창을 좁힌다.
+  if (await isPaymentsKilled()) {
+    console.error("[payments/nice/return] kill switch 활성(승인 직전) — 승인 차단");
+    return fail(
+      request,
+      "결제가 일시 중단되었습니다. 잠시 후 다시 시도해주세요.",
+      "PAYMENTS_PAUSED"
+    );
+  }
+
   // 승인 — 금액은 플랜에서 재계산한 값을 보낸다. 인증 금액과 다르면 나이스가 거절한다.
   const payment = await approvePayment(tid, parsed.plan.price);
   if (
@@ -114,10 +126,9 @@ export async function POST(request: NextRequest) {
 
   // 승인 응답 주문 결속 대조 (LA-06 방어심화): 응답이 요청과 다른 주문·거래를
   // 가리키면 지급하지 않는다 — 엇갈린 응답으로 다른 주문에 오지급되는 것 방지.
-  if (
-    (typeof payment.orderId === "string" && payment.orderId !== orderId) ||
-    (typeof payment.tid === "string" && payment.tid !== tid)
-  ) {
+  // orderId·tid는 나이스 성공 응답에 항상 포함되므로(공식 명세) 누락도 불일치로
+  // 간주해 필수화한다(fail-closed) — 값이 없으면 통과하던 기존 fail-open 제거.
+  if (payment.orderId !== orderId || payment.tid !== tid) {
     console.error(
       `[payments/nice/return] 승인 응답 불일치: req order=${orderId} tid=${tid} / resp order=${payment.orderId} tid=${payment.tid}`
     );

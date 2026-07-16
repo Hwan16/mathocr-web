@@ -171,6 +171,20 @@ async function main() {
     // 6) 보상 재실행 → 409 (기존 중복 방지 회귀)
     r = await patchReport(report2, adminToken, { reward: true });
     check("보상 재실행 409", r.status === 409, `status=${r.status}`);
+
+    // 7) P1-2: 보상 후 파기 전 프로세스 사망 시나리오 — 이미지가 남은 채로 재보상
+    //    요청이 오면 409지만 파기는 재시도돼야 한다(방침 제3조 보장).
+    const lingerPaths = [`${reporterUid}/${report2}/original.png`, `${reporterUid}/${report2}/converted.png`];
+    for (const p of lingerPaths) {
+      await admin.storage.from("reports").upload(p, PNG, { contentType: "image/png", upsert: true });
+    }
+    await admin.from("conversion_reports")
+      .update({ original_image_path: lingerPaths[0], converted_image_path: lingerPaths[1] })
+      .eq("id", report2);
+    check("셋업: 파기 후 이미지 잔존 재현(2장)", (await storageCount(reporterUid, report2)) === 2);
+    r = await patchReport(report2, adminToken, { reward: true });
+    check("재보상 409(중복 방지 유지)", r.status === 409, `status=${r.status}`);
+    check("409 분기에서도 잔존 이미지 재파기됨", (await storageCount(reporterUid, report2)) === 0);
   } finally {
     // 정리: storage 잔여물 → 보상 payments 행(정확 id만) → 계정(cascade로 신고 행 삭제)
     for (const rid of [report1, report2]) {

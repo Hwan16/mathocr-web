@@ -7,6 +7,23 @@ import { trackEvent } from "@/lib/analytics";
 
 const SAVED_EMAIL_KEY = "mathocr_saved_email";
 
+// 로그인 후 이동 경로를 같은 출처의 내부 경로로만 제한한다(오픈 리다이렉트 방지).
+// 고정 base로 파싱하므로 브라우저의 제어문자 제거·프로토콜 상대 URL 정규화까지
+// 반영된다 — origin이 base와 달라지면(외부로 탈출) 대시보드로 대체한다.
+function safeInternalPath(raw: string | null): string {
+  if (!raw) return "/dashboard";
+  try {
+    const base = "https://internal.invalid";
+    const u = new URL(raw, base);
+    if (u.origin === base && u.pathname.startsWith("/")) {
+      return u.pathname + u.search + u.hash;
+    }
+  } catch {
+    // 파싱 불가 → 안전 기본값
+  }
+  return "/dashboard";
+}
+
 function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -15,13 +32,10 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const rawRedirect = searchParams.get("redirect") || "/dashboard";
-  // 오픈 리다이렉트 방지(LA-10): 내부 경로만 허용. "https://..." 같은 외부
-  // 주소와 "//host"·"/\host"(프로토콜 상대 URL·백슬래시 변종)는 대시보드로 대체.
-  const redirect =
-    rawRedirect.startsWith("/") && !rawRedirect.startsWith("//") && !rawRedirect.startsWith("/\\")
-      ? rawRedirect
-      : "/dashboard";
+  // 오픈 리다이렉트 방지(LA-10): 내부 경로만 허용. 단순 문자열 접두사 검사는
+  // 탭·개행 등 제어문자(`/%09/evil.com` → 브라우저 정규화 후 `//evil.com`)로
+  // 우회되므로, 고정 base로 파싱해 origin이 그대로일 때만 통과시킨다.
+  const redirect = safeInternalPath(searchParams.get("redirect"));
   // 이메일 인증 링크를 타고 돌아온 경우 (signup의 emailRedirectTo)
   const justConfirmed = searchParams.get("confirmed") === "1";
 

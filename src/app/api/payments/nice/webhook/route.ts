@@ -30,24 +30,42 @@ type WebhookEvent = {
   amount?: unknown;
   ediDate?: unknown;
   signature?: unknown;
+  cancelledTid?: unknown;
+  balanceAmt?: unknown;
+  cancels?: unknown;
 };
 
 // 나이스 취소·부분취소 status 값 (표기 변형 포함 방어적으로 수용)
 const CANCEL_STATUSES = new Set(["cancelled", "canceled", "partialCancelled"]);
 
+type CancelRecordResult = "recorded" | "invalid" | "store_failed";
+
+function asStr(v: unknown): string | null {
+  return typeof v === "number" || typeof v === "string" ? String(v) : null;
+}
+
+// 이번 통보의 실제 취소액 — NICE 명세상 최상위 amount는 '원결제금액'이고,
+// 취소액은 cancels[] 배열의 항목별 amount다. 가장 최근(마지막) 취소 항목을 쓴다.
+function latestCancelAmount(cancels: unknown): string | null {
+  if (!Array.isArray(cancels) || cancels.length === 0) return null;
+  const last = cancels[cancels.length - 1] as { amount?: unknown };
+  return asStr(last?.amount);
+}
+
 // 취소·부분취소 통보 (LA-06): 자동 회수는 하지 않는다(오회수 위험) —
-// payment_events에 원문 저장 + 관리자 메일 경보만. 크레딧·환불 정리는
-// 관리자가 결제 내역을 확인해 수동으로 진행한다.
+// payment_events에 저장 + 관리자 메일 경보만. 크레딧·환불 정리는 관리자가
+// 결제 내역을 확인해 수동으로 진행한다.
+//
+// 보안(Codex P1-5): 서명이 유효한 통보만 저장한다 — 공개 엔드포인트라 무효
+// 서명 요청을 저장하면 인증 없는 저장소 스팸이 되기 때문. 멱등 키(event_key)로
+// 재전송 시 행·경보 중복을 막고, 유효 이벤트 저장 실패는 500으로 재전송을 유도.
 async function recordCancelEvent(
   event: WebhookEvent,
   status: string
-): Promise<void> {
+): Promise<CancelRecordResult> {
   const tid = typeof event.tid === "string" ? event.tid : null;
   const orderId = typeof event.orderId === "string" ? event.orderId : null;
-  const amount =
-    typeof event.amount === "number" || typeof event.amount === "string"
-      ? String(event.amount)
-      : null;
+  const amount = asStr(event.amount); // 원결제금액 (서명 계산에 쓰이는 값)
   const ediDate = typeof event.ediDate === "string" ? event.ediDate : "";
   const signature = typeof event.signature === "string" ? event.signature : "";
   const signatureValid =
@@ -57,42 +75,89 @@ async function recordCancelEvent(
     amount !== null &&
     verifyWebhookSignature({ tid, amount, ediDate, signature });
 
+  // 무효 서명 = 인증 없는 임의 요청. 저장·경보 없이 무시(저장소 스팸 차단).
+  if (!signatureValid) {
+    console.error(
+      "[payments/nice/webhook] 취소 이벤트 서명 무효 — 무시(스팸 방지)",
+      { tid, orderId }
+    );
+    return "invalid";
+  }
+
+  const cancelledTid =
+    typeof event.cancelledTid === "string" ? event.cancelledTid : null;
+  const balanceAmt = asStr(event.balanceAmt);
+  const cancelledAmount = latestCancelAmount(event.cancels);
+  // 멱등 키: 취소 거래키 우선, 없으면 tid:status
+  const eventKey = cancelledTid ?? `${tid}:${status}`;
+
+  const admin = createAdminClient();
+
+  // 신규 삽입일 때만 true (재전송 conflict면 무시되어 false) — 경보 1회 보장
+  let isNew = false;
+  let stored = false;
   try {
-    const admin = createAdminClient();
-    const { error } = await admin.from("payment_events").insert({
+    const { data, error } = await admin
+      .from("payment_events")
+      .upsert(
+        {
+          event_key: eventKey,
+          event_type: status,
+          tid,
+          order_id: orderId,
+          amount,
+          cancelled_amount: cancelledAmount,
+          cancelled_tid: cancelledTid,
+          balance_amt: balanceAmt,
+          signature_valid: true,
+          raw: event,
+        },
+        { onConflict: "event_key", ignoreDuplicates: true }
+      )
+      .select("id");
+    if (error) throw new Error(error.message);
+    isNew = (data?.length ?? 0) > 0;
+    stored = true;
+  } catch (upsertError) {
+    // 0021 미적용(event_key/취소 컬럼 없음) 폴백 — 기본 컬럼만으로 저장.
+    // 멱등은 못 하지만 서명 유효 이벤트만 오므로 스팸은 아니다.
+    console.warn(
+      "[payments/nice/webhook] upsert 실패 — 기본 컬럼 폴백",
+      upsertError instanceof Error ? upsertError.message : String(upsertError)
+    );
+    const { error: insErr } = await admin.from("payment_events").insert({
       event_type: status,
       tid,
       order_id: orderId,
       amount,
-      signature_valid: signatureValid,
+      signature_valid: true,
       raw: event,
     });
-    if (error) {
+    if (insErr) {
       console.error(
-        "[payments/nice/webhook] 취소 이벤트 저장 실패(0020 미적용?)",
-        error.message
+        "[payments/nice/webhook] 취소 이벤트 저장 실패",
+        insErr.message
       );
+      return "store_failed"; // 유효 이벤트 저장 실패 → 500으로 NICE 재전송 유도
     }
-  } catch (error) {
-    console.error("[payments/nice/webhook] 취소 이벤트 저장 예외", {
-      error: error instanceof Error ? error.message : String(error),
-    });
+    isNew = true; // 폴백 경로는 멱등 판별 불가 → 경보 발송
+    stored = true;
   }
 
-  if (signatureValid) {
+  if (stored && isNew) {
     await sendAdminAlert(
       `[MathOCR 결제] 취소 웹훅 수신 (${status}) — 수동 확인 필요`,
       `<p>나이스페이에서 결제 <strong>취소 통보</strong>를 받았습니다.</p>
-<p>주문: <strong>${orderId ?? "(없음)"}</strong><br/>거래(tid): ${tid}<br/>금액: ${amount}원<br/>유형: ${status}</p>
+<p>주문: <strong>${orderId ?? "(없음)"}</strong><br/>거래(tid): ${tid}<br/>
+취소 거래키: ${cancelledTid ?? "(없음)"}<br/>
+원결제금액: ${amount}원<br/>
+이번 취소액: ${cancelledAmount ?? "(응답에 없음 — 전액취소로 추정)"}원<br/>
+취소 후 잔액: ${balanceAmt ?? "(없음)"}원<br/>유형: ${status}</p>
 <p>크레딧 <strong>자동 회수는 하지 않습니다</strong> — 관리자 페이지에서 해당 사용자의
 크레딧·결제 내역을 확인해 수동으로 정리하세요. 원문은 payment_events 테이블에 저장돼 있습니다.</p>`
     );
-  } else {
-    console.error(
-      "[payments/nice/webhook] 취소 이벤트 서명 무효 — 경보 생략(위조 의심)",
-      { tid, orderId }
-    );
   }
+  return "recorded";
 }
 
 export async function POST(request: NextRequest) {
@@ -107,7 +172,20 @@ export async function POST(request: NextRequest) {
 
   // 취소·부분취소 통보 → 저장 + 관리자 경보 (자동 회수 없음)
   if (typeof event.status === "string" && CANCEL_STATUSES.has(event.status)) {
-    await recordCancelEvent(event, event.status);
+    // 성공(0000) 취소만 처리 — 실패한 취소 시도(비-0000)는 돈이 안 움직였으므로
+    // "취소 수신" 경보를 내지 않는다(오해 방지). resultCode 미포함도 무시.
+    if (event.resultCode !== "0000") {
+      console.error(
+        "[payments/nice/webhook] 취소 통보 resultCode 비정상 — 무시",
+        { status: event.status, resultCode: event.resultCode }
+      );
+      return ok();
+    }
+    const result = await recordCancelEvent(event, event.status);
+    // 유효 이벤트 저장 실패 → 500(재전송 유도). 무효 서명·정상 저장 → 200 OK.
+    if (result === "store_failed") {
+      return NextResponse.json({ error: "store failed" }, { status: 500 });
+    }
     return ok();
   }
 

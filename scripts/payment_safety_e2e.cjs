@@ -177,28 +177,60 @@ async function main() {
     if (!env.NICEPAY_SECRET_KEY) {
       console.log("  SKIP  취소 웹훅 (NICEPAY_SECRET_KEY 없음)");
     } else {
-      const tidValid = `e2e_cancel_${ts}_valid`;
+      // 0021(event_key·취소 컬럼) 적용 여부 감지
+      const col = await admin.from("payment_events").select("event_key").limit(1);
+      const has0021 = !col.error;
+      console.log(`  0021: ${has0021 ? "적용됨" : "미적용(폴백 검증)"}`);
+
       const ediDate = new Date().toISOString();
+      const tidValid = `e2e_cancel_${ts}_valid`;
       cancelTids.push(tidValid);
-      let wh = await postWebhook({
-        status: "cancelled", tid: tidValid, orderId: `mo_e2e_${ts}`, amount: "1000",
-        ediDate, signature: webhookSignature(tidValid, "1000", ediDate),
-      });
+      // 유효 취소: resultCode 0000 + 서명 유효 + 취소 상세(cancels/cancelledTid/balanceAmt)
+      const validEvent = {
+        resultCode: "0000", status: "partialCancelled", tid: tidValid,
+        orderId: `mo_e2e_${ts}`, amount: "1000", ediDate,
+        signature: webhookSignature(tidValid, "1000", ediDate),
+        cancelledTid: `${tidValid}_c1`, balanceAmt: "600",
+        cancels: [{ amount: "400" }],
+      };
+      let wh = await postWebhook(validEvent);
       check("취소 웹훅(서명 유효) → 200 OK", wh.status === 200 && wh.text.includes("OK"), JSON.stringify(wh));
       const { data: evValid } = await admin
-        .from("payment_events").select("*").eq("tid", tidValid).maybeSingle();
-      check("이벤트 저장 + signature_valid=true (경보 메일 1통 발송됨)", !!evValid && evValid.signature_valid === true && evValid.event_type === "cancelled", JSON.stringify(evValid));
+        .from("payment_events").select("*").eq("tid", tidValid);
+      check("유효 취소 저장(1건) + signature_valid=true", (evValid ?? []).length === 1 && evValid[0].signature_valid === true, JSON.stringify(evValid));
+      if (has0021) {
+        check("취소 상세 정확 저장(취소액 400·잔액 600·원금 1000)",
+          evValid[0].cancelled_amount === "400" && evValid[0].balance_amt === "600" && evValid[0].amount === "1000" && evValid[0].cancelled_tid === `${tidValid}_c1`,
+          JSON.stringify(evValid[0]));
 
+        // 멱등: 동일 웹훅 재전송 → 행 중복 없음(여전히 1건)
+        wh = await postWebhook(validEvent);
+        const { data: evDup } = await admin.from("payment_events").select("id").eq("tid", tidValid);
+        check("재전송 멱등 — 행 중복 없음(1건 유지)", (evDup ?? []).length === 1, JSON.stringify(evDup));
+      }
+
+      // 서명 위조 → 저장 안 됨(스팸 차단, P1-5)
       const tidBad = `e2e_cancel_${ts}_bad`;
       cancelTids.push(tidBad);
       wh = await postWebhook({
-        status: "partialCancelled", tid: tidBad, orderId: `mo_e2e_${ts}`, amount: "1000",
-        ediDate, signature: "forged",
+        resultCode: "0000", status: "partialCancelled", tid: tidBad,
+        orderId: `mo_e2e_${ts}`, amount: "1000", ediDate, signature: "forged",
       });
       check("취소 웹훅(서명 위조) → 200 OK", wh.status === 200 && wh.text.includes("OK"), JSON.stringify(wh));
-      const { data: evBad } = await admin
-        .from("payment_events").select("*").eq("tid", tidBad).maybeSingle();
-      check("위조 건도 저장되되 signature_valid=false (경보 없음)", !!evBad && evBad.signature_valid === false, JSON.stringify(evBad));
+      const { data: evBad } = await admin.from("payment_events").select("id").eq("tid", tidBad);
+      check("위조 서명 → 저장 안 됨(무인증 스팸 차단)", (evBad ?? []).length === 0, JSON.stringify(evBad));
+
+      // resultCode 비정상 취소 → 저장 안 됨(오해 경보 방지, P1-4)
+      const tidFailCancel = `e2e_cancel_${ts}_rc`;
+      cancelTids.push(tidFailCancel);
+      wh = await postWebhook({
+        resultCode: "9999", status: "cancelled", tid: tidFailCancel,
+        orderId: `mo_e2e_${ts}`, amount: "1000", ediDate,
+        signature: webhookSignature(tidFailCancel, "1000", ediDate),
+      });
+      check("취소 resultCode 비정상 → 200 OK", wh.status === 200 && wh.text.includes("OK"), JSON.stringify(wh));
+      const { data: evRc } = await admin.from("payment_events").select("id").eq("tid", tidFailCancel);
+      check("resultCode 비정상 취소 → 저장 안 됨", (evRc ?? []).length === 0, JSON.stringify(evRc));
     }
   } finally {
     // 플래그 원상복구 (프로덕션 안전 최우선)

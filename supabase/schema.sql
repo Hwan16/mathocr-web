@@ -437,7 +437,11 @@ create table if not exists public.payment_events (
   event_type text not null,
   tid text,
   order_id text,
-  amount text,
+  amount text,                    -- 원결제금액(NICE 최상위 amount)
+  cancelled_amount text,          -- 이번 취소액(cancels[].amount, 0021)
+  cancelled_tid text,             -- 취소 거래키(cancelledTid, 0021)
+  balance_amt text,               -- 취소 가능 잔액(balanceAmt, 0021)
+  event_key text,                 -- 멱등 키(cancelledTid ?? tid:status, 0021)
   signature_valid boolean not null default false,
   raw jsonb not null
 );
@@ -445,6 +449,9 @@ create index if not exists idx_payment_events_received_at
   on public.payment_events(received_at);
 create index if not exists idx_payment_events_tid
   on public.payment_events(tid);
+-- 재전송 웹훅의 행·경보 중복 방지 (0021). NULL 다수 허용.
+create unique index if not exists uq_payment_events_event_key
+  on public.payment_events(event_key);
 alter table public.payment_events enable row level security;
 
 -- ============================================

@@ -126,6 +126,10 @@ export async function PATCH(
       return NextResponse.json({ error: "보상 지급에 실패했습니다." }, { status: 500 });
     }
     if (!data?.success) {
+      // 이미 보상됨(또는 없음). 보상은 됐지만 직후 파기 전에 프로세스가 죽어
+      // 이미지가 남아 있을 수 있으므로, 중복 보상 응답 전에 파기를 한 번 더
+      // 시도한다(멱등 — 이미 파기됐으면 "none"). 방침 제3조 파기 보장 보강.
+      await purgeReportImages(adminClient, id);
       return NextResponse.json(
         { error: "이미 보상이 지급되었거나 신고를 찾을 수 없습니다." },
         { status: 409 }
