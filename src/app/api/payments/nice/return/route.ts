@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { parseOrderId } from "@/lib/payments";
+import { isPaymentsKilled } from "@/lib/service-flags";
 import {
   approvePayment,
   nicepayConfigured,
@@ -36,6 +37,17 @@ function fail(request: NextRequest, message: string, code?: string) {
 export async function POST(request: NextRequest) {
   if (!nicepayConfigured()) {
     return fail(request, "결제 기능이 아직 열리지 않았습니다.");
+  }
+
+  // 결제 kill switch (LA-06): 사고 시 관리자가 즉시 신규 승인을 차단한다.
+  // 승인 API 호출 전이라 여기서 막히면 카드에서 돈이 빠지지 않는다.
+  if (await isPaymentsKilled()) {
+    console.error("[payments/nice/return] kill switch 활성 — 승인 차단");
+    return fail(
+      request,
+      "결제가 일시 중단되었습니다. 잠시 후 다시 시도해주세요.",
+      "PAYMENTS_PAUSED"
+    );
   }
 
   const form = await request.formData().catch(() => null);
@@ -97,6 +109,21 @@ export async function POST(request: NextRequest) {
       request,
       payment?.resultMsg ?? "결제 승인에 실패했습니다.",
       payment?.resultCode
+    );
+  }
+
+  // 승인 응답 주문 결속 대조 (LA-06 방어심화): 응답이 요청과 다른 주문·거래를
+  // 가리키면 지급하지 않는다 — 엇갈린 응답으로 다른 주문에 오지급되는 것 방지.
+  if (
+    (typeof payment.orderId === "string" && payment.orderId !== orderId) ||
+    (typeof payment.tid === "string" && payment.tid !== tid)
+  ) {
+    console.error(
+      `[payments/nice/return] 승인 응답 불일치: req order=${orderId} tid=${tid} / resp order=${payment.orderId} tid=${payment.tid}`
+    );
+    return fail(
+      request,
+      "결제 승인 응답이 주문 정보와 일치하지 않습니다. 고객센터로 문의해주세요."
     );
   }
 

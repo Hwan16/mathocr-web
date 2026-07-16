@@ -47,6 +47,16 @@ function ChargeInner() {
   // 분쟁 시 "고지받지 못했다" 주장을 차단하는 핵심 증거라 플랜을 바꾸면 다시 받는다.
   const [confirmed, setConfirmed] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // 결제 kill switch (LA-06) — 서버가 승인을 거부하는 상태면 결제창을 열기 전에
+  // 안내한다. 조회 실패 시 false 유지(진짜 차단은 서버 승인 라우트가 한다).
+  const [paused, setPaused] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/payments/status")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => setPaused(data?.paused === true))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const supabase = createClient();
@@ -77,7 +87,7 @@ function ChargeInner() {
 
   const onPay = async () => {
     const plan = getPlan(selectedId);
-    if (!plan || !user || !CLIENT_KEY || !confirmed) return;
+    if (!plan || !user || !CLIENT_KEY || !confirmed || paused) return;
     setError(null);
     setPaying(true);
     trackEvent("cta_click", { label: "charge_pay", location: `charge_${plan.id}` });
@@ -158,6 +168,15 @@ function ChargeInner() {
         {loadingUser ? (
           <div className="card rounded-xl p-8 bg-white text-center text-zinc-500">
             불러오는 중…
+          </div>
+        ) : paused ? (
+          <div className="card rounded-xl p-8 bg-white text-center">
+            <p className="text-zinc-700 font-medium mb-1">
+              결제가 일시 중단되었습니다.
+            </p>
+            <p className="text-sm text-zinc-500">
+              시스템 점검 중입니다. 잠시 후 다시 시도해주세요.
+            </p>
           </div>
         ) : !user && PAYMENTS_ENABLED ? (
           <div className="card rounded-xl p-8 bg-white text-center">

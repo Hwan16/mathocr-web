@@ -416,6 +416,38 @@ revoke execute on function public.complete_conversion_with_refund(uuid, uuid, in
 grant execute on function public.complete_conversion_with_refund(uuid, uuid, integer) to service_role;
 
 -- ============================================
+-- 10.5. 결제 안전장치 (0020) — kill switch 플래그 + 취소 웹훅 이벤트
+-- ============================================
+-- 상세는 migrations/0020_payment_safety.sql 참고. 둘 다 RLS 정책 없음
+-- (= 서버 service_role 전용).
+create table if not exists public.service_flags (
+  key text primary key,
+  value boolean not null,
+  updated_at timestamptz not null default now(),
+  updated_by uuid
+);
+alter table public.service_flags enable row level security;
+insert into public.service_flags (key, value)
+values ('payments_disabled', false)
+on conflict (key) do nothing;
+
+create table if not exists public.payment_events (
+  id uuid primary key default gen_random_uuid(),
+  received_at timestamptz not null default now(),
+  event_type text not null,
+  tid text,
+  order_id text,
+  amount text,
+  signature_valid boolean not null default false,
+  raw jsonb not null
+);
+create index if not exists idx_payment_events_received_at
+  on public.payment_events(received_at);
+create index if not exists idx_payment_events_tid
+  on public.payment_events(tid);
+alter table public.payment_events enable row level security;
+
+-- ============================================
 -- 11. conversion_reports 테이블 (변환 실패/오변환 사용자 신고)
 -- ============================================
 -- 상세는 migrations/0002_conversion_reports.sql 참고. 이미지는 Storage

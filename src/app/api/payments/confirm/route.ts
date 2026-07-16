@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/supabase/auth-helper";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { parseOrderId } from "@/lib/payments";
+import { isPaymentsKilled } from "@/lib/service-flags";
 
 // 결제 승인 — successUrl 리다이렉트 직후 브라우저가 호출한다.
 //
@@ -15,6 +16,15 @@ export async function POST(request: NextRequest) {
   if (!secretKey) {
     return NextResponse.json(
       { error: "결제 기능이 아직 열리지 않았습니다." },
+      { status: 503 }
+    );
+  }
+
+  // 결제 kill switch (LA-06) — 나이스 return 라우트와 동일한 비상 차단
+  if (await isPaymentsKilled()) {
+    console.error("[payments/confirm] kill switch 활성 — 승인 차단");
+    return NextResponse.json(
+      { error: "결제가 일시 중단되었습니다. 잠시 후 다시 시도해주세요." },
       { status: 503 }
     );
   }

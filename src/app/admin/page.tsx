@@ -204,21 +204,24 @@ export default function AdminPage() {
       </nav>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Tabs */}
-        <div className="flex gap-1 mb-8 bg-[var(--surface)] rounded-xl p-1 w-fit">
-          {tabs.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
-                tab === t.key
-                  ? "bg-[var(--accent)] text-white"
-                  : "text-zinc-600 hover:text-zinc-800"
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
+        {/* Tabs + 결제 비상 스위치 */}
+        <div className="flex items-center justify-between gap-4 flex-wrap mb-8">
+          <div className="flex gap-1 bg-[var(--surface)] rounded-xl p-1 w-fit">
+            {tabs.map((t) => (
+              <button
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  tab === t.key
+                    ? "bg-[var(--accent)] text-white"
+                    : "text-zinc-600 hover:text-zinc-800"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+          <PaymentSwitch />
         </div>
 
         {tab === "users" && <UsersTab />}
@@ -229,6 +232,82 @@ export default function AdminPage() {
         {tab === "stats" && <StatsTab />}
       </div>
     </div>
+  );
+}
+
+/* ── 결제 비상 차단 스위치 (LA-06 kill switch) ── */
+function PaymentSwitch() {
+  const [state, setState] = useState<
+    { disabled: boolean; envForced: boolean } | "unavailable" | null
+  >(null);
+  const [busy, setBusy] = useState(false);
+
+  async function load() {
+    try {
+      const res = await fetch("/api/admin/payments-switch");
+      if (res.ok) setState(await res.json());
+      else setState("unavailable");
+    } catch {
+      setState("unavailable");
+    }
+  }
+  useEffect(() => {
+    load();
+  }, []);
+
+  if (state === null) return null;
+  if (state === "unavailable") {
+    return (
+      <span
+        className="text-xs text-zinc-400 px-3 py-2"
+        title="0020 마이그레이션 적용 후 사용할 수 있습니다"
+      >
+        결제 스위치 사용 불가
+      </span>
+    );
+  }
+  const blocked = state.disabled || state.envForced;
+
+  async function toggle() {
+    if (state === null || state === "unavailable") return;
+    if (state.envForced) {
+      alert(
+        "서버 환경변수(PAYMENTS_KILL_SWITCH)로 강제 차단 중입니다. 해제는 Vercel 환경변수에서 하세요."
+      );
+      return;
+    }
+    const next = !state.disabled;
+    const msg = next
+      ? "결제를 긴급 차단할까요?\n\n모든 신규 결제 승인이 즉시 거부됩니다. 결제 사고 대응 시에만 사용하세요."
+      : "결제 차단을 해제할까요?\n\n신규 결제가 다시 허용됩니다.";
+    if (!confirm(msg)) return;
+    setBusy(true);
+    const res = await fetch("/api/admin/payments-switch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ disabled: next }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error ?? "변경에 실패했습니다.");
+    }
+    setBusy(false);
+    load();
+  }
+
+  return (
+    <button
+      onClick={toggle}
+      disabled={busy}
+      title="결제 비상 차단 스위치 — 사고 시 신규 결제 승인을 즉시 막습니다"
+      className={`px-4 py-2 rounded-lg text-xs font-medium border transition-colors disabled:opacity-50 ${
+        blocked
+          ? "bg-red-500/10 text-red-600 border-red-500/30 hover:bg-red-500/20"
+          : "text-emerald-600 border-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/10"
+      }`}
+    >
+      {busy ? "변경 중…" : blocked ? "🔴 결제 차단됨 — 눌러서 해제" : "🟢 결제 정상 가동"}
+    </button>
   );
 }
 
