@@ -78,11 +78,13 @@ export const metadata: Metadata = {
       "max-video-preview": -1,
     },
   },
-  // 검색엔진 소유확인 (구글 서치콘솔 + 네이버 웹마스터). ⚠️ 확인 후에도 메타태그 삭제 금지(재확인 시 필요).
+  // 소유확인 메타태그 (구글 서치콘솔 + 네이버 웹마스터 + 메타 도메인 인증).
+  // ⚠️ 확인 후에도 메타태그 삭제 금지(재확인 시 필요).
   verification: {
     google: "K6mQzqoBBovnv8ZiY5eTg25m-kKDiVHLM9J_R471IV4",
     other: {
       "naver-site-verification": "e08cf2523d557a661191cfd06828319d7f20d816",
+      "facebook-domain-verification": "c3vklo1rp8pajw6pu9l06a8qqzgepg",
     },
   },
   icons: {
