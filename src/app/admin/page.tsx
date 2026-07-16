@@ -620,6 +620,10 @@ function UsersTab() {
   const [total, setTotal] = useState(0);
   const [creditModal, setCreditModal] = useState<AdminUser | null>(null);
   const [creditAmount, setCreditAmount] = useState("");
+  const [granting, setGranting] = useState(false);
+  const [grantError, setGrantError] = useState<string | null>(null);
+  // 모달이 열릴 때마다 새 멱등 키 발급 — 같은 모달에서의 연타·재시도는 서버가 같은 요청으로 취급
+  const [grantRequestId, setGrantRequestId] = useState("");
   // 행 클릭 → 유저 상세(마이페이지 뷰 + CS 정보) 모달
   const [detailUser, setDetailUser] = useState<AdminUser | null>(null);
   const limit = 20;
@@ -648,23 +652,43 @@ function UsersTab() {
     loadUsers();
   }, [loadUsers]);
 
+  function openCreditModal(user: AdminUser) {
+    setCreditModal(user);
+    setCreditAmount("");
+    setGrantError(null);
+    setGrantRequestId(crypto.randomUUID());
+  }
+
   async function handleAddCredits() {
-    if (!creditModal || !creditAmount) return;
+    if (!creditModal || !creditAmount || granting) return;
     const amount = parseInt(creditAmount);
     if (isNaN(amount) || amount <= 0) return;
 
-    const res = await fetch(`/api/admin/users/${creditModal.id}/credits`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ credits: amount }),
-    });
+    if (!confirm(`${creditModal.email}에게 ${amount}크레딧을 부여할까요?`)) return;
 
-    if (res.ok) {
-      setCreditModal(null);
-      setCreditAmount("");
-      // 상세 모달이 열려 있으면 닫는다 — 요약 수치가 갱신 전 값으로 남지 않게
-      setDetailUser(null);
-      loadUsers();
+    setGranting(true);
+    setGrantError(null);
+    try {
+      const res = await fetch(`/api/admin/users/${creditModal.id}/credits`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ credits: amount, requestId: grantRequestId }),
+      });
+
+      if (res.ok) {
+        setCreditModal(null);
+        setCreditAmount("");
+        // 상세 모달이 열려 있으면 닫는다 — 요약 수치가 갱신 전 값으로 남지 않게
+        setDetailUser(null);
+        loadUsers();
+      } else {
+        const data = await res.json().catch(() => null);
+        setGrantError(data?.error ?? "크레딧 부여에 실패했습니다.");
+      }
+    } catch {
+      setGrantError("네트워크 오류로 부여하지 못했습니다. 잔액 확인 후 다시 시도하세요.");
+    } finally {
+      setGranting(false);
     }
   }
 
@@ -734,7 +758,7 @@ function UsersTab() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        setCreditModal(u);
+                        openCreditModal(u);
                       }}
                       className="text-xs text-[var(--accent)] hover:underline"
                     >
@@ -775,7 +799,7 @@ function UsersTab() {
         <UserDetailModal
           user={detailUser}
           onClose={() => setDetailUser(null)}
-          onGrant={() => setCreditModal(detailUser)}
+          onGrant={() => openCreditModal(detailUser)}
         />
       )}
 
@@ -793,18 +817,23 @@ function UsersTab() {
               min="1"
               className="w-full px-4 py-2.5 rounded-xl bg-white border border-[var(--border-light)] text-zinc-900 text-sm focus:outline-none focus:border-[var(--accent)] mb-4"
             />
+            {grantError && (
+              <p className="text-sm text-red-600 mb-4">{grantError}</p>
+            )}
             <div className="flex gap-3">
               <button
                 onClick={() => setCreditModal(null)}
-                className="flex-1 py-2 rounded-xl text-sm border border-[var(--border-light)] text-zinc-600 hover:text-zinc-800 transition-colors"
+                disabled={granting}
+                className="flex-1 py-2 rounded-xl text-sm border border-[var(--border-light)] text-zinc-600 hover:text-zinc-800 transition-colors disabled:opacity-40"
               >
                 취소
               </button>
               <button
                 onClick={handleAddCredits}
-                className="flex-1 btn-primary py-2 rounded-xl text-sm"
+                disabled={granting}
+                className="flex-1 btn-primary py-2 rounded-xl text-sm disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                부여
+                {granting ? "부여 중…" : "부여"}
               </button>
             </div>
           </div>
