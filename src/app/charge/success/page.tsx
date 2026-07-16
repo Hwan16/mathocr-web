@@ -3,11 +3,26 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { metaPixelTrack } from "@/lib/meta-pixel";
 
 type State =
   | { phase: "confirming" }
   | { phase: "done"; credits?: number; expiresAt?: string | null }
   | { phase: "error"; message: string };
+
+// 메타 픽셀 Purchase 이벤트 — 주문당 1회만 (성공 페이지 새로고침·재방문 시 중복 방지).
+// 금액·통화만 보내며 개인 정보는 포함하지 않는다. (마케팅 백로그 §6-3)
+function metaPixelPurchaseOnce(orderId: string, amount: number) {
+  if (!Number.isFinite(amount) || amount <= 0) return;
+  const key = `meta_purchase_fired:${orderId}`;
+  try {
+    if (localStorage.getItem(key)) return;
+    localStorage.setItem(key, "1");
+  } catch {
+    // localStorage 불가 환경(시크릿 모드 등)에서는 중복 방지 없이 1회 전송
+  }
+  metaPixelTrack("Purchase", { value: amount, currency: "KRW" });
+}
 
 function formatDate(iso: string | null | undefined): string {
   if (!iso) return "무제한";
@@ -29,6 +44,9 @@ function SuccessInner() {
     // 나이스페이 경로 — 승인·지급은 return 라우트(서버)에서 이미 끝났다.
     // 여기서는 갱신된 잔액만 조회해 보여준다.
     if (sp.get("pg") === "nice") {
+      const niceOrderId = sp.get("orderId");
+      const niceAmount = Number(sp.get("amount"));
+      if (niceOrderId) metaPixelPurchaseOnce(niceOrderId, niceAmount);
       (async () => {
         const supabase = createClient();
         const {
@@ -70,6 +88,7 @@ function SuccessInner() {
         });
         const data = await res.json().catch(() => null);
         if (res.ok && data?.success) {
+          metaPixelPurchaseOnce(orderId, amount);
           setState({
             phase: "done",
             credits: data.credits,

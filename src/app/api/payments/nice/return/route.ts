@@ -159,5 +159,11 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  return redirectTo(request, "/charge/success", { pg: "nice", orderId });
+  // amount는 성공 페이지의 메타 픽셀 Purchase 이벤트(가치 최적화용)에만 쓰인다 —
+  // 지급·검증은 위에서 이미 끝났으므로 URL 값이 조작되어도 크레딧에는 영향 없음
+  return redirectTo(request, "/charge/success", {
+    pg: "nice",
+    orderId,
+    amount: String(parsed.plan.price),
+  });
 }
