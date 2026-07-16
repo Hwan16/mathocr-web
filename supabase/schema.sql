@@ -430,6 +430,9 @@ create table if not exists public.conversion_reports (
     check (status in ('received', 'reviewed', 'accepted', 'rejected')),
   rewarded boolean not null default false,
   rewarded_at timestamptz,
+  -- 신고 종결(확인/반려/채택) 시 Storage 이미지를 파기한 시각 (0019).
+  -- 방침 제3조 "검수·보상 완료 시 지체 없이 파기" 이행 증빙. null = 미파기.
+  images_deleted_at timestamptz,
   created_at timestamptz not null default now(),
   -- '채택'은 보상 지급된 신고에만 허용(채택은 reward_report() 경로로만). 0003 동기화.
   constraint conversion_reports_accepted_requires_reward

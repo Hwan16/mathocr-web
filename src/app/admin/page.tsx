@@ -2173,6 +2173,7 @@ interface ReportEntry {
   rewarded: boolean;
   rewarded_at: string | null;
   created_at: string;
+  images_deleted_at: string | null;
   original_url: string | null;
   converted_url: string | null;
 }
@@ -2231,9 +2232,13 @@ function ReportsTab() {
       body: JSON.stringify({ status }),
     });
     setBusyId(null);
+    const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
       alert(data.error ?? "상태 변경에 실패했습니다.");
+    } else if (data.images === "failed") {
+      alert(
+        "상태는 변경됐지만 신고 이미지 파기에 실패했습니다. 같은 상태 버튼을 다시 눌러 재시도해주세요."
+      );
     }
     load();
   }
@@ -2248,7 +2253,13 @@ function ReportsTab() {
     });
     const data = await res.json().catch(() => ({}));
     setBusyId(null);
-    if (!res.ok) alert(data.error ?? "지급에 실패했습니다.");
+    if (!res.ok) {
+      alert(data.error ?? "지급에 실패했습니다.");
+    } else if (data.images === "failed") {
+      alert(
+        "지급은 완료됐지만 신고 이미지 파기에 실패했습니다. '확인' 상태 버튼을 눌러 파기를 재시도해주세요."
+      );
+    }
     load();
   }
 
@@ -2312,8 +2323,18 @@ function ReportsTab() {
             </div>
 
             <div className="grid md:grid-cols-2 gap-4 mb-4">
-              <ReportImage label="원본 시험지" url={r.original_url} onOpen={setLightbox} />
-              <ReportImage label="변환 결과" url={r.converted_url} onOpen={setLightbox} />
+              <ReportImage
+                label="원본 시험지"
+                url={r.original_url}
+                purgedAt={r.images_deleted_at}
+                onOpen={setLightbox}
+              />
+              <ReportImage
+                label="변환 결과"
+                url={r.converted_url}
+                purgedAt={r.images_deleted_at}
+                onOpen={setLightbox}
+              />
             </div>
 
             <div className="rounded-xl bg-zinc-50 border border-[var(--border-subtle)] px-4 py-3 mb-4">
@@ -2400,10 +2421,12 @@ function ReportsTab() {
 function ReportImage({
   label,
   url,
+  purgedAt,
   onOpen,
 }: {
   label: string;
   url: string | null;
+  purgedAt?: string | null;
   onOpen: (u: string) => void;
 }) {
   return (
@@ -2426,7 +2449,9 @@ function ReportImage({
         </button>
       ) : (
         <div className="w-full aspect-[4/3] rounded-xl border border-[var(--border-light)] bg-zinc-50 flex items-center justify-center text-xs text-zinc-400">
-          이미지 없음
+          {purgedAt
+            ? `처리 완료 — 방침에 따라 파기됨 (${new Date(purgedAt).toLocaleDateString("ko-KR")})`
+            : "이미지 없음"}
         </div>
       )}
     </div>

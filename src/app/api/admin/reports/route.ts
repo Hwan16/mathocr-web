@@ -121,6 +121,8 @@ export async function GET(request: NextRequest) {
     rewarded: r.rewarded,
     rewarded_at: r.rewarded_at,
     created_at: r.created_at,
+    // 0019 미적용 환경에서는 컬럼이 없어 undefined → null
+    images_deleted_at: r.images_deleted_at ?? null,
     original_url: r.original_image_path ? (urls.get(r.original_image_path) ?? null) : null,
     converted_url: r.converted_image_path ? (urls.get(r.converted_image_path) ?? null) : null,
   }));
