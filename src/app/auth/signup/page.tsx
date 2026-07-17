@@ -199,8 +199,10 @@ function SignupForm() {
 
       // 이메일 인증이 켜져 있으면 세션이 없다 → 메일 확인 안내로 전환
       if (result.needs_confirmation) {
-        trackEvent("sign_up", { method: "password" });
-        metaPixelTrack("CompleteRegistration");
+        // LA-14: 폼 제출은 '가입 시작' 신호만. 가입 완료(verified_signup·
+        // CompleteRegistration)는 인증 링크가 도착하는 /auth/login?confirmed=1 에서 집계한다.
+        trackEvent("begin_registration", { method: "password" });
+        metaPixelTrack("Lead");
         setConfirmEmailSent(true);
         return;
       }
@@ -217,7 +219,10 @@ function SignupForm() {
       }
 
       // 가입 성공 → 자동 로그인 → 대시보드
-      trackEvent("sign_up", { method: "password" });
+      // (Confirm email이 꺼진 환경 — 인증 단계가 없으므로 시작·완료를 함께 집계)
+      trackEvent("begin_registration", { method: "password" });
+      trackEvent("verified_signup", { method: "password" });
+      metaPixelTrack("Lead");
       metaPixelTrack("CompleteRegistration");
       router.push("/dashboard");
       router.refresh();

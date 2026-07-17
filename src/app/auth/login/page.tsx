@@ -1,9 +1,10 @@
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { trackEvent } from "@/lib/analytics";
+import { metaPixelTrack } from "@/lib/meta-pixel";
 
 const SAVED_EMAIL_KEY = "mathocr_saved_email";
 
@@ -36,8 +37,36 @@ function LoginForm() {
   // 탭·개행 등 제어문자(`/%09/evil.com` → 브라우저 정규화 후 `//evil.com`)로
   // 우회되므로, 고정 base로 파싱해 origin이 그대로일 때만 통과시킨다.
   const redirect = safeInternalPath(searchParams.get("redirect"));
-  // 이메일 인증 링크를 타고 돌아온 경우 (signup의 emailRedirectTo)
+  // 이메일 인증 링크를 타고 돌아온 경우 (signup의 emailRedirectTo).
+  // 안내 배너는 상태로 유지한다 — 아래 효과가 중복 집계 방지를 위해 URL에서
+  // 파라미터를 지운 뒤에도 첫 화면의 안내는 남아야 하므로.
   const justConfirmed = searchParams.get("confirmed") === "1";
+  const [confirmBanner, setConfirmBanner] = useState<"success" | "failed" | null>(null);
+  const confirmHandled = useRef(false);
+
+  useEffect(() => {
+    if (!justConfirmed || confirmHandled.current) return;
+    confirmHandled.current = true;
+    // Supabase는 만료·재사용된 링크도 이 주소로 돌려보내며 실패 사유를 URL 해시에
+    // 담는다(#error=...&error_code=otp_expired). 실패면 가입 완료로 집계하지 않는다.
+    if (window.location.hash.includes("error")) {
+      setConfirmBanner("failed");
+    } else {
+      setConfirmBanner("success");
+      // LA-14: 인증 링크 도착 = 가입 완료 신호. 폼 제출(begin_registration·Lead)과
+      // 분리해 광고 성과를 인증 마친 계정 기준으로 잡는다.
+      trackEvent("verified_signup", { method: "password" });
+      metaPixelTrack("CompleteRegistration");
+    }
+    // 새로고침 시 재집계되지 않도록 파라미터·해시를 URL에서 지운다 (배너는 상태로 유지).
+    // 인증 메일 링크에는 redirect 파라미터가 없지만, 혹시 있으면 보존한다.
+    const rawRedirect = searchParams.get("redirect");
+    router.replace(
+      rawRedirect
+        ? `/auth/login?redirect=${encodeURIComponent(rawRedirect)}`
+        : "/auth/login"
+    );
+  }, [justConfirmed, router, searchParams]);
 
   // 저장된 이메일 불러오기
   useEffect(() => {
@@ -126,9 +155,15 @@ function LoginForm() {
         <p className="text-zinc-500 text-sm mt-2">계정에 로그인하세요</p>
       </div>
 
-      {justConfirmed && (
+      {confirmBanner === "success" && (
         <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
           이메일 인증이 완료되었습니다. 로그인해주세요. 🎉
+        </div>
+      )}
+      {confirmBanner === "failed" && (
+        <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          인증 링크가 만료되었거나 이미 사용된 링크입니다. 이미 인증을 마쳤다면 그대로
+          로그인해주세요.
         </div>
       )}
 
