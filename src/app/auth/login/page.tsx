@@ -60,13 +60,18 @@ function LoginForm() {
     }
     // 새로고침 시 재집계되지 않도록 파라미터·해시를 URL에서 지운다 (배너는 상태로 유지).
     // 인증 메일 링크에는 redirect 파라미터가 없지만, 혹시 있으면 보존한다.
+    // router.replace가 아니라 history.replaceState를 쓴다 — 페이지 이동이 아니라
+    // 주소 표기만 정리하는 것이고, 하이드레이션 직후 해시가 있는 초기 진입에서는
+    // 라우터 네비게이션이 무시되는 경우가 있다(프로덕션 실측).
     const rawRedirect = searchParams.get("redirect");
-    router.replace(
+    window.history.replaceState(
+      null,
+      "",
       rawRedirect
         ? `/auth/login?redirect=${encodeURIComponent(rawRedirect)}`
         : "/auth/login"
     );
-  }, [justConfirmed, router, searchParams]);
+  }, [justConfirmed, searchParams]);
 
   // 저장된 이메일 불러오기
   useEffect(() => {
