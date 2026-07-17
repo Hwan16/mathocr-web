@@ -20,9 +20,12 @@ const CSP_REPORT_ONLY = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://connect.facebook.net https://pay.nicepay.co.kr",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://www.facebook.com https://www.googletagmanager.com https://*.google-analytics.com",
+  // analytics.google.com(GA4 수집 지역 변형)·www.google.com/co.kr(구글 애즈 전환
+  // 링커 핑)은 프로덕션 Report-Only 실관찰(2026-07-18)에서 확인돼 추가 — 빠지면
+  // enforce 시 GA4 수집·광고 전환 측정이 깨진다.
+  "img-src 'self' data: blob: https://www.facebook.com https://www.googletagmanager.com https://*.google-analytics.com https://www.google.com https://www.google.co.kr",
   "font-src 'self' data:",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.google-analytics.com https://www.googletagmanager.com https://stats.g.doubleclick.net https://www.facebook.com https://connect.facebook.net",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://www.googletagmanager.com https://stats.g.doubleclick.net https://www.google.com https://www.google.co.kr https://www.facebook.com https://connect.facebook.net",
   "frame-src 'self' https://*.nicepay.co.kr",
   "form-action 'self' https://*.nicepay.co.kr",
   "base-uri 'self'",
