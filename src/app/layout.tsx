@@ -3,6 +3,10 @@ import { GoogleAnalytics } from "@next/third-parties/google";
 import StructuredData from "./structured-data";
 import UtmTracker from "@/components/UtmTracker";
 import MetaPixel from "@/components/MetaPixel";
+import IconifyProvider from "@/components/IconifyProvider";
+// 폰트 자체 번들 (LA-10) — jsDelivr CDN 대신 npm 패키지에서 번들.
+// 참조된 woff2 서브셋은 빌드가 /_next/static 자산으로 자동 포함한다.
+import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
 import "./globals.css";
 
 // GA4 측정 ID (공개 값 — 모든 페이지 HTML에 노출되는 값이라 비밀 아님)
@@ -104,18 +108,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ko">
-      <head>
-        <link
-          rel="stylesheet"
-          as="style"
-          crossOrigin="anonymous"
-          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
-        />
-        <script src="https://cdn.jsdelivr.net/npm/iconify-icon@2.3.0/dist/iconify-icon.min.js" defer />
-      </head>
       <body className="antialiased bg-white text-zinc-900" suppressHydrationWarning>
         {children}
         <StructuredData />
+        {/* 아이콘 자체 번들 — CDN 없이 iconify-icon 웹 컴포넌트 + 내장 데이터 등록 */}
+        <IconifyProvider />
         {/* 가입 출처(UTM) 추적 — 광고 랜딩 페이지가 어디든 잡히도록 전역 마운트 */}
         <UtmTracker />
         {/* 메타 픽셀 — NEXT_PUBLIC_META_PIXEL_ID 설정 시에만 활성 (M6) */}

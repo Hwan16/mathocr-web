@@ -44,9 +44,11 @@ function SuccessInner() {
     // 나이스페이 경로 — 승인·지급은 return 라우트(서버)에서 이미 끝났다.
     // 여기서는 갱신된 잔액만 조회해 보여준다.
     if (sp.get("pg") === "nice") {
-      const niceOrderId = sp.get("orderId");
+      // ref = 주문 난수 suffix (LA-10 — 전체 orderId는 사용자 UUID가 들어 있어
+      // URL 노출 제거). Purchase 중복 방지 키로만 쓰인다.
+      const niceRef = sp.get("ref") ?? sp.get("orderId");
       const niceAmount = Number(sp.get("amount"));
-      if (niceOrderId) metaPixelPurchaseOnce(niceOrderId, niceAmount);
+      if (niceRef) metaPixelPurchaseOnce(niceRef, niceAmount);
       (async () => {
         const supabase = createClient();
         const {

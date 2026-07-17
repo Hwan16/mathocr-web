@@ -187,10 +187,13 @@ export async function POST(request: NextRequest) {
   }
 
   // amount는 성공 페이지의 메타 픽셀 Purchase 이벤트(가치 최적화용)에만 쓰인다 —
-  // 지급·검증은 위에서 이미 끝났으므로 URL 값이 조작되어도 크레딧에는 영향 없음
+  // 지급·검증은 위에서 이미 끝났으므로 URL 값이 조작되어도 크레딧에는 영향 없음.
+  // ref = 주문번호의 난수 suffix만 (LA-10): 전체 orderId에는 사용자 UUID가
+  // 인코딩돼 있어 URL로 노출하면 브라우저 이력·GA 페이지뷰에 개인 식별자가
+  // 남는다. 성공 페이지는 Purchase 중복 방지 키로만 쓰므로 suffix면 충분하다.
   return redirectTo(request, "/charge/success", {
     pg: "nice",
-    orderId,
+    ref: orderId.slice(orderId.lastIndexOf("_") + 1),
     amount: String(parsed.plan.price),
   });
 }
