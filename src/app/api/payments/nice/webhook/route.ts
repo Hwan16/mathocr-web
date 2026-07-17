@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { parseOrderId } from "@/lib/payments";
 import { sendAdminAlert } from "@/lib/admin-alert";
+import {
+  recordApprovedEvent,
+  recordGrantFailure,
+} from "@/lib/payment-recovery";
 import { nicepayConfigured, verifyWebhookSignature } from "@/lib/nicepay";
 
 // 나이스페이 웹훅(URL 통보) — return 승인의 안전망 + 가상계좌 입금 통보.
@@ -222,6 +226,12 @@ export async function POST(request: NextRequest) {
     return ok();
   }
 
+  // 승인 확정 기록 (LA-06 복구): 서명 검증된 paid 통보 = 승인이 실제로 있었다는
+  // 증거다. return 라우트가 이미 기록했으면 멱등으로 무시된다 — return 프로세스가
+  // 승인 직후 죽은 경우도 웹훅이 독립적으로 기록해 미지급 탐지를 보장한다.
+  const orderInfo = { tid, orderId, amount: parsed.plan.price };
+  await recordApprovedEvent("nice_webhook", orderInfo);
+
   const admin = createAdminClient();
   const { data, error } = await admin.rpc("grant_plan_credits", {
     p_user_id: parsed.userId,
@@ -233,6 +243,7 @@ export async function POST(request: NextRequest) {
 
   if (error) {
     console.error("[payments/nice/webhook] grant 실패:", error.message);
+    await recordGrantFailure("nice_webhook", orderInfo, error.message);
     return NextResponse.json({ error: "grant failed" }, { status: 500 });
   }
 
@@ -241,6 +252,11 @@ export async function POST(request: NextRequest) {
     console.error(
       "[payments/nice/webhook] 지급 결과 이상:",
       JSON.stringify(result)
+    );
+    await recordGrantFailure(
+      "nice_webhook",
+      orderInfo,
+      `grant 결과 이상: ${JSON.stringify(result)}`
     );
     return NextResponse.json({ error: "grant rejected" }, { status: 500 });
   }

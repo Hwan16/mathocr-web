@@ -224,6 +224,8 @@ export default function AdminPage() {
           <PaymentSwitch />
         </div>
 
+        <PaymentRecoveryNotice />
+
         {tab === "users" && <UsersTab />}
         {tab === "promos" && <PromosTab />}
         {tab === "reports" && <ReportsTab />}
@@ -308,6 +310,120 @@ function PaymentSwitch() {
     >
       {busy ? "변경 중…" : blocked ? "🔴 결제 차단됨 — 눌러서 해제" : "🟢 결제 정상 가동"}
     </button>
+  );
+}
+
+/* ── 지급 대기 결제 알림 (LA-06 잔여 — 승인 성공·지급 실패 복구) ── */
+// 카드 출금은 됐는데 크레딧 지급이 안 된 주문이 있을 때만 표시된다.
+// 평상시(미지급 0건)에는 아무것도 렌더하지 않는다.
+interface PendingPayment {
+  tid: string;
+  orderId: string | null;
+  amount: string | null;
+  firstSeen: string;
+  hasGrantFailed: boolean;
+  planName: string | null;
+  credits: number | null;
+  userEmail: string | null;
+  recoverable: boolean;
+}
+
+function PaymentRecoveryNotice() {
+  const [pending, setPending] = useState<PendingPayment[]>([]);
+  const [busyTid, setBusyTid] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/payments/recovery");
+      if (!res.ok) return; // 조회 실패(마이그레이션 미적용 등)는 조용히 숨김
+      const data = await res.json();
+      setPending(Array.isArray(data.pending) ? data.pending : []);
+    } catch {
+      // 네트워크 오류 — 다음 방문 때 재시도
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function recover(item: PendingPayment) {
+    if (
+      !confirm(
+        `이 결제에 크레딧을 재지급할까요?\n\n주문: ${item.orderId}\n사용자: ${item.userEmail ?? "(이메일 없음)"}\n플랜: ${item.planName} (${item.credits}문제)\n금액: ${Number(item.amount ?? 0).toLocaleString()}원\n\n거래 ID 기준 멱등이라 이미 지급된 주문이면 중복 지급되지 않습니다.`
+      )
+    )
+      return;
+    setBusyTid(item.tid);
+    try {
+      const res = await fetch("/api/admin/payments/recovery", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tid: item.tid }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert(data.error ?? "재지급에 실패했습니다.");
+      } else if (data.already) {
+        alert("이미 지급된 거래입니다 — 목록에서 제외됩니다.");
+      } else {
+        alert(`재지급 완료: ${data.planName} ${data.credits}문제`);
+      }
+    } catch {
+      alert("재지급 요청에 실패했습니다.");
+    }
+    setBusyTid(null);
+    load();
+  }
+
+  if (pending.length === 0) return null;
+
+  return (
+    <div className="mb-8 rounded-xl border border-red-300 bg-red-50 p-5">
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-sm font-bold text-red-700">
+          ⚠️ 지급 대기 결제 {pending.length}건
+        </span>
+        <span className="text-xs text-red-600">
+          — 카드 결제는 승인됐는데 크레딧이 지급되지 않은 주문입니다
+        </span>
+      </div>
+      <div className="space-y-2">
+        {pending.map((item) => (
+          <div
+            key={item.tid}
+            className="flex items-center justify-between gap-3 flex-wrap rounded-lg bg-white border border-red-200 px-4 py-3"
+          >
+            <div className="text-sm text-zinc-700">
+              <div className="font-medium">
+                {item.userEmail ?? "(사용자 정보 없음)"} ·{" "}
+                {item.planName ?? "플랜 불명"}
+                {item.credits != null && ` ${item.credits}문제`} ·{" "}
+                {Number(item.amount ?? 0).toLocaleString()}원
+              </div>
+              <div className="text-xs text-zinc-500 mt-0.5">
+                주문 {item.orderId ?? "(없음)"} · 승인 확인{" "}
+                {new Date(item.firstSeen).toLocaleString("ko-KR")}
+                {item.hasGrantFailed && " · 지급 실패 기록 있음"}
+              </div>
+            </div>
+            {item.recoverable ? (
+              <button
+                onClick={() => recover(item)}
+                disabled={busyTid === item.tid}
+                className="px-4 py-2 rounded-lg text-xs font-medium bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                {busyTid === item.tid ? "지급 중…" : "크레딧 재지급"}
+              </button>
+            ) : (
+              <span className="text-xs text-zinc-500">
+                주문번호 해석 불가 — 유저 관리에서 수동 충전
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 

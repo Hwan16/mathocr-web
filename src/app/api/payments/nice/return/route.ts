@@ -3,6 +3,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { parseOrderId } from "@/lib/payments";
 import { isPaymentsKilled } from "@/lib/service-flags";
 import {
+  recordApprovedEvent,
+  recordGrantFailure,
+} from "@/lib/payment-recovery";
+import {
   approvePayment,
   nicepayConfigured,
   verifyAuthSignature,
@@ -138,6 +142,12 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // 승인 확정 기록 (LA-06 복구): 이 시점부터는 카드에서 돈이 빠진 상태다.
+  // 아래 지급이 실패하고 웹훅 재전송까지 실패해도 이 이벤트로 미지급 주문을
+  // 찾아 관리자 화면에서 재지급할 수 있다. 기록 실패는 흐름을 막지 않는다.
+  const orderInfo = { tid, orderId, amount: parsed.plan.price };
+  await recordApprovedEvent("nice_return", orderInfo);
+
   // 크레딧 지급 (원자적 + 멱등: tid)
   const admin = createAdminClient();
   const { data, error } = await admin.rpc("grant_plan_credits", {
@@ -152,6 +162,7 @@ export async function POST(request: NextRequest) {
     // 결제는 완료 — 지급은 웹훅 재전송이 이어받는다. fail 페이지의 안내 문구가
     // "결제됐다면 잠시 후 자동 지급" 케이스를 커버한다.
     console.error("[payments/nice/return] grant 실패:", error.message);
+    await recordGrantFailure("nice_return", orderInfo, error.message);
     return fail(
       request,
       "결제는 완료됐으나 크레딧 지급 처리 중 오류가 발생했습니다. 잠시 후 자동으로 재처리됩니다."
@@ -163,6 +174,11 @@ export async function POST(request: NextRequest) {
     console.error(
       "[payments/nice/return] 지급 결과 이상:",
       JSON.stringify(result)
+    );
+    await recordGrantFailure(
+      "nice_return",
+      orderInfo,
+      `grant 결과 이상: ${JSON.stringify(result)}`
     );
     return fail(
       request,
