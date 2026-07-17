@@ -195,17 +195,25 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* 유효기간 */}
+          {/* 유효기간 — 정상: 파란색 / 만료: 빨간 볼드 + 배지 */}
           <div className="bezel-card rounded-2xl p-6">
             <div className="text-sm text-zinc-500 mb-1">유효기간</div>
             <div
-              className={`text-xl font-semibold ${isExpired ? "text-red-600" : "text-zinc-900"}`}
+              className={`text-xl ${
+                isExpired
+                  ? "font-bold text-red-600"
+                  : profile?.expires_at
+                    ? "font-semibold text-blue-600"
+                    : "font-semibold text-zinc-900"
+              }`}
             >
               {profile?.expires_at
                 ? new Date(profile.expires_at).toLocaleDateString("ko-KR")
                 : "무제한"}
               {isExpired && (
-                <span className="text-sm text-red-600 ml-2">만료됨</span>
+                <span className="ml-2 inline-block align-middle rounded-full bg-red-600 px-2.5 py-0.5 text-xs font-bold text-white">
+                  만료됨
+                </span>
               )}
             </div>
           </div>

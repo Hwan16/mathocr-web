@@ -826,10 +826,23 @@ function UsersTab() {
                   <td className="px-6 py-3 text-center text-zinc-700">
                     {u.credits}
                   </td>
-                  <td className="px-6 py-3 text-center text-zinc-600">
-                    {u.expires_at
-                      ? new Date(u.expires_at).toLocaleDateString("ko-KR")
-                      : "—"}
+                  <td className="px-6 py-3 text-center">
+                    {u.expires_at ? (
+                      new Date(u.expires_at) < new Date() ? (
+                        <span className="font-bold text-red-600">
+                          {new Date(u.expires_at).toLocaleDateString("ko-KR")}
+                          <span className="ml-1 inline-block align-middle rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                            만료
+                          </span>
+                        </span>
+                      ) : (
+                        <span className="font-medium text-blue-600">
+                          {new Date(u.expires_at).toLocaleDateString("ko-KR")}
+                        </span>
+                      )
+                    ) : (
+                      <span className="text-zinc-600">—</span>
+                    )}
                   </td>
                   <td className="px-6 py-3 text-zinc-500">
                     {new Date(u.created_at).toLocaleDateString("ko-KR")}
@@ -1057,12 +1070,22 @@ function UserDetailModal({
           <div className="rounded-xl bg-zinc-50 p-3">
             <div className="text-xs text-zinc-500 mb-0.5">유효기간</div>
             <div
-              className={`text-sm font-semibold ${isExpired ? "text-red-600" : "text-zinc-900"}`}
+              className={`text-sm ${
+                isExpired
+                  ? "font-bold text-red-600"
+                  : user.expires_at
+                    ? "font-semibold text-blue-600"
+                    : "font-semibold text-zinc-900"
+              }`}
             >
               {user.expires_at
                 ? new Date(user.expires_at).toLocaleDateString("ko-KR")
                 : "무제한"}
-              {isExpired && <span className="ml-1 text-xs">만료</span>}
+              {isExpired && (
+                <span className="ml-1.5 inline-block align-middle rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-bold text-white">
+                  만료됨
+                </span>
+              )}
             </div>
           </div>
           <div className="rounded-xl bg-zinc-50 p-3">
