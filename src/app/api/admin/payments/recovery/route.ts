@@ -9,10 +9,12 @@ import { parseOrderId } from "@/lib/payments";
 // pg_transaction_id=tid 행이 없는 것 (지급 성공 = grant_plan_credits가 payments
 // 행을 만들므로 별도 상태 갱신 없이 자동으로 목록에서 빠진다).
 //
-// 재지급: 서버에 기록된 이벤트의 order_id에서 플랜·사용자를 재계산해
-// grant_plan_credits를 다시 호출한다 — 지급량·대상은 전부 서버 기록에서 나오고
-// (클라이언트가 보내는 건 tid뿐), tid 멱등이라 이미 지급된 주문은 중복 지급되지
-// 않는다(duplicate_transaction → 이미 지급됨 응답).
+// 재지급: 지급량·유효기간·금액은 승인 이벤트에 저장된 "승인 시점 플랜 스냅샷"
+// (raw.plan_snapshot, 72.1 P1-3)에서 나온다 — 이후 플랜 구성이 바뀌어도 결제
+// 당시 조건 그대로 복구된다. 스냅샷이 없는 과거 기록은 자동 재지급하지 않고
+// 수동 충전으로 안내한다(현재 구성으로 오지급할 위험 차단). 대상 사용자는
+// order_id에서 파싱하고(클라이언트가 보내는 건 tid뿐), tid 멱등이라 이미 지급된
+// 주문은 중복 지급되지 않는다(duplicate_transaction → 이미 지급됨 응답).
 
 async function requireAdmin() {
   const user = await getAuthUser();
@@ -35,7 +37,50 @@ type EventRow = {
   amount: string | null;
   event_type: string;
   received_at: string;
+  raw: unknown;
 };
+
+// 승인 시점 플랜 스냅샷 (payment-recovery.ts가 raw.plan_snapshot으로 저장).
+// 숫자 필드가 하나라도 비정상이면 스냅샷 없음으로 취급한다(부분 신뢰 금지).
+type PlanSnapshot = {
+  plan_name: string;
+  credits: number;
+  validity_days: number;
+  price: number;
+};
+
+function readSnapshot(raw: unknown): PlanSnapshot | null {
+  if (!raw || typeof raw !== "object") return null;
+  const s = (raw as { plan_snapshot?: unknown }).plan_snapshot;
+  if (!s || typeof s !== "object") return null;
+  const o = s as Record<string, unknown>;
+  if (
+    typeof o.credits !== "number" ||
+    !Number.isInteger(o.credits) ||
+    o.credits <= 0 ||
+    typeof o.validity_days !== "number" ||
+    !Number.isInteger(o.validity_days) ||
+    o.validity_days <= 0 ||
+    typeof o.price !== "number" ||
+    o.price <= 0
+  ) {
+    return null;
+  }
+  return {
+    plan_name: typeof o.plan_name === "string" ? o.plan_name : "(플랜명 없음)",
+    credits: o.credits,
+    validity_days: o.validity_days,
+    price: o.price,
+  };
+}
+
+function firstSnapshot(events: EventRow[]): PlanSnapshot | null {
+  for (const ev of events) {
+    const snap = readSnapshot(ev.raw);
+    if (snap) return snap;
+  }
+  return null;
+}
 
 export async function GET() {
   const adminUser = await requireAdmin();
@@ -50,7 +95,7 @@ export async function GET() {
   const since = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
   const { data: events, error } = await admin
     .from("payment_events")
-    .select("tid, order_id, amount, event_type, received_at")
+    .select("tid, order_id, amount, event_type, received_at, raw")
     .in("event_type", ["approved", "grant_failed"])
     .gte("received_at", since)
     .order("received_at", { ascending: false })
@@ -105,6 +150,13 @@ export async function GET() {
     );
     const parsed = first.order_id ? parseOrderId(first.order_id) : null;
     if (parsed) userIds.add(parsed.userId);
+    // 표시·지급 모두 스냅샷 우선 — 없으면 현재 플랜 구성은 "표시"에만 쓴다
+    const snapshot = firstSnapshot(list);
+    const manualReason = !parsed
+      ? "주문번호 해석 불가"
+      : !snapshot
+        ? "승인 기록에 플랜 스냅샷 없음(도입 전 주문)"
+        : null;
     return {
       tid,
       orderId: first.order_id,
@@ -112,12 +164,14 @@ export async function GET() {
       firstSeen,
       hasGrantFailed: list.some((e) => e.event_type === "grant_failed"),
       planId: parsed?.plan.id ?? null,
-      planName: parsed?.plan.name ?? null,
-      credits: parsed?.plan.credits ?? null,
+      planName: snapshot?.plan_name ?? parsed?.plan.name ?? null,
+      credits: snapshot?.credits ?? parsed?.plan.credits ?? null,
       userId: parsed?.userId ?? null,
       userEmail: null as string | null,
-      // order_id가 파싱 불가면 재지급 불가 — 나이스 콘솔·유저 관리 수동 충전으로 처리
-      recoverable: !!parsed,
+      // 자동 재지급 가능 = 주문번호 파싱 가능 + 승인 시점 스냅샷 존재.
+      // 불가 건은 나이스 콘솔·유저 관리 수동 충전으로 처리(manualReason 표시).
+      recoverable: !!parsed && !!snapshot,
+      manualReason,
     };
   });
 
@@ -160,14 +214,15 @@ export async function POST(request: NextRequest) {
   // 만들어낼 수 없다.
   const { data: events, error: evErr } = await admin
     .from("payment_events")
-    .select("tid, order_id, amount, event_type, received_at")
+    .select("tid, order_id, amount, event_type, received_at, raw")
     .eq("tid", tid)
     .in("event_type", ["approved", "grant_failed"])
     .limit(10);
   if (evErr) {
     return NextResponse.json({ error: "이벤트 조회 실패", detail: evErr.message }, { status: 500 });
   }
-  const event = ((events ?? []) as EventRow[]).find((e) => e.order_id) ?? null;
+  const eventRows = (events ?? []) as EventRow[];
+  const event = eventRows.find((e) => e.order_id) ?? null;
   if (!event || !event.order_id) {
     return NextResponse.json(
       { error: "해당 거래의 승인 기록이 없습니다." },
@@ -182,12 +237,24 @@ export async function POST(request: NextRequest) {
       { status: 422 }
     );
   }
-  // 기록된 승인 금액과 현재 플랜 가격이 다르면(가격 개편 이후 등) 자동 재지급을
-  // 멈추고 수동 판단으로 넘긴다 — 결제액과 다른 지급을 만들지 않기 위해.
-  if (event.amount !== null && Number(event.amount) !== parsed.plan.price) {
+  // 지급 근거는 승인 시점 스냅샷(72.1 P1-3) — 현재 플랜 구성은 쓰지 않는다.
+  // 스냅샷 없는 과거 기록을 현재 구성으로 지급하면 결제 당시와 다른 지급이
+  // 될 수 있으므로 자동 재지급을 멈추고 수동 판단으로 넘긴다.
+  const snapshot = firstSnapshot(eventRows);
+  if (!snapshot) {
     return NextResponse.json(
       {
-        error: `승인 금액(${event.amount}원)과 현재 플랜 가격(${parsed.plan.price}원)이 다릅니다 — 수동 충전으로 처리하세요.`,
+        error:
+          "승인 기록에 플랜 스냅샷이 없습니다(스냅샷 도입 전 주문) — 결제 당시 플랜을 확인해 유저 관리에서 수동 충전으로 처리하세요.",
+      },
+      { status: 409 }
+    );
+  }
+  // 기록된 승인 금액과 스냅샷 가격이 다르면(기록 손상 등 비정상) 자동 재지급 중단.
+  if (event.amount !== null && Number(event.amount) !== snapshot.price) {
+    return NextResponse.json(
+      {
+        error: `승인 금액(${event.amount}원)과 스냅샷 가격(${snapshot.price}원)이 다릅니다 — 수동 충전으로 처리하세요.`,
       },
       { status: 409 }
     );
@@ -195,9 +262,9 @@ export async function POST(request: NextRequest) {
 
   const { data, error } = await admin.rpc("grant_plan_credits", {
     p_user_id: parsed.userId,
-    p_credits: parsed.plan.credits,
-    p_validity_days: parsed.plan.validityDays,
-    p_amount: parsed.plan.price,
+    p_credits: snapshot.credits,
+    p_validity_days: snapshot.validity_days,
+    p_amount: snapshot.price,
     p_transaction_id: tid,
   });
   if (error) {
@@ -242,7 +309,7 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({
     success: true,
-    credits: parsed.plan.credits,
-    planName: parsed.plan.name,
+    credits: snapshot.credits,
+    planName: snapshot.plan_name,
   });
 }

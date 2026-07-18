@@ -326,6 +326,7 @@ interface PendingPayment {
   credits: number | null;
   userEmail: string | null;
   recoverable: boolean;
+  manualReason: string | null;
 }
 
 function PaymentRecoveryNotice() {
@@ -417,7 +418,8 @@ function PaymentRecoveryNotice() {
               </button>
             ) : (
               <span className="text-xs text-zinc-500">
-                주문번호 해석 불가 — 유저 관리에서 수동 충전
+                {item.manualReason ?? "자동 재지급 불가"} — 유저 관리에서 수동
+                충전
               </span>
             )}
           </div>

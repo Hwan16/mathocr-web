@@ -230,7 +230,7 @@ export async function POST(request: NextRequest) {
   // 증거다. return 라우트가 이미 기록했으면 멱등으로 무시된다 — return 프로세스가
   // 승인 직후 죽은 경우도 웹훅이 독립적으로 기록해 미지급 탐지를 보장한다.
   const orderInfo = { tid, orderId, amount: parsed.plan.price };
-  await recordApprovedEvent("nice_webhook", orderInfo);
+  await recordApprovedEvent("nice_webhook", orderInfo, parsed.plan);
 
   const admin = createAdminClient();
   const { data, error } = await admin.rpc("grant_plan_credits", {
@@ -243,7 +243,7 @@ export async function POST(request: NextRequest) {
 
   if (error) {
     console.error("[payments/nice/webhook] grant 실패:", error.message);
-    await recordGrantFailure("nice_webhook", orderInfo, error.message);
+    await recordGrantFailure("nice_webhook", orderInfo, error.message, parsed.plan);
     return NextResponse.json({ error: "grant failed" }, { status: 500 });
   }
 
@@ -256,7 +256,8 @@ export async function POST(request: NextRequest) {
     await recordGrantFailure(
       "nice_webhook",
       orderInfo,
-      `grant 결과 이상: ${JSON.stringify(result)}`
+      `grant 결과 이상: ${JSON.stringify(result)}`,
+      parsed.plan
     );
     return NextResponse.json({ error: "grant rejected" }, { status: 500 });
   }

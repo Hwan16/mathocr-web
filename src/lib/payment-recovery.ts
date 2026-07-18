@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendAdminAlert } from "@/lib/admin-alert";
+import type { Plan } from "@/lib/payments";
 
 // ── 승인 성공·지급 실패 주문 복구 (LA-06 잔여) ──
 //
@@ -15,14 +16,42 @@ import { sendAdminAlert } from "@/lib/admin-alert";
 // 원칙:
 //  - 기록은 전부 fail-open — 이벤트 기록 실패가 결제·지급 흐름을 막으면 안 된다.
 //    (기록이 없어도 기존 안전망(웹훅 500 재전송)은 그대로 동작한다)
-//  - 지급 실패는 grant_failed 이벤트로 남기고 관리자 메일 경보를 1회만 보낸다
-//    (event_key 유니크로 웹훅 재전송·재시도가 겹쳐도 경보 중복 없음).
+//    fail-open 경로의 DB 호출은 짧은 timeout으로 무응답 시 응답 지연도 막는다.
+//  - 승인 이벤트에는 승인 시점의 플랜 구성(credits·validity_days·price)을
+//    스냅샷으로 저장한다 — 이후 플랜 구성이 바뀌어도 재지급은 결제 당시 조건을
+//    따른다(현재 구성으로 오지급 방지, 72.1 P1-3).
+//  - 지급 실패는 grant_failed 이벤트로 남기고 관리자 메일 경보를 보낸다.
+//    이벤트 생성과 메일 발송은 분리(72.1 P1-4): 발송 성공 시 raw.alert_sent_at을
+//    기록하고, 발송이 실패했다면 웹훅 재전송 등으로 다시 이 경로에 들어올 때
+//    재시도한다 — 이벤트는 있는데 경보만 0회로 끝나는 창을 줄인다.
+
+// fail-open 기록 경로 전용 timeout — 본 결제 흐름을 오래 붙잡지 않기 위한 값.
+const RECORD_TIMEOUT_MS = 5000;
 
 type OrderInfo = {
   tid: string;
   orderId: string;
   amount: number;
 };
+
+// 승인 시점의 플랜 구성 스냅샷 — 재지급의 단일 근거.
+export type PlanSnapshot = {
+  plan_id: string;
+  plan_name: string;
+  credits: number;
+  validity_days: number;
+  price: number;
+};
+
+export function toPlanSnapshot(plan: Plan): PlanSnapshot {
+  return {
+    plan_id: plan.id,
+    plan_name: plan.name,
+    credits: plan.credits,
+    validity_days: plan.validityDays,
+    price: plan.price,
+  };
+}
 
 async function upsertEvent(
   eventKey: string,
@@ -47,7 +76,8 @@ async function upsertEvent(
       },
       { onConflict: "event_key", ignoreDuplicates: true }
     )
-    .select("id");
+    .select("id")
+    .abortSignal(AbortSignal.timeout(RECORD_TIMEOUT_MS));
   if (error) throw new Error(error.message);
   return { isNew: (data?.length ?? 0) > 0 };
 }
@@ -56,10 +86,14 @@ async function upsertEvent(
 // 같은 tid는 한 번만 저장된다.
 export async function recordApprovedEvent(
   source: "nice_return" | "nice_webhook",
-  info: OrderInfo
+  info: OrderInfo,
+  plan: Plan
 ): Promise<void> {
   try {
-    await upsertEvent(`${info.tid}:approved`, "approved", info, { source });
+    await upsertEvent(`${info.tid}:approved`, "approved", info, {
+      source,
+      plan_snapshot: toPlanSnapshot(plan),
+    });
   } catch (e) {
     console.warn(
       "[payment-recovery] approved 이벤트 기록 실패 (흐름은 계속):",
@@ -68,29 +102,73 @@ export async function recordApprovedEvent(
   }
 }
 
-// 지급 실패 기록 + 관리자 경보(최초 1회) — 돈은 나갔는데 크레딧이 안 간 상태.
-export async function recordGrantFailure(
-  source: "nice_return" | "nice_webhook",
+// grant_failed 경보 메일 발송 + 성공 시 raw.alert_sent_at 마킹.
+// 마킹 실패는 무시한다(다음 재시도에서 메일이 한 번 더 갈 뿐 — 누락보다 낫다).
+async function sendGrantFailureAlert(
+  eventKey: string,
   info: OrderInfo,
-  detail: string
+  source: string,
+  detail: string,
+  currentRaw: Record<string, unknown>
 ): Promise<void> {
-  try {
-    const { isNew } = await upsertEvent(
-      `${info.tid}:grant_failed`,
-      "grant_failed",
-      info,
-      { source, detail }
-    );
-    if (isNew) {
-      await sendAdminAlert(
-        "[MathOCR 결제] ⚠️ 결제 승인됐는데 크레딧 지급 실패 — 복구 필요",
-        `<p>카드 결제는 <strong>승인 완료</strong>됐지만 크레딧 지급이 실패했습니다.</p>
+  const sent = await sendAdminAlert(
+    "[MathOCR 결제] ⚠️ 결제 승인됐는데 크레딧 지급 실패 — 복구 필요",
+    `<p>카드 결제는 <strong>승인 완료</strong>됐지만 크레딧 지급이 실패했습니다.</p>
 <p>주문: <strong>${info.orderId}</strong><br/>거래(tid): ${info.tid}<br/>
 금액: ${info.amount.toLocaleString()}원<br/>실패 사유: ${detail}<br/>경로: ${source}</p>
 <p>웹훅 재전송이 자동 재시도하지만, 계속 실패하면 <strong>관리자 페이지 상단의
 "지급 대기 결제" 알림</strong>에서 [크레딧 재지급] 버튼으로 복구하세요.
 (재지급은 거래 ID 기준 멱등 — 이미 지급됐다면 중복 지급되지 않습니다)</p>`
-      );
+  );
+  if (!sent) return;
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("payment_events")
+    .update({ raw: { ...currentRaw, alert_sent_at: new Date().toISOString() } })
+    .eq("event_key", eventKey)
+    .abortSignal(AbortSignal.timeout(RECORD_TIMEOUT_MS));
+  if (error) {
+    console.warn("[payment-recovery] alert_sent_at 마킹 실패:", error.message);
+  }
+}
+
+// 지급 실패 기록 + 관리자 경보 — 돈은 나갔는데 크레딧이 안 간 상태.
+// 경보는 발송 성공(alert_sent_at) 전까지는 재진입 때마다 재시도한다.
+export async function recordGrantFailure(
+  source: "nice_return" | "nice_webhook",
+  info: OrderInfo,
+  detail: string,
+  plan: Plan
+): Promise<void> {
+  const eventKey = `${info.tid}:grant_failed`;
+  try {
+    const rawPayload: Record<string, unknown> = {
+      source,
+      detail,
+      plan_snapshot: toPlanSnapshot(plan),
+    };
+    const { isNew } = await upsertEvent(
+      eventKey,
+      "grant_failed",
+      info,
+      rawPayload
+    );
+    if (isNew) {
+      await sendGrantFailureAlert(eventKey, info, source, detail, rawPayload);
+      return;
+    }
+    // 이미 있는 이벤트(웹훅 재전송 등) — 경보가 아직 안 나갔으면 재시도
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .from("payment_events")
+      .select("raw")
+      .eq("event_key", eventKey)
+      .abortSignal(AbortSignal.timeout(RECORD_TIMEOUT_MS))
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    const existingRaw = (data?.raw ?? {}) as Record<string, unknown>;
+    if (!existingRaw.alert_sent_at) {
+      await sendGrantFailureAlert(eventKey, info, source, detail, existingRaw);
     }
   } catch (e) {
     console.warn(

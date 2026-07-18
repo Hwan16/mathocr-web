@@ -14,6 +14,8 @@ export async function sendAdminAlert(
   try {
     const resp = await fetch("https://api.resend.com/emails", {
       method: "POST",
+      // 경보는 부가 기능 — 메일 서버 무응답이 원 요청(결제 등)을 오래 붙잡지 않게 제한
+      signal: AbortSignal.timeout(8000),
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
