@@ -47,25 +47,45 @@ function LoginForm() {
   useEffect(() => {
     if (!justConfirmed || confirmHandled.current) return;
     confirmHandled.current = true;
-    // Supabase는 만료·재사용된 링크도 이 주소로 돌려보내며 실패 사유를 URL 해시에
-    // 담는다(#error=...&error_code=otp_expired). 실패면 가입 완료로 집계하지 않는다.
-    if (window.location.hash.includes("error")) {
+    // Supabase verify의 결과는 URL에 실려 온다 (실제 GoTrue 인스턴스 실측, 2026-07-19):
+    //   성공  → #access_token=...&refresh_token=...&type=signup (해시 토큰)
+    //   실패  → #error=access_denied&error_code=otp_expired&... (만료·재사용 링크)
+    // ?confirmed=1만 있고 해시 증거가 없는 방문(봇 크롤·이력 재방문·주소 직접 입력)은
+    // 진짜 인증 완료가 아니므로 전환으로 집계하지 않는다(72.1 P1-1) — 해시는 서버로
+    // 전송되지 않아 크롤러 URL에는 붙지 않는다. PKCE 변형(?code=)도 증거로 인정.
+    const hashParams = new URLSearchParams(
+      window.location.hash.replace(/^#/, "")
+    );
+    const hasError = hashParams.has("error") || hashParams.has("error_code");
+    const hasEvidence =
+      hashParams.has("access_token") ||
+      hashParams.get("type") === "signup" ||
+      searchParams.has("code");
+    if (hasError) {
       setConfirmBanner("failed");
-    } else {
+    } else if (hasEvidence) {
       setConfirmBanner("success");
       // LA-14: 인증 링크 도착 = 가입 완료 신호. 폼 제출(begin_registration·Lead)과
       // 분리해 광고 성과를 인증 마친 계정 기준으로 잡는다.
       trackEvent("verified_signup", { method: "password" });
       metaPixelTrack("CompleteRegistration");
+    } else {
+      // 증거 없는 confirmed=1 — 배너는 보여주되(과거에 인증을 마친 사람의 재방문일
+      // 수 있음) 전환은 집계하지 않는다. 진짜 사용자가 이 분기로 새는지(=미지의
+      // 리다이렉트 변형으로 전환 유실) GA에서 관찰할 수 있게 별도 이벤트만 남긴다.
+      setConfirmBanner("success");
+      trackEvent("verified_signup_no_evidence", { method: "password" });
     }
     // 새로고침 시 재집계되지 않도록 파라미터·해시를 URL에서 지운다 (배너는 상태로 유지).
     // 인증 메일 링크에는 redirect 파라미터가 없지만, 혹시 있으면 보존한다.
     // router.replace가 아니라 history.replaceState를 쓴다 — 페이지 이동이 아니라
     // 주소 표기만 정리하는 것이고, 하이드레이션 직후 해시가 있는 초기 진입에서는
     // 라우터 네비게이션이 무시되는 경우가 있다(프로덕션 실측).
+    // history.state는 그대로 보존한다(72.1 P2-1) — null로 덮으면 Next 라우터의
+    // 내부 상태가 지워져 이후 뒤로가기 동작이 어긋날 수 있다.
     const rawRedirect = searchParams.get("redirect");
     window.history.replaceState(
-      null,
+      window.history.state,
       "",
       rawRedirect
         ? `/auth/login?redirect=${encodeURIComponent(rawRedirect)}`
