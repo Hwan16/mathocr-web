@@ -184,7 +184,7 @@ function ChargeInner() {
               크레딧 충전에는 로그인이 필요합니다.
             </p>
             <a
-              href="/auth/login"
+              href="/auth/login?redirect=%2Fcharge"
               className="btn-primary inline-block px-6 py-3 rounded-lg text-sm"
             >
               로그인하고 계속하기
