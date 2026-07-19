@@ -20,6 +20,10 @@ interface AdminUser {
   credits: number;
   expires_at: string | null;
   created_at: string;
+  // 가입 출처 (0012_signup_attribution, first-touch). null = 직접 유입.
+  utm_source?: string | null;
+  utm_medium?: string | null;
+  utm_campaign?: string | null;
 }
 
 interface ErrorLogEntry {
@@ -1136,6 +1140,15 @@ function UserDetailModal({
 
   const isExpired =
     user.expires_at && new Date(user.expires_at) < new Date();
+  // 가입 경로 — 통계 탭과 같은 SOURCE_LABELS/SOURCE_COLORS 표기 재사용
+  const signupSource = user.utm_source ?? "direct";
+  const signupPath = [
+    sourceLabel(signupSource),
+    user.utm_medium,
+    user.utm_campaign,
+  ]
+    .filter(Boolean)
+    .join(" · ");
   const fmtDateTime = (iso: string) =>
     new Date(iso).toLocaleString("ko-KR", {
       dateStyle: "short",
@@ -1158,6 +1171,13 @@ function UserDetailModal({
             <p className="text-xs text-zinc-500">
               가입일 {new Date(user.created_at).toLocaleDateString("ko-KR")} ·
               권한 {user.role}
+            </p>
+            <p className="text-xs text-zinc-500 mt-0.5 flex items-center gap-1.5">
+              <span
+                className="inline-block w-2 h-2 rounded-full shrink-0"
+                style={{ backgroundColor: sourceColor(signupSource) }}
+              />
+              가입 경로 {signupPath}
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
