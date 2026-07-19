@@ -118,8 +118,11 @@ export default function EarlyBirdPopup() {
             className="w-full h-56 object-contain"
           />
           <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-b from-transparent to-white" />
+          {/* 2026-07-19 사용자 결정: 인원 수(200명)는 비노출 — "아직 200명도
+              안 찼나?"로 읽히는 역효과 방지. 한정성("한정 인원")만 표기.
+              선착순 캡 자체는 코드 max_uses로 계속 동작한다. */}
           <span className="absolute top-3 left-3 text-[11px] font-semibold tracking-widest bg-violet-600 text-white rounded-full px-3 py-1 shadow-sm">
-            EARLY BIRD · 선착순 200명
+            EARLY BIRD · 한정 인원
           </span>
         </div>
 
@@ -145,7 +148,7 @@ export default function EarlyBirdPopup() {
           </a>
 
           {/* 혜택 조건 — CTA와 같은 화면에 상시 노출 (표시광고 중요정보 근접 표시).
-              2026-07-16 사용자 요청으로 축소: 배지(선착순 200명)·본문(인증 후
+              2026-07-16 사용자 요청으로 축소: 배지(한정 인원)·본문(인증 후
               지급)과 중복되는 항목과 크레딧 셈법은 빼고, 팝업 안 어디에도 없는
               제한 조건(사용기한·1인 1회)만 남긴다. 전체 조건은 가입 페이지
               혜택 배너에서 한 번 더 표시된다. "선착순"의 확정 시점은 인증 후
