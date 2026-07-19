@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/onboarding-mail",
       "schedule": "30 * * * *"
+    },
+    {
+      "path": "/api/cron/stale-conversions",
+      "schedule": "10 * * * *"
     }
   ]
 }
