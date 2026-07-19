@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { trackEvent } from "@/lib/analytics";
 import { metaPixelTrack } from "@/lib/meta-pixel";
+import ResendConfirmationMail from "@/components/ResendConfirmationMail";
 
 const SAVED_EMAIL_KEY = "mathocr_saved_email";
 
@@ -30,6 +31,8 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [rememberEmail, setRememberEmail] = useState(false);
   const [error, setError] = useState("");
+  // 미인증 계정 로그인 시도 — 재발송 버튼을 에러 아래에 함께 보여준다
+  const [needsResend, setNeedsResend] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -105,6 +108,7 @@ function LoginForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setNeedsResend(false);
     setLoading(true);
 
     try {
@@ -122,6 +126,7 @@ function LoginForm() {
           setError(
             "이메일 인증이 아직 완료되지 않았습니다. 가입 시 받은 메일의 인증 링크를 눌러주세요."
           );
+          setNeedsResend(true); // 메일 유실 대비 — 재발송 버튼 노출
         } else {
           setError("이메일 또는 비밀번호가 올바르지 않습니다.");
         }
@@ -187,8 +192,15 @@ function LoginForm() {
       )}
       {confirmBanner === "failed" && (
         <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          인증 링크가 만료되었거나 이미 사용된 링크입니다. 이미 인증을 마쳤다면 그대로
-          로그인해주세요.
+          <p>
+            인증 링크가 만료되었거나 이미 사용된 링크입니다. 이미 인증을 마쳤다면
+            그대로 로그인해주세요.
+          </p>
+          <p className="mt-2 text-xs text-amber-700 mb-1.5">
+            아직 인증 전이라면 아래에 가입한 이메일을 입력한 뒤 새 인증 메일을
+            받을 수 있어요.
+          </p>
+          <ResendConfirmationMail email={email} />
         </div>
       )}
 
@@ -242,6 +254,14 @@ function LoginForm() {
           </div>
 
           {error && <p className="text-red-600 text-sm">{error}</p>}
+          {needsResend && (
+            <div className="rounded-lg bg-zinc-50 border border-zinc-200 px-4 py-3">
+              <p className="text-xs text-zinc-500 mb-1.5">
+                인증 메일이 오지 않았거나 찾을 수 없나요?
+              </p>
+              <ResendConfirmationMail email={email} />
+            </div>
+          )}
 
           <button
             type="submit"

@@ -6,6 +6,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { trackEvent } from "@/lib/analytics";
 import { SIGNUP_FREE_CREDITS } from "@/lib/plans";
 import { metaPixelTrack } from "@/lib/meta-pixel";
+import ResendConfirmationMail, {
+  startResendCooldown,
+} from "@/components/ResendConfirmationMail";
 import { getStoredUtm } from "@/lib/utm";
 // 동의받은 약관/방침의 버전(시행일) — lib/consent.ts 단일 출처 (서버와 자동 일치)
 import { CONSENT_VERSION } from "@/lib/consent";
@@ -203,6 +206,8 @@ function SignupForm() {
         // CompleteRegistration)는 인증 링크가 도착하는 /auth/login?confirmed=1 에서 집계한다.
         trackEvent("begin_registration", { method: "password" });
         metaPixelTrack("Lead");
+        // 방금 첫 인증 메일이 발송됐으므로 재발송 쿨다운을 미리 걸어둔다
+        startResendCooldown(email);
         setConfirmEmailSent(true);
         return;
       }
@@ -308,10 +313,13 @@ function SignupForm() {
                 자동으로 지급됩니다.
               </p>
             )}
-            <p className="text-xs text-zinc-400 leading-relaxed mb-6">
+            <p className="text-xs text-zinc-400 leading-relaxed mb-4">
               메일이 안 보이면 스팸함을 확인해주세요. 이미 가입된 이메일이라면
               메일이 오지 않을 수 있어요 — 바로 로그인해 보세요.
             </p>
+            <div className="mb-6 flex justify-center">
+              <ResendConfirmationMail email={email} />
+            </div>
             <a
               href="/auth/login"
               className="btn-primary inline-block px-6 py-3 rounded-lg text-sm"
