@@ -210,12 +210,16 @@ export async function GET(req: NextRequest) {
   }
 
   // (2) 유료 결제 이력 — 비동의자 중립형 발송 자격 (§4-2 결정 (ii))
+  // amount > 0 필수(2026-07-22 수정): 프로모션 상환·운영자 지급도 payments 에
+  // status=completed, amount=0 으로 기록되므로, 금액 필터가 없으면 무료 크레딧만
+  // 받은 비동의자가 '유료 구매자'로 오판되어 §4-2 (ii)가 금지한 소멸 안내를 받는다.
   const paidUserIds = new Set<string>();
   if (candidates.length > 0) {
     const { data: paidRows, error: paidError } = await supabase
       .from("payments")
       .select("user_id")
       .eq("status", "completed")
+      .gt("amount", 0)
       .in("user_id", candidates.map((p) => p.id));
     if (paidError) {
       // 조회 실패 시 비동의자 중립형은 전부 건너뛴다(fail-closed) —
@@ -229,13 +233,45 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // (2b) 최근 재지급(re_earlybird, expiry-regrant cron) 수신자 — 재지급 광고 메일이
+  // 만료일(지급+7일)을 이미 고지했으므로, 7일 내에는 광고형 만료 임박 메일을 다시
+  // 보내지 않는다(2026-07-22 — 이틀 연속 광고 메일 방지). 중립형은 유지: 비동의
+  // 유료 사용자는 재지급을 조용히 받았기 때문에 이 안내가 유일한 고지다.
+  const recentRegrantIds = new Set<string>();
+  if (candidates.length > 0) {
+    const { data: regrantCode } = await supabase
+      .from("promo_codes")
+      .select("id")
+      .eq("code", "re_earlybird")
+      .maybeSingle();
+    if (regrantCode) {
+      const { data: regrants, error: regrantsError } = await supabase
+        .from("promo_redemptions")
+        .select("user_id")
+        .eq("promo_code_id", regrantCode.id)
+        .gte("created_at", new Date(Date.now() - 7 * dayMs).toISOString())
+        .in("user_id", candidates.map((p) => p.id));
+      if (regrantsError) {
+        // 조회 실패 시 억제 없이 기존 동작 유지 (최악이 중복 광고 1통 — 발송 누락보다 낫다)
+        console.warn("[expiry-reminder] regrant lookup failed — 중복 억제 없이 진행", {
+          error: regrantsError.message,
+        });
+      }
+      for (const r of regrants ?? []) {
+        if (r.user_id) recentRegrantIds.add(r.user_id);
+      }
+    }
+  }
+
   // (3) 발송 종류 판정: marketing(광고형) / neutral(중립형) / null(발송 안 함)
   function decideKind(p: {
     id: string;
     marketing_opt_in: boolean | null;
   }): "marketing" | "neutral" | null {
     if (!confirmedById.get(p.id)) return null; // 미인증 — 전면 제외
-    if (p.marketing_opt_in === true) return "marketing";
+    if (p.marketing_opt_in === true) {
+      return recentRegrantIds.has(p.id) ? null : "marketing"; // 재지급 7일 내 — 광고형 중복 억제
+    }
     return paidUserIds.has(p.id) ? "neutral" : null; // 비동의자는 유료 구매자만
   }
 
@@ -258,6 +294,7 @@ export async function GET(req: NextRequest) {
         marketing_opt_in: p.marketing_opt_in === true,
         confirmed: confirmedById.get(p.id) === true,
         has_paid: paidUserIds.has(p.id),
+        recent_regrant: recentRegrantIds.has(p.id), // 재지급 7일 내 → 광고형 억제 사유
         // marketing=광고형, neutral=중립형, null=발송 안 함
         send: decideKind(p),
       })),

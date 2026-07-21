@@ -5,6 +5,10 @@
       "schedule": "0 0 * * *"
     },
     {
+      "path": "/api/cron/expiry-regrant",
+      "schedule": "20 0 * * *"
+    },
+    {
       "path": "/api/cron/onboarding-mail",
       "schedule": "30 * * * *"
     },
