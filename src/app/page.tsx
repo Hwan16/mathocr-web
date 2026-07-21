@@ -687,12 +687,58 @@ export default function Home() {
                 </div>
 
                 <ul className="space-y-3 mb-8 text-[15px] text-zinc-600">
-                  {[
-                    `${plan.credits} 크레딧 충전`,
-                    `유효기간 ${plan.validityDays}일 · 재충전 시 함께 연장`,
-                    "문제 속 그림은 무료",
-                    "실패한 문제는 차감 안 됨",
-                  ].map((t) => (
+                  <li className="flex items-center gap-2.5">
+                    <iconify-icon
+                      icon="solar:check-circle-bold"
+                      width="18"
+                      className="shrink-0"
+                      style={{ color: plan.color }}
+                    />
+                    {plan.credits} 크레딧 충전
+                  </li>
+                  {plan.validityDays > 30 ? (
+                    // Pro만 유효기간 60일(다른 플랜의 2배) — 박스로 별도 강조.
+                    // "2배"는 실재하는 우리 플랜(30일)끼리의 비교라 LA-01 원칙에 부합
+                    <li
+                      className="-mx-3 flex items-start gap-2.5 rounded-lg border px-3 py-2"
+                      style={{
+                        backgroundColor: plan.color + "14",
+                        borderColor: plan.color + "4d",
+                      }}
+                    >
+                      <iconify-icon
+                        icon="solar:check-circle-bold"
+                        width="18"
+                        className="shrink-0 mt-0.5"
+                        style={{ color: plan.color }}
+                      />
+                      <span>
+                        <span className="font-bold text-zinc-900">
+                          유효기간 {plan.validityDays}일
+                        </span>
+                        <span
+                          className="ml-2 inline-block align-[2px] text-[11px] font-bold px-2 py-0.5 rounded-full text-white"
+                          style={{ backgroundColor: plan.color }}
+                        >
+                          다른 플랜의 2배
+                        </span>
+                        <span className="block text-[13px] text-zinc-500 mt-0.5">
+                          재충전 시 함께 연장
+                        </span>
+                      </span>
+                    </li>
+                  ) : (
+                    <li className="flex items-center gap-2.5">
+                      <iconify-icon
+                        icon="solar:check-circle-bold"
+                        width="18"
+                        className="shrink-0"
+                        style={{ color: plan.color }}
+                      />
+                      유효기간 {plan.validityDays}일 · 재충전 시 함께 연장
+                    </li>
+                  )}
+                  {["문제 속 그림은 무료", "실패한 문제는 차감 안 됨"].map((t) => (
                     <li key={t} className="flex items-center gap-2.5">
                       <iconify-icon
                         icon="solar:check-circle-bold"
