@@ -24,6 +24,8 @@ interface AdminUser {
   utm_source?: string | null;
   utm_medium?: string | null;
   utm_campaign?: string | null;
+  // 마케팅 메일 수신 동의 (0013). 광고성 메일은 동의자에게만 보낼 수 있다(정보통신망법).
+  marketing_opt_in?: boolean;
   // 이메일 인증·프로모션 대기 상태 (auth.users에서 합쳐 내려옴, null = 확인 실패)
   // promo_pending_error 는 위조 불가능한 app_metadata 기록만 내려온다.
   email_confirmed?: boolean | null;
@@ -1210,7 +1212,12 @@ function UserDetailModal({
             <h3 className="text-lg font-semibold truncate">{user.email}</h3>
             <p className="text-xs text-zinc-500">
               가입일 {new Date(user.created_at).toLocaleDateString("ko-KR")} ·
-              권한 {user.role}
+              권한 {user.role} · 마케팅 수신{" "}
+              {user.marketing_opt_in ? (
+                <span className="text-emerald-600 font-medium">동의함</span>
+              ) : (
+                <span className="text-zinc-400">안 함</span>
+              )}
             </p>
             <p className="text-xs text-zinc-500 mt-0.5 flex items-center gap-1.5">
               <span
