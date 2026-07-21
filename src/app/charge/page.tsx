@@ -39,6 +39,7 @@ function ChargeInner() {
   // 결제 비공개(PAYMENTS_ENABLED=false) 기간에도 관리자에게는 결제 UI를 노출한다
   // — 실도메인 결제 테스트·카드사 심사용 결제경로 캡처 목적.
   const [role, setRole] = useState<string | null>(null);
+  // 홈 추천 카드는 Pro지만 기본 선택은 부담이 적은 Basic 유지 (2026-07-21 사용자 결정)
   const [selectedId, setSelectedId] = useState<string>(
     getPlan(preselect ?? "") ? (preselect as string) : "basic"
   );

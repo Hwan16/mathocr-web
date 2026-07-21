@@ -11,6 +11,9 @@
 // savePctVsStarter: Starter 실단가(199원) 대비 절약률, 내림(과장 방지).
 //   Basic: 1 - (34900/200)/199 = 12.3% → 12 / Pro: 1 - (69900/500)/199 = 29.7% → 29
 // color: 플랜별 강조색(이름 뱃지·절약 뱃지·체크 아이콘에 사용).
+// colorHover: color를 한 단계 진하게 — featured 카드의 구매 버튼 hover에 사용.
+// featured: 추천 카드(테두리·추천 뱃지·채운 구매 버튼). 2026-07-21 Basic→Pro 이동
+//   (단가 최저·유효기간 2배로 추천 근거가 가장 강한 플랜이라 사용자 결정).
 export const PLANS = [
   {
     id: "starter",
@@ -21,7 +24,8 @@ export const PLANS = [
     perUnit: 199,
     savePctVsStarter: null,
     featured: false,
-    color: "#2563eb", // blue
+    color: "#2563eb", // blue-600
+    colorHover: "#1d4ed8", // blue-700
   },
   {
     id: "basic",
@@ -31,8 +35,9 @@ export const PLANS = [
     validityDays: 30,
     perUnit: 175,
     savePctVsStarter: 12,
-    featured: true,
-    color: "#7c3aed", // violet (brand accent)
+    featured: false,
+    color: "#7c3aed", // violet-600 (brand accent)
+    colorHover: "#6d28d9", // violet-700
   },
   {
     id: "pro",
@@ -42,8 +47,9 @@ export const PLANS = [
     validityDays: 60,
     perUnit: 140,
     savePctVsStarter: 29,
-    featured: false,
-    color: "#c026d3", // fuchsia
+    featured: true,
+    color: "#c026d3", // fuchsia-600
+    colorHover: "#a21caf", // fuchsia-700
   },
 ] as const;
 

@@ -639,9 +639,9 @@ export default function Home() {
             {PLANS.map((plan) => (
               <div
                 key={plan.id}
-                className={`card rounded-xl p-8 relative ${
-                  plan.featured ? "!border-[var(--accent)]" : ""
-                }`}
+                className="card rounded-xl p-8 relative"
+                // featured 테두리는 accent 고정 대신 플랜 색을 따라감 (Pro=자주색)
+                style={plan.featured ? { borderColor: plan.color } : undefined}
               >
                 {plan.featured && (
                   // "가장 인기"는 판매량 근거가 필요한 최상급 표현이라 주관적
@@ -766,6 +766,16 @@ export default function Home() {
                   className={`block w-full text-center px-6 py-3.5 rounded-lg text-[15px] ${
                     plan.featured ? "btn-primary" : "btn-outline"
                   }`}
+                  // btn-primary가 var(--accent)를 쓰므로 변수만 플랜 색으로 덮어
+                  // hover 동작을 유지한 채 버튼 색을 카드와 맞춘다
+                  style={
+                    plan.featured
+                      ? ({
+                          "--accent": plan.color,
+                          "--accent-hover": plan.colorHover,
+                        } as React.CSSProperties)
+                      : undefined
+                  }
                 >
                   구매하기
                 </button>
