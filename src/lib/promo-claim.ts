@@ -37,6 +37,7 @@ type ClaimUser = {
   email?: string | null;
   email_confirmed_at?: string | null;
   user_metadata?: Record<string, unknown> | null;
+  app_metadata?: Record<string, unknown> | null;
 };
 
 export async function claimPendingPromo(
@@ -105,15 +106,24 @@ export async function claimPendingPromo(
 
   if (success || (errorCode && PERMANENT_ERRORS.has(errorCode))) {
     // 성공했거나 재시도 의미가 없는 실패 → pending 정리 (감사용 결과도 남긴다)
+    // 실패 사유(promo_pending_error)는 app_metadata 에 기록한다 — 관리자 화면이
+    // 이 값을 상태 배지로 신뢰하는데, user_metadata 는 본인 세션으로
+    // supabase.auth.updateUser 를 호출해 마음대로 위조·삭제할 수 있기 때문.
     const existingMetadata = user.user_metadata ?? {};
     const { error: metadataError } = await admin.auth.admin.updateUserById(user.id, {
       user_metadata: {
         ...existingMetadata,
         pending_promo_code: null,
-        ...(success || ownRedemption
-          ? { promo_code: code }
-          : { promo_pending_error: errorCode }),
+        ...(success || ownRedemption ? { promo_code: code } : {}),
       },
+      ...(success || ownRedemption
+        ? {}
+        : {
+            app_metadata: {
+              ...(user.app_metadata ?? {}),
+              promo_pending_error: errorCode,
+            },
+          }),
     });
     if (metadataError) {
       // 정리 실패 시 다음 로그인 때 한 번 더 시도된다 — already_redeemed 로

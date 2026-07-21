@@ -24,7 +24,24 @@ interface AdminUser {
   utm_source?: string | null;
   utm_medium?: string | null;
   utm_campaign?: string | null;
+  // 이메일 인증·프로모션 대기 상태 (auth.users에서 합쳐 내려옴, null = 확인 실패)
+  // promo_pending_error 는 위조 불가능한 app_metadata 기록만 내려온다.
+  email_confirmed?: boolean | null;
+  pending_promo_code?: string | null;
+  promo_pending_error?: string | null;
 }
+
+// 프로모션 자동 지급이 확정 실패로 끝난 경우의 사유 표기 (promo-claim.ts 오류 코드)
+const PROMO_ERROR_LABELS: Record<string, string> = {
+  exhausted: "선착순 마감 후 지급 시점 도래 (정상 미지급)",
+  inactive_code: "프로모션 종료 후 지급 시점 도래 (정상 미지급)",
+  already_redeemed: "다른 계정에서 이미 수령 (중복 수령 차단)",
+  invalid_code: "존재하지 않는 코드",
+  invalid_source: "잘못된 지급 경로",
+};
+// 캠페인이 정상 종료된 뒤의 예정된 미지급 — 사고가 아니므로 목록에 빨간 배지를
+// 띄우지 않는다 (종료 후엔 신규 전원이 해당돼 진짜 이상 케이스가 묻힌다).
+const PROMO_ERROR_NEUTRAL = new Set(["exhausted", "inactive_code"]);
 
 interface ErrorLogEntry {
   id: string;
@@ -830,9 +847,14 @@ function UsersTab() {
   const [detailUser, setDetailUser] = useState<AdminUser | null>(null);
   const limit = 20;
 
+  // 느린 응답이 나중에 도착해 최신 검색 결과를 덮어쓰는 레이스 방지 —
+  // 마지막으로 시작한 요청의 응답만 반영한다.
+  const loadSeq = useRef(0);
+
   const loadUsers = useCallback(async () => {
     // service_role 권한이 필요한 조회는 서버 API(/api/admin/*)를 통해서만 한다.
     // 브라우저 anon 클라이언트로 직접 profiles 전체를 읽으면 RLS에 막힌다.
+    const seq = ++loadSeq.current;
     const params = new URLSearchParams({
       page: String(page),
       limit: String(limit),
@@ -840,18 +862,23 @@ function UsersTab() {
     if (search) params.set("search", search);
 
     const res = await fetch(`/api/admin/users?${params.toString()}`);
+    if (seq !== loadSeq.current) return;
     if (!res.ok) {
       setUsers([]);
       setTotal(0);
       return;
     }
     const data = await res.json();
+    if (seq !== loadSeq.current) return;
     setUsers(data.users ?? []);
     setTotal(data.total ?? 0);
   }, [page, search]);
 
   useEffect(() => {
-    loadUsers();
+    // 검색 타이핑마다 요청이 나가지 않게 짧게 디바운스 (서버가 요청당
+    // 인증 상태 조회 20건을 하므로 키 입력마다 쏘면 낭비가 크다)
+    const t = setTimeout(loadUsers, 250);
+    return () => clearTimeout(t);
   }, [loadUsers]);
 
   function openCreditModal(user: AdminUser) {
@@ -933,7 +960,20 @@ function UsersTab() {
                   onClick={() => setDetailUser(u)}
                   className="border-b border-[var(--border-subtle)] last:border-0 hover:bg-zinc-50 cursor-pointer"
                 >
-                  <td className="px-6 py-3 text-zinc-800">{u.email}</td>
+                  <td className="px-6 py-3 text-zinc-800">
+                    {u.email}
+                    {u.email_confirmed === false && (
+                      <span className="ml-2 inline-block align-middle rounded-full bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-600">
+                        미인증
+                      </span>
+                    )}
+                    {u.promo_pending_error &&
+                      !PROMO_ERROR_NEUTRAL.has(u.promo_pending_error) && (
+                        <span className="ml-2 inline-block align-middle rounded-full bg-red-50 border border-red-200 px-2 py-0.5 text-[10px] font-bold text-red-600">
+                          혜택 미지급
+                        </span>
+                      )}
+                  </td>
                   <td className="px-6 py-3 text-center">
                     <span
                       className={`text-xs px-2 py-0.5 rounded-full ${
@@ -1179,6 +1219,40 @@ function UserDetailModal({
               />
               가입 경로 {signupPath}
             </p>
+            {/* 인증·프로모션 지급 상태 — 미인증 대기를 미지급 사고로 오인하지 않게 명시.
+                "지급 시도"라고 쓰는 이유: 선착순 마감·IP 제한 등으로 시도가 실패할 수
+                있어 지급을 확정 표현하면 관리자가 사용자에게 틀린 안내를 하게 된다. */}
+            {user.email_confirmed === null && (
+              <p className="text-xs text-zinc-400 mt-1">
+                인증 상태 확인 실패 — 새로고침 후 다시 확인하세요
+              </p>
+            )}
+            {user.email_confirmed === false && (
+              <p className="text-xs text-amber-600 mt-1 font-medium">
+                이메일 미인증
+                {user.pending_promo_code &&
+                  ` — ${user.pending_promo_code} 혜택은 인증 후 첫 로그인 때 자동으로 지급 시도됩니다`}
+              </p>
+            )}
+            {user.email_confirmed === true && user.pending_promo_code && (
+              <p className="text-xs text-blue-600 mt-1 font-medium">
+                {user.pending_promo_code} 혜택 지급 대기 — 다음 로그인 때
+                자동으로 다시 시도됩니다
+              </p>
+            )}
+            {user.promo_pending_error && (
+              <p
+                className={`text-xs mt-1 ${
+                  PROMO_ERROR_NEUTRAL.has(user.promo_pending_error)
+                    ? "text-zinc-500"
+                    : "text-red-600 font-medium"
+                }`}
+              >
+                프로모션 미적용 —{" "}
+                {PROMO_ERROR_LABELS[user.promo_pending_error] ??
+                  user.promo_pending_error}
+              </p>
+            )}
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <button
