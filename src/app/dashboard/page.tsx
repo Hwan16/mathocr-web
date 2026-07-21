@@ -217,7 +217,7 @@ export default function DashboardPage() {
         )}
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           {/* 크레딧 */}
           <div className="bezel-card rounded-2xl p-6">
             <div className="text-sm text-zinc-500 mb-1">잔여 크레딧</div>
@@ -294,6 +294,20 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
+
+        {/* 약관 개정 사전 공지 (약관 제10조의 서비스 내 공지) — 이용자에게 불리할 수
+            있는 변경이라 눈에 띄는 위치(잔액/유효기간 카드 바로 아래)에 둔다. 상단
+            배너와 경쟁하지 않게 배너가 아닌 한 줄 텍스트로.
+            시행일(2026-08-21)이 지나면 삭제. */}
+        <p className="mb-10 text-sm text-zinc-600">
+          2026년 8월 21일부터 서비스 이용약관이 일부 개정됩니다 —{" "}
+          <a
+            href="/terms"
+            className="text-[var(--accent)] underline underline-offset-2 hover:opacity-80 transition-opacity"
+          >
+            자세히 보기
+          </a>
+        </p>
 
         {/* Promo Code */}
         <PromoRedeemCard onRedeemed={loadData} />
@@ -513,13 +527,16 @@ function MarketingConsentRow({ initialOptIn }: { initialOptIn: boolean }) {
           할인·혜택 소식 메일 받기
         </div>
         {/* "광고성 정보 수신 동의" 명칭은 법정 표기(KISA 안내서) — 삭제 금지.
-            무료 크레딧 만료 알림은 KISA 해석상 광고성이라 동의자에게만 발송된다
-            (expiry-reminder cron) — "필수 안내는 관계없이 발송" 식의 안내는
-            무료 사용자에게 사실과 달라 쓰지 않는다. */}
+            발송 판정은 크레딧이 아니라 계정 단위다 — expiry-reminder의 decideKind는
+            payments(status=completed·amount>0) 이력이 있는 계정에만 비동의 상태로
+            중립형 만료 안내를 보낸다. 유료 이력이 없는 계정의 만료 알림은 KISA
+            해석상 광고성이라 동의자에게만 발송된다. "필수 안내는 관계없이 발송" 식
+            안내나 "무료 크레딧" 단위 서술은 사실과 달라 쓰지 않는다
+            (약관 개정안·수신거부 안내와 같은 계정 단위 표현으로 유지할 것). */}
         <p className="text-sm text-zinc-500">
           광고성 정보 수신 동의(이메일)입니다. 만료 전 미리 알림·시작
-          가이드·할인 소식을 보내드려요 — 무료로 받은 크레딧의 만료 알림은 이
-          동의가 있어야 보내드릴 수 있어요.
+          가이드·할인 소식을 보내드려요 — 유료 결제 이력이 없는 계정의 만료
+          알림은 이 동의가 있어야 보내드릴 수 있어요.
         </p>
         {error && <p className="mt-1 text-sm text-red-600">✗ {error}</p>}
       </div>

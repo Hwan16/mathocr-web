@@ -16,10 +16,14 @@ export default function TermsPage() {
           <p className="text-zinc-500 text-sm mt-2">
             최종 수정일: 2026년 7월 12일
           </p>
+          <p className="text-amber-700 text-sm mt-1">
+            2026년 8월 21일 시행 예정 개정 안내 (아래 참조)
+          </p>
         </div>
 
         {/* Terms Content */}
         <div className="card rounded-xl p-8 md:p-10 shadow-sm">
+          <AmendmentNotice />
           <TermsContent />
         </div>
 
@@ -32,6 +36,83 @@ export default function TermsPage() {
           </a>
         </div>
       </div>
+    </div>
+  );
+}
+
+// 약관 개정 사전 공지 (공지 2026-07-22 / 시행 2026-08-21).
+// 이용자에게 불리할 수 있는 변경이라 30일 예고 후 시행한다. 시행일에
+// 아래 개정안 전문을 본문 제6조 제9항·제10조에 반영하고 이 박스는 삭제한다.
+function AmendmentNotice() {
+  return (
+    <div className="mb-10 rounded-xl border border-amber-200 bg-amber-50 p-5 md:p-6 text-sm text-amber-900 leading-relaxed">
+      <h2 className="text-base font-semibold text-amber-900 mb-1">
+        2026년 8월 21일 시행 예정 약관 개정 안내
+      </h2>
+      <p className="text-amber-800/80 text-xs mb-4">
+        공지일: 2026년 7월 22일 · 시행일: 2026년 8월 21일
+      </p>
+
+      <p className="mb-2">아래 두 가지가 바뀝니다.</p>
+      <ul className="list-disc pl-5 space-y-2 mb-4">
+        <li>
+          <strong className="font-semibold">
+            크레딧 만료 예정 안내 방법을 실제 운영에 맞게 구체화
+          </strong>{" "}
+          — 만료 예정 안내는 마이페이지 등 서비스 화면을 통한 안내를 기본으로
+          합니다. 유료 결제 이력이 있는 계정에는 만료 예정을 이메일로도
+          안내드리며, 유료 결제 이력이 없는 계정의 만료 예정 이메일 안내는
+          광고성 정보 수신에 동의하신 이용자에게 제공됩니다.
+        </li>
+        <li>
+          <strong className="font-semibold">
+            약관 변경 시 사전 공지 기간을 명문화
+          </strong>{" "}
+          — 일반적인 변경은 시행일 7일 전, 이용자에게 불리하거나 중대한 변경은
+          시행일 30일 전부터 공지합니다.
+        </li>
+      </ul>
+
+      <p className="font-semibold mb-2">개정될 조문 전문</p>
+      <div className="space-y-3">
+        <div className="rounded-lg border border-amber-200 bg-white/70 px-4 py-3">
+          <p className="text-xs font-medium text-amber-800/80 mb-1.5">
+            제6조 제9항 (개정안)
+          </p>
+          <p>
+            유효기간이 경과한 크레딧은 자동으로 소멸하며, 서비스 이용 및 환불의
+            대상이 되지 않습니다. 제공자는 유효기간 만료 예정 사실을 마이페이지
+            등 서비스 화면을 통해 안내하며, 유료 결제 이력이 있는 계정에
+            대해서는 만료 예정을 이용자가 등록·인증한 이메일로도 안내합니다.
+            유료 결제 이력이 없는 계정의 만료 예정 이메일 안내는 「정보통신망
+            이용촉진 및 정보보호 등에 관한 법률」에 따른 광고성 정보 수신에
+            동의한 이용자에게 제공됩니다. 이용자의 수신 환경 등으로
+            안내를 수신·확인하지 못한 경우에도 소멸의 효력에는 영향이 없습니다.
+          </p>
+        </div>
+        <div className="rounded-lg border border-amber-200 bg-white/70 px-4 py-3">
+          <p className="text-xs font-medium text-amber-800/80 mb-1.5">
+            제10조 (개정안)
+          </p>
+          <p className="mb-2">
+            ① 제공자는 관련 법령에 위배되지 않는 범위 내에서 본 약관을 변경할 수
+            있으며, 변경 시 시행일 7일 전부터 서비스 화면에 공지합니다. 다만
+            이용자에게 불리하거나 중대한 변경의 경우에는 시행일 30일 전부터
+            공지합니다.
+          </p>
+          <p>
+            ② 변경된 약관에 동의하지 않는 이용자는 시행일 전까지 서비스 이용을
+            중단하고 탈퇴할 수 있으며, 공지된 시행일 이후에도 서비스를 계속
+            이용하는 경우 변경된 약관에 동의한 것으로 봅니다.
+          </p>
+        </div>
+      </div>
+
+      <p className="mt-4 text-amber-800">
+        아래 본문은 현행 약관이며, 개정 내용은 2026년 8월 21일부터 적용됩니다.
+        개정에 동의하지 않으시는 경우 시행일 전까지 서비스 이용을 중단하고
+        탈퇴하실 수 있습니다.
+      </p>
     </div>
   );
 }

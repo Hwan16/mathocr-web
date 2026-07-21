@@ -55,6 +55,24 @@ export async function GET(request: NextRequest) {
   if (!uid || !verifyUnsubscribeToken(uid, token, kind)) {
     return invalidPage();
   }
+  // 크레딧 만료 안내 설명은 회원(kind=user) 전용 — kind=app 은 얼리버드 신청자라
+  // 회원 계정도 크레딧도 없을 수 있어, 그대로 보여주면 없는 계정의 메일이 계속
+  // 온다고 오해하게 된다.
+  const notice =
+    kind === "user"
+      ? `<p style="margin:16px 0 0;font-size:12px;color:#52525b;line-height:1.6;text-align:left;">
+       유료 결제 이력이 있는 계정에는 계약 이행에 관한 안내로서 크레딧 만료 예정 안내가
+       계속 발송됩니다. 유료 결제 이력이 없는 계정의 만료 알림은 광고성 정보 수신 동의가
+       있어야 발송할 수 있어, 수신거부 시에는 발송되지 않습니다.
+     </p>
+     <p style="margin:10px 0 0;font-size:12px;color:#a1a1aa;line-height:1.6;text-align:left;">
+       2026년 8월 21일 시행 예정 약관 개정에 따른 안내이며, 현재 운영도 이와 같습니다.
+       자세한 내용은 <a href="/terms" style="color:#7c3aed;">이용약관</a>의 개정 안내를 참고해 주세요.
+     </p>`
+      : `<p style="margin:16px 0 0;font-size:12px;color:#52525b;line-height:1.6;text-align:left;">
+       수신거부를 확정하시면 신청하신 얼리버드 안내 메일이 더 이상 발송되지 않습니다.
+     </p>`;
+
   return page(
     `<p style="margin:0 0 20px;">마케팅·혜택 안내 메일 수신을<br />중단할까요?</p>
      <form method="POST" action="/api/unsubscribe">
@@ -65,7 +83,7 @@ export async function GET(request: NextRequest) {
          수신거부 확정
        </button>
      </form>
-     <p style="margin:16px 0 0;font-size:12px;color:#a1a1aa;">서비스 이용 관련 필수 안내(만료 예정 등)는 계속 발송됩니다.</p>`
+     ${notice}`
   );
 }
 
