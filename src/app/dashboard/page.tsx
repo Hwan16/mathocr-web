@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
+import ExpiryConsentBanner from "@/components/ExpiryConsentBanner";
 
 interface Profile {
   credits: number;
@@ -38,6 +39,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [promoNotice, setPromoNotice] = useState<PromoNotice | null>(null);
+  const [consentHighlight, setConsentHighlight] = useState(false);
   const router = useRouter();
   const supabase = createClient();
   const limit = 10;
@@ -100,6 +102,29 @@ export default function DashboardPage() {
   const isExpired =
     profile?.expires_at && new Date(profile.expires_at) < new Date();
   const totalPages = Math.ceil(totalConversions / limit);
+
+  // 만료 임박(7일 이내) + 크레딧 보유 + 마케팅 수신 미동의 → 동의 권유 배너.
+  // 프로모션 지급 배너와 같은 화면에 겹치지 않게 한다 ("한 화면에 권유 1개").
+  const showExpiryConsentBanner =
+    !promoNotice &&
+    profile != null &&
+    profile.marketing_opt_in !== true &&
+    (profile.credits ?? 0) > 0 &&
+    profile.expires_at != null &&
+    !isExpired &&
+    new Date(profile.expires_at).getTime() - Date.now() <=
+      7 * 24 * 60 * 60 * 1000;
+
+  // 잔액 카드의 "만료 알림 메일 꺼짐 → 켜기" 클릭 시: 실제 동의 지점(계정
+  // 설정의 토글 — 광고성 수신 동의 설명이 있는 곳)으로 스크롤 + 잠깐 강조.
+  // 여기서 바로 동의 처리하지 않는 이유: 동의는 설명을 읽은 지점에서 받는다.
+  function focusConsentRow() {
+    document
+      .getElementById("marketing-consent-setting")
+      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    setConsentHighlight(true);
+    setTimeout(() => setConsentHighlight(false), 2000);
+  }
 
   if (loading) {
     return (
@@ -182,6 +207,15 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* 만료 임박 × 미동의 → 만료 알림 켜기 권유 (1회, 닫으면 같은 만료건 재노출 없음) */}
+        {showExpiryConsentBanner && profile?.expires_at && (
+          <ExpiryConsentBanner
+            credits={profile.credits}
+            expiresAt={profile.expires_at}
+            onConsented={loadData}
+          />
+        )}
+
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
           {/* 크레딧 */}
@@ -193,6 +227,37 @@ export default function DashboardPage() {
                 회
               </span>
             </div>
+            {/* 미동의자 전용 상시 상태 표시 — 배너를 닫은 사용자를 위한 잔류 경로.
+                동의 처리는 계정 설정 토글에서만 한다(설명을 읽는 지점에서 동의). */}
+            {profile?.marketing_opt_in !== true && (
+              <button
+                type="button"
+                onClick={focusConsentRow}
+                className="mt-2.5 flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-600 transition-colors group"
+              >
+                <svg
+                  aria-hidden
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                  <path d="M18.63 13A17.89 17.89 0 0 1 18 8" />
+                  <path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14" />
+                  <path d="M18 8a6 6 0 0 0-9.33-5" />
+                  <path d="m1 1 22 22" />
+                </svg>
+                <span>만료 알림 메일 꺼짐</span>
+                <span className="font-medium text-[var(--accent)] group-hover:underline">
+                  켜기
+                </span>
+              </button>
+            )}
           </div>
 
           {/* 유효기간 — 정상: 파란색 / 만료: 빨간 볼드 + 배지 */}
@@ -360,9 +425,24 @@ export default function DashboardPage() {
               </a>
             </div>
             {profile && (
-              <MarketingConsentRow
-                initialOptIn={profile.marketing_opt_in === true}
-              />
+              <div id="marketing-consent-setting">
+                {/* 하이라이트는 안쪽 레이어에 — 바깥 div는 divide-y 구분선 폭을
+                    형제 행과 동일하게 유지한다 */}
+                <div
+                  className={`rounded-xl px-3 -mx-3 transition-all duration-500 ${
+                    consentHighlight
+                      ? "ring-2 ring-[var(--accent)] ring-offset-2 bg-[var(--accent-soft)]"
+                      : ""
+                  }`}
+                >
+                  {/* key: 배너에서 동의 후 loadData로 profile이 갱신되면 토글도
+                      새 값으로 다시 마운트되게 한다 (내부 state 초기값 고정 문제) */}
+                  <MarketingConsentRow
+                    key={String(profile.marketing_opt_in)}
+                    initialOptIn={profile.marketing_opt_in === true}
+                  />
+                </div>
+              </div>
             )}
             <div className="py-4 flex items-center justify-between gap-4">
               <div>
@@ -432,9 +512,14 @@ function MarketingConsentRow({ initialOptIn }: { initialOptIn: boolean }) {
         <div className="text-sm font-medium text-zinc-800">
           할인·혜택 소식 메일 받기
         </div>
+        {/* "광고성 정보 수신 동의" 명칭은 법정 표기(KISA 안내서) — 삭제 금지.
+            무료 크레딧 만료 알림은 KISA 해석상 광고성이라 동의자에게만 발송된다
+            (expiry-reminder cron) — "필수 안내는 관계없이 발송" 식의 안내는
+            무료 사용자에게 사실과 달라 쓰지 않는다. */}
         <p className="text-sm text-zinc-500">
-          충전 혜택·할인 안내 메일 수신 여부입니다. 크레딧 만료 예정 등 필수
-          안내는 이 설정과 관계없이 발송됩니다.
+          광고성 정보 수신 동의(이메일)입니다. 만료 전 미리 알림·시작
+          가이드·할인 소식을 보내드려요 — 무료로 받은 크레딧의 만료 알림은 이
+          동의가 있어야 보내드릴 수 있어요.
         </p>
         {error && <p className="mt-1 text-sm text-red-600">✗ {error}</p>}
       </div>

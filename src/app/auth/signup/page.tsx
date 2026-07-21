@@ -489,9 +489,34 @@ function SignupForm() {
                   <span className="font-medium text-zinc-700">
                     광고성 정보 수신 동의(이메일)
                   </span>{" "}
-                  — 할인·혜택 소식을 받아볼게요. 마이페이지에서 언제든 바꿀 수
-                  있어요.
+                  — 무료 크레딧이 사라지기 전 만료 알림과 시작 가이드, 할인
+                  소식을 보내드려요. 마이페이지에서 언제든 끌 수 있어요.
                 </label>
+              </div>
+              {/* 받는 메일 전부 공개 — 자동 메일이 3종뿐인 지금만 쓸 수 있는 신뢰 카드.
+                  메일 종류·발송 정책이 바뀌면 이 목록도 반드시 함께 갱신할 것.
+                  "7일 전" 같은 확정 시점은 쓰지 않는다(환영 메일 중복 방지로 생략되는 케이스 존재). */}
+              <div className="ml-7 rounded-lg bg-zinc-50 border border-zinc-100 px-3.5 py-3">
+                <p className="text-[11px] font-medium text-zinc-500 mb-1.5">
+                  이 동의로 받는 메일은 지금 이게 전부예요
+                </p>
+                <ul className="space-y-1 text-[11px] text-zinc-500 leading-relaxed">
+                  <li className="flex gap-1.5">
+                    <span className="text-[var(--accent)]">·</span>
+                    환영 메일 1통 — 지급된 크레딧과 만료일, 첫 변환 가이드
+                  </li>
+                  <li className="flex gap-1.5">
+                    <span className="text-[var(--accent)]">·</span>
+                    만료 전 미리 알림 — 안 쓴 크레딧이 사라지기 전에
+                  </li>
+                  <li className="flex gap-1.5">
+                    <span className="text-[var(--accent)]">·</span>
+                    할인·이벤트 소식 — 생기면 가끔
+                  </li>
+                </ul>
+                <p className="mt-1.5 text-[11px] text-zinc-400">
+                  모든 메일 하단에서 언제든 수신거부할 수 있어요.
+                </p>
               </div>
             </div>
 
