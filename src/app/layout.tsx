@@ -3,6 +3,7 @@ import { GoogleAnalytics } from "@next/third-parties/google";
 import StructuredData from "./structured-data";
 import UtmTracker from "@/components/UtmTracker";
 import MetaPixel from "@/components/MetaPixel";
+import NaverWcs from "@/components/NaverWcs";
 import IconifyProvider from "@/components/IconifyProvider";
 // 폰트 자체 번들 (LA-10) — jsDelivr CDN 대신 npm 패키지에서 번들.
 // 참조된 woff2 서브셋은 빌드가 /_next/static 자산으로 자동 포함한다.
@@ -117,6 +118,8 @@ export default function RootLayout({
         <UtmTracker />
         {/* 메타 픽셀 — NEXT_PUBLIC_META_PIXEL_ID 설정 시에만 활성 (M6) */}
         <MetaPixel />
+        {/* 네이버 프리미엄 로그분석 — NEXT_PUBLIC_NAVER_WCS_ID 설정 시에만 활성 */}
+        <NaverWcs />
       </body>
       {/* GA4: 실제 배포(production)에서만 로드 — 로컬/개발 접속은 추적하지 않음 */}
       {process.env.NODE_ENV === "production" && (

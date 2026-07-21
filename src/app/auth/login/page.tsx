@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { trackEvent } from "@/lib/analytics";
 import { metaPixelTrack } from "@/lib/meta-pixel";
+import { naverWcsTrans } from "@/lib/naver-wcs";
 import ResendConfirmationMail from "@/components/ResendConfirmationMail";
 
 const SAVED_EMAIL_KEY = "mathocr_saved_email";
@@ -72,6 +73,7 @@ function LoginForm() {
       // 분리해 광고 성과를 인증 마친 계정 기준으로 잡는다.
       trackEvent("verified_signup", { method: "password" });
       metaPixelTrack("CompleteRegistration");
+      naverWcsTrans({ type: "sign_up" });
     } else {
       // 증거 없는 confirmed=1 — 배너는 보여주되(과거에 인증을 마친 사람의 재방문일
       // 수 있음) 전환은 집계하지 않는다. 진짜 사용자가 이 분기로 새는지(=미지의

@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { trackEvent } from "@/lib/analytics";
 import { SIGNUP_FREE_CREDITS } from "@/lib/plans";
 import { metaPixelTrack } from "@/lib/meta-pixel";
+import { naverWcsTrans } from "@/lib/naver-wcs";
 import ResendConfirmationMail, {
   startResendCooldown,
 } from "@/components/ResendConfirmationMail";
@@ -229,6 +230,7 @@ function SignupForm() {
       trackEvent("verified_signup", { method: "password" });
       metaPixelTrack("Lead");
       metaPixelTrack("CompleteRegistration");
+      naverWcsTrans({ type: "sign_up" });
       router.push("/dashboard");
       router.refresh();
     } catch {

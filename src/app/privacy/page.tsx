@@ -20,9 +20,10 @@ export default function PrivacyPage() {
           </a>
           <h1 className="text-2xl font-bold mt-4">개인정보처리방침</h1>
           <p className="text-zinc-500 text-sm mt-2">
-            시행일: 2026년 7월 12일 (최초 시행 2026년 7월 8일 · 7월 11일 개정:
+            시행일: 2026년 7월 21일 (최초 시행 2026년 7월 8일 · 7월 11일 개정:
             제7조의2 온라인 맞춤형 광고 고지 신설 · 7월 12일 개정: 수탁자 표에
-            나이스페이먼츠·Upstash 추가)
+            나이스페이먼츠·Upstash 추가 · 7월 21일 개정: 제7조의2에 네이버
+            프리미엄 로그분석 추가)
           </p>
         </div>
 
@@ -257,7 +258,9 @@ function PrivacyContent() {
       </section>
 
       {/* 제7조의2 — 2026-07-11 신설: 메타 픽셀 등 맞춤형 광고 도구 도입 대비 고지.
-          ⚠️ 픽셀 활성화(NEXT_PUBLIC_META_PIXEL_ID 설정)는 이 조항 배포 이후에만 할 것 */}
+          2026-07-21 개정: 네이버 프리미엄 로그분석(검색광고 전환 추적) 병기.
+          ⚠️ 추적 도구 활성화(NEXT_PUBLIC_META_PIXEL_ID·NEXT_PUBLIC_NAVER_WCS_ID
+          설정)는 이 조항 배포 이후에만 할 것 */}
       <section>
         <h2 className="text-lg font-semibold text-zinc-900 mb-3">
           제7조의2 (온라인 맞춤형 광고를 위한 행태정보의 수집·이용)
@@ -274,7 +277,8 @@ function PrivacyContent() {
           </li>
           <li>
             수집 방법: 이용자가 웹사이트 방문 시 광고 사업자가 제공하는 도구(메타
-            픽셀 — Meta Platforms, Inc.)를 통한 자동 수집
+            픽셀 — Meta Platforms, Inc. / 네이버 프리미엄 로그분석 — 네이버
+            주식회사)를 통한 자동 수집
           </li>
           <li>
             수집 목적: 관심 기반 맞춤형 광고 제공(리타게팅) 및 광고 성과 측정

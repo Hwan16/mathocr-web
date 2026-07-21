@@ -26,7 +26,7 @@ const admin = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_RO
 });
 
 const APPLY = process.argv.includes("--apply");
-const CONSENT_VERSION = "2026-07-12"; // src/lib/consent.ts 와 동일 값
+const CONSENT_VERSION = "2026-07-21"; // src/lib/consent.ts 와 동일 값
 const AUDIT_AGENT = "system:la09-demote-unconfirmed-optin-2026-07-13";
 
 async function listAllUsers() {

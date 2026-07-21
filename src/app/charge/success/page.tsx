@@ -4,15 +4,18 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { metaPixelTrack } from "@/lib/meta-pixel";
+import { naverWcsTrans } from "@/lib/naver-wcs";
 
 type State =
   | { phase: "confirming" }
   | { phase: "done"; credits?: number; expiresAt?: string | null }
   | { phase: "error"; message: string };
 
-// 메타 픽셀 Purchase 이벤트 — 주문당 1회만 (성공 페이지 새로고침·재방문 시 중복 방지).
-// 금액·통화만 보내며 개인 정보는 포함하지 않는다. (마케팅 백로그 §6-3)
-function metaPixelPurchaseOnce(orderId: string, amount: number) {
+// 구매 전환 이벤트(메타 Purchase + 네이버 purchase) — 주문당 1회만 (성공 페이지
+// 새로고침·재방문 시 중복 방지). 금액·통화·주문 난수 suffix만 보내며 개인 정보는
+// 포함하지 않는다. (마케팅 백로그 §6-3) localStorage 키 이름은 메타 단독 시절
+// 값을 유지한다 — 바꾸면 과거 주문이 새 키로 재발사된다.
+function purchaseConversionOnce(orderId: string, amount: number) {
   if (!Number.isFinite(amount) || amount <= 0) return;
   const key = `meta_purchase_fired:${orderId}`;
   try {
@@ -22,6 +25,11 @@ function metaPixelPurchaseOnce(orderId: string, amount: number) {
     // localStorage 불가 환경(시크릿 모드 등)에서는 중복 방지 없이 1회 전송
   }
   metaPixelTrack("Purchase", { value: amount, currency: "KRW" });
+  // 네이버 전환 id는 주문 난수 suffix만 — 토스 경로의 전체 orderId에는 사용자
+  // UUID가 들어 있어 제3자 전송 금지(LA-10과 동일 원칙). 나이스 경로의 ref는
+  // 이미 suffix라 그대로 통과한다.
+  const safeId = orderId.split("_").pop() || orderId;
+  naverWcsTrans({ type: "purchase", value: String(amount), id: safeId });
 }
 
 function formatDate(iso: string | null | undefined): string {
@@ -48,7 +56,7 @@ function SuccessInner() {
       // URL 노출 제거). Purchase 중복 방지 키로만 쓰인다.
       const niceRef = sp.get("ref") ?? sp.get("orderId");
       const niceAmount = Number(sp.get("amount"));
-      if (niceRef) metaPixelPurchaseOnce(niceRef, niceAmount);
+      if (niceRef) purchaseConversionOnce(niceRef, niceAmount);
       (async () => {
         const supabase = createClient();
         const {
@@ -90,7 +98,7 @@ function SuccessInner() {
         });
         const data = await res.json().catch(() => null);
         if (res.ok && data?.success) {
-          metaPixelPurchaseOnce(orderId, amount);
+          purchaseConversionOnce(orderId, amount);
           setState({
             phase: "done",
             credits: data.credits,
