@@ -6,6 +6,14 @@ import { useState } from "react";
 // 화면 내 권유는 정보통신망법 §50의 '전송'이 아니어서 사전동의 규제 대상이 아님
 // (KISA 안내서 — 단 메일·앱푸시로 권유하는 것은 규제 대상이므로 금지).
 // 문구 규칙: "광고성" 명칭 필수, 확정 시점("7일 전") 금지, 압박형 표현 금지.
+// 또한 "동의해야 만료 알림이 온다"는 식의 서술 금지(2026-07-22) — 유료 결제 이력이
+// 있는 계정은 미동의 상태에서도 expiry-reminder의 중립형 만료 안내를 이미 받는다.
+// 같은 이유로 만료 알림 자체를 권유 대상으로 서술하지 않는다 — 유료 이력 계정에는
+// 아직 못 받는 것이 아니라 이미 받고 있는 안내라 방향이 반대인 제안이 된다.
+// 권유는 "할인·혜택 소식을 메일로 받기"라는 수신 범위로만 표현한다(잔액 카드의
+// "할인·혜택 메일 꺼짐", 계정 설정 토글 "할인·혜택 소식 메일 받기"와 같은 기준).
+// 단 헤드라인의 만료 사실("크레딧 N개가 O월 O일에 사라져요")은 모든 계정에 참이고
+// 동의 동기의 핵심이므로 유지한다.
 // 닫으면 같은 만료 이벤트(expires_at 기준)에는 다시 노출하지 않는다 —
 // 새 크레딧 지급으로 만료일이 바뀌면 한 번 더 노출.
 const DISMISS_KEY = "mathocr_expiry_optin_dismissed";
@@ -81,8 +89,10 @@ export default function ExpiryConsentBanner({
           ✓
         </span>
         <p className="leading-relaxed">
-          <strong className="font-semibold">만료 알림을 켜 두었어요.</strong>{" "}
-          크레딧이 사라지기 전에 메일로 미리 알려드릴게요.
+          <strong className="font-semibold">
+            할인·혜택 소식을 메일로 받기로 하셨어요.
+          </strong>{" "}
+          아래 계정 설정에서 언제든 끌 수 있어요.
         </p>
       </div>
     );
@@ -100,7 +110,7 @@ export default function ExpiryConsentBanner({
               크레딧 {credits}개가 {expiryLabel}에 사라져요
             </p>
             <p className="mt-0.5 text-zinc-600">
-              만료 전 미리 알림 메일을 켜 두면 잊지 않고 쓸 수 있어요.{" "}
+              할인·혜택 소식을 메일로 받아보시겠어요?{" "}
               <span className="text-zinc-400">
                 광고성 정보 수신 동의(이메일)이며 언제든 끌 수 있어요.
               </span>
@@ -115,7 +125,7 @@ export default function ExpiryConsentBanner({
             disabled={state === "saving"}
             className="rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
           >
-            {state === "saving" ? "설정 중..." : "만료 알림·할인 메일 받기"}
+            {state === "saving" ? "설정 중..." : "메일로 받기"}
           </button>
           <button
             type="button"

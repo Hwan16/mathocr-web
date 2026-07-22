@@ -115,7 +115,7 @@ export default function DashboardPage() {
     new Date(profile.expires_at).getTime() - Date.now() <=
       7 * 24 * 60 * 60 * 1000;
 
-  // 잔액 카드의 "만료 알림 메일 꺼짐 → 켜기" 클릭 시: 실제 동의 지점(계정
+  // 잔액 카드의 "할인·혜택 메일 꺼짐 → 켜기" 클릭 시: 실제 동의 지점(계정
   // 설정의 토글 — 광고성 수신 동의 설명이 있는 곳)으로 스크롤 + 잠깐 강조.
   // 여기서 바로 동의 처리하지 않는 이유: 동의는 설명을 읽은 지점에서 받는다.
   function focusConsentRow() {
@@ -228,7 +228,21 @@ export default function DashboardPage() {
               </span>
             </div>
             {/* 미동의자 전용 상시 상태 표시 — 배너를 닫은 사용자를 위한 잔류 경로.
-                동의 처리는 계정 설정 토글에서만 한다(설명을 읽는 지점에서 동의). */}
+                동의 처리는 계정 설정 토글에서만 한다(설명을 읽는 지점에서 동의).
+
+                문구가 "만료 알림"이 아니라 "할인·혜택"인 이유(2026-07-22 수정):
+                만료 알림은 미동의자에게도 갈 수 있다 — expiry-reminder의 decideKind는
+                유료 결제 이력(payments status=completed·amount>0)이 있는 계정이면
+                비동의 상태에서도 중립형 만료 안내를 보낸다. 그래서 "만료 알림 메일
+                꺼짐"은 유료 이력 계정에 방향이 정반대인 거짓이었다. 반면 할인·혜택
+                메일은 세 발송 경로(onboarding-mail·expiry-regrant·expiry-reminder의
+                광고형)가 모두 marketing_opt_in=true 게이트라 예외 없이 동의자 전용 —
+                어느 계정에도 거짓이 아니다. 클릭 시 스크롤되는 계정 설정 토글 제목
+                ("할인·혜택 소식 메일 받기")과 명칭도 일치한다.
+
+                조건이 marketing_opt_in 하나뿐이라 크레딧 0·유효기간 무제한 계정에도
+                표시되지만, 이 문구는 만료와 무관한 사실이라 그 경우에도 거짓이 아니다
+                (조건을 좁힐 이유가 없어 그대로 둔다). */}
             {profile?.marketing_opt_in !== true && (
               <button
                 type="button"
@@ -252,7 +266,7 @@ export default function DashboardPage() {
                   <path d="M18 8a6 6 0 0 0-9.33-5" />
                   <path d="m1 1 22 22" />
                 </svg>
-                <span>만료 알림 메일 꺼짐</span>
+                <span>할인·혜택 메일 꺼짐</span>
                 <span className="font-medium text-[var(--accent)] group-hover:underline">
                   켜기
                 </span>

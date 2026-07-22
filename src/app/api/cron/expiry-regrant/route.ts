@@ -63,7 +63,9 @@ import { normalizeEmailAlias } from "@/lib/email";
 //     제거·봉인 쓰기만 지속적으로 실패하는 계정(문장 타임아웃·row 락 장기 점유 등)에서
 //     attempts 가 영원히 0이라 상한도 sent_at 검사도 걸리지 않아 같은 (광고) 메일이
 //     매일 무한 재발송된다(정보통신망법 노출). 사전 증가면 최악의 경우에도 중복이
-//     MAX_MAIL_ATTEMPTS 회로 확정 상한을 갖는다.
+//     확정 상한을 갖는다.
+//   - 사전 증가의 부작용은 dispatched 카운터로 보완한다 (2026-07-22 리뷰) — 아래
+//     MAX_MAIL_DISPATCHES / MAX_MAIL_ATTEMPTS_HARD 주석 참조.
 //   - 발송은 성공했는데 마커 제거가 실패하면 sent_at 을 찍어 "발송 완료"로 봉인한다
 //     (정상 경로의 즉시 차단 — 사전 증가 상한은 그 뒤를 받치는 최후 방어선).
 //   - 마커에 queued_at(마커를 남긴 시각)을 함께 적어, (3)이 promo_redemptions 의
@@ -74,6 +76,18 @@ import { normalizeEmailAlias } from "@/lib/email";
 //   - 메일 예산: 옵트인 대상 지급은 실행당 MAX_MAILS_PER_RUN 건까지만 — 예산이 차면
 //     "지급 자체를" 다음 실행으로 미뤄 메일 없는 지급을 만들지 않는다. (Resend 무료
 //     티어 일 100통을 expiry-reminder 등과 나눠 쓴다)
+//
+// 알려진 격차 (2026-07-22 mock 스위트가 드러낸 것 — scripts/expiry_regrant_state_test.mjs 의
+// todo 항목과 1:1 대응한다. 어느 것도 이번 변경으로 생긴 회귀가 아니다):
+//   G1. 두 실행이 겹쳐 돌 때, 뒤늦은 쪽이 already_redeemed 를 "DB 확정 거절"로 보고 마커를
+//       롤백 삭제하는데 그 마커가 사실은 앞선 실행이 남긴 재시도 단서일 수 있다. 앞선 실행이
+//       지급 직후 죽었다면 안내 메일 1통이 영구 유실된다. 근본 해결은 마커에 실행 ID 를 넣고
+//       "내가 쓴 마커일 때만 롤백"으로 조건부 삭제하는 것 — 동작 변경이라 별도 결정 필요.
+//       현재 완화책은 cron 이 하루 1회라 겹칠 일이 사실상 없다는 점뿐이다.
+//   G2. 발송 후 쓰기(마커 제거·sent_at 봉인·dispatched)가 전부 실패하는 row 에서는 하루 넘긴
+//       재시도의 중복을 막지 못한다. 멱등키 보존 창(24시간)이 cron 주기와 같아 여기서도 못 막는다.
+//       중복은 MAX_MAIL_ATTEMPTS_HARD 회로 확정 상한을 갖는다(무한 재발송은 아님).
+//       근본 해결은 발송 이력 테이블 도입 — 별도 결정 필요.
 //
 // 이메일 인증 게이트: email_confirmed_at 없는 계정은 지급·메일 모두 제외(fail-closed).
 //   타인 이메일 가입 계정에 혜택이 쌓이거나 메일이 나가는 경로 차단 (LA-09).
@@ -94,10 +108,32 @@ const MAX_PAGES = 5; // 한 실행이 훑는 최대 후보 수 = 1000
 const MAX_GRANTS_PER_RUN = 200;
 const MAX_MAILS_PER_RUN = 40; // 신규 지급 메일 상한 (재시도 몫 MAX_RETRY_MAILS 와 별도)
 const MAX_RETRY_MAILS = 40;
-// 발송 "시도" 상한 (실패 횟수가 아니라 시도 횟수 — 시도 직전에 증가시킨다).
-// 계속 실패하는 주소를 포기시키는 동시에, 마커 정리가 지속 실패해도 중복 발송이
-// 이 횟수를 넘지 못하게 하는 확정 상한 역할을 한다.
-const MAX_MAIL_ATTEMPTS = 5;
+// 발송 상한이 둘인 이유 (2026-07-22 리뷰 — attempts 사전 증가의 부작용 보완):
+//
+//   attempts   = sendMail 을 부르기 "직전에" 올리는 값. 반드시 내구성 있게 남는다.
+//   dispatched = sendMail 호출까지 "실제로 도달한" 횟수. 호출이 끝난 뒤에 기록하므로
+//                크래시·쓰기 실패로 유실될 수 있다(그래서 최선 노력 기록이다).
+//
+// 사전 증가만 두면, attempts 를 올린 직후 sendMail 호출 전에 프로세스가 죽는 일이
+// 반복될 때 실제 발송 없이 상한만 소진돼 정당한 사용자가 재지급 안내를 영영 못 받는다.
+// 그렇다고 attempts 를 사후 증가로 되돌리면 무한 재발송 구멍이 되살아난다.
+// 그래서 "되돌리기" 대신 카운터를 둘로 나눈다 — 둘 다 단조 증가라 되돌릴 일이 없다.
+//
+//   포기 조건 = dispatched >= MAX_MAIL_DISPATCHES  또는  attempts >= MAX_MAIL_ATTEMPTS_HARD
+//
+//   - 정상/발송실패 경로: dispatched 가 attempts 를 따라 올라가 5회에서 멈춘다(기존과 동일).
+//   - 사전 증가 직후 크래시 반복: dispatched 가 0에 머물러 8회까지 재시도가 살아 있다
+//     → 메일을 영영 못 받는 구멍이 막힌다.
+//   - 발송은 되는데 사후 쓰기가 계속 실패: dispatched 도 못 오르지만 attempts 는 오르므로
+//     8회에서 확정적으로 멈춘다 → 무한 재발송은 되살아나지 않는다(최악 중복 5→8).
+//
+// 레거시 마커(dispatched 필드 없음)는 attempts 를 dispatched 로 간주한다(effectiveDispatched)
+// — 그 시절 attempts 는 곧 실제 발송 도달 횟수였으므로, 하위 호환으로 기존 5회 상한이 그대로 유지된다.
+const MAX_MAIL_DISPATCHES = 5;
+const MAX_MAIL_ATTEMPTS_HARD = 8;
+// Resend 응답을 기다리는 최대 시간 — 응답 없는 커넥션 하나가 루프 전체(maxDuration 300초)를
+// 잡아먹지 못하게 한다. 타임아웃은 발송 실패로 처리되고, 재시도는 멱등키가 받쳐 준다.
+const MAIL_TIMEOUT_MS = 15_000;
 // 지급 시각(DB now()) 과 마커 시각(앱 서버 Date.now()) 의 시계 오차 허용치.
 // 이 안쪽 차이는 "같은 실행의 지급"으로 본다 — 오래된 지급은 최소 하루 전이라 안전.
 const GRANT_CLOCK_SKEW_MS = 10 * 60 * 1000;
@@ -116,17 +152,18 @@ function formatKst(iso: string): string {
 }
 
 // 메일 재시도용 재료 — profiles.regrant_mail_due 에 그대로 저장된다.
-// queued_at·sent_at 은 이전 버전이 남긴 마커에는 없다(선택 필드) — 없으면 기존 동작 유지.
-type MailDue = {
+// queued_at·sent_at·dispatched 는 이전 버전이 남긴 마커에는 없다(선택 필드) — 없으면 기존 동작 유지.
+export type MailDue = {
   lost: number; // 만료로 소멸한 크레딧 수
   lost_at: string; // 만료 시각 ISO
   new_expires: string; // 재지급 크레딧 만료 시각 ISO
   attempts?: number; // 발송 시도 횟수 — sendMail 직전에 증가시킨다(실패 횟수가 아님)
+  dispatched?: number; // sendMail 호출까지 실제로 도달한 횟수 — 호출 후 기록(최선 노력)
   queued_at?: string; // 마커를 남긴 시각 ISO — (3)에서 "이 마커의 지급"인지 판별
   sent_at?: string; // 발송 성공 후 마커 제거가 실패한 흔적 — 재발송 금지 표시
 };
 
-function isMailDue(v: unknown): v is MailDue {
+export function isMailDue(v: unknown): v is MailDue {
   if (!v || typeof v !== "object") return false;
   const o = v as Record<string, unknown>;
   return (
@@ -134,6 +171,35 @@ function isMailDue(v: unknown): v is MailDue {
     typeof o.lost_at === "string" &&
     typeof o.new_expires === "string"
   );
+}
+
+// dispatched 가 없는 레거시 마커는 attempts 를 그대로 dispatched 로 본다.
+// 그 시절 attempts 는 "실제 발송에 도달한 횟수"와 같은 뜻이었으므로, 이렇게 해야
+// 이미 5회 보낸 레거시 마커가 새 하드 상한(8) 덕에 3회 더 발송되는 일이 없다.
+export function effectiveDispatched(due: MailDue): number {
+  return due.dispatched ?? due.attempts ?? 0;
+}
+
+// 더 이상 보내지 않는다 — 두 상한 중 하나라도 걸리면 포기.
+export function isMailExhausted(due: MailDue): boolean {
+  return (
+    effectiveDispatched(due) >= MAX_MAIL_DISPATCHES ||
+    (due.attempts ?? 0) >= MAX_MAIL_ATTEMPTS_HARD
+  );
+}
+
+// Resend 멱등키 — "안정적"이어야 의미가 있다. 랜덤 값을 쓰면 재시도마다 키가 달라져
+// 중복 차단이 전혀 걸리지 않는다. lost_at(만료 시각)은 마커를 만들 때 확정돼 이후 절대
+// 바뀌지 않고 레거시 마커에도 항상 들어 있으며, 재지급은 계정당 평생 1회라
+// (user_id, lost_at) 하나로 지급 사건이 유일하게 식별된다. (Resend 상한 256자 — 여기선 ~80자)
+//
+// ⚠️ 한계: Resend 의 멱등키 보존 창은 24시간인데 이 cron 주기도 24시간이다. 따라서 이
+//    키는 "같은 실행 안의 중복·접수 후 응답 유실 직후의 재시도"는 확실히 막지만,
+//    '다음날 재시도'로 넘어간 중복은 신뢰성 있게 막지 못한다(보존 창이 이미 지났을 수 있음).
+//    하루 넘긴 중복의 방어선은 sent_at 봉인이고, 그마저 실패했을 때의 최종 상한이
+//    MAX_MAIL_DISPATCHES / MAX_MAIL_ATTEMPTS_HARD 다.
+export function mailIdempotencyKey(userId: string, due: MailDue): string {
+  return `regrant/${userId}/${due.lost_at}`;
 }
 
 // 광고형 (마케팅 동의자 전용) — 재지급 안내 + 이용 유도이므로
@@ -173,15 +239,28 @@ function buildRegrantEmail(userId: string, due: MailDue, grantCredits: number) {
   return { subject, html };
 }
 
-async function sendMail(apiKey: string, to: string, subject: string, html: string): Promise<boolean> {
+async function sendMail(
+  apiKey: string,
+  to: string,
+  subject: string,
+  html: string,
+  idempotencyKey: string
+): Promise<boolean> {
   try {
     const resp = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
+        // Resend 는 POST /emails 에서 Idempotency-Key 를 지원한다(최대 256자, 보존 24시간).
+        // 같은 키로 다시 요청하면 실제 발송 없이 원래 응답을 그대로 돌려준다 — 접수는
+        // 됐는데 응답만 유실된 경우의 재시도가 두 번째 메일을 만들지 않게 한다.
+        // 보존 창이 cron 주기와 같아 '다음날 재시도'까지는 못 막는다(mailIdempotencyKey 주석).
+        "Idempotency-Key": idempotencyKey,
       },
       body: JSON.stringify({ from: FROM, to, subject, html }),
+      // 응답 없는 커넥션 하나가 뒤의 모든 대상까지 굶기지 않도록 요청 자체에 상한을 둔다.
+      signal: AbortSignal.timeout(MAIL_TIMEOUT_MS),
     });
     return resp.ok;
   } catch {
@@ -202,6 +281,271 @@ type Scanned = Candidate & {
   mail: boolean;
   skip: "already_granted" | "unconfirmed" | "mail_budget_deferred" | null;
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 마커·발송 상태 머신 (주입형)
+//
+// 아래 함수들은 Supabase·Resend 를 직접 부르지 않고 포트(markers/mailer/grants)만
+// 통해 움직인다. 라우트는 실제 구현체를 꽂기만 하고, 순서·판정 규칙은 전부 여기에 있다.
+// 이렇게 나눠 두면 크래시·중복 실행·응답 유실 같은 경로를 페이크로 재현해 검증할 수 있다
+// (scripts/expiry_regrant_state_test.mjs — 운영 DB·실메일 없이 도는 mock 스위트).
+// 동작은 분리 전과 동일하다 — 순수 리팩터링 + 이번 리뷰의 두 변경(멱등키·dispatched)만 반영.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type MarkerStore = {
+  // true = 저장이 확정됐다. false = (재시도 포함) 저장 실패.
+  // 프로세스 사망을 모사할 때만 throw 한다 — 라우트 구현체는 throw 하지 않는다.
+  set(userId: string, value: MailDue | null): Promise<boolean>;
+};
+
+export type Mailer = {
+  send(msg: {
+    to: string;
+    subject: string;
+    html: string;
+    idempotencyKey: string;
+  }): Promise<boolean>;
+};
+
+export type GrantResult = {
+  success?: boolean;
+  error?: string;
+  expires_at?: string;
+};
+
+export type GrantStore = {
+  // rpcError 는 "DB 가 답을 주지 않은 실패"(네트워크·타임아웃·5xx) — 커밋됐을 수 있다.
+  // result 가 돌아온 실패는 DB 가 확정적으로 거절한 것이다.
+  redeem(
+    userId: string,
+    email: string
+  ): Promise<{ result: GrantResult | null; rpcError: { message: string } | null }>;
+};
+
+export type RegrantDeps = {
+  markers: MarkerStore;
+  mailer: Mailer;
+  grants: GrantStore;
+  now: () => number;
+  warn: (message: string, meta?: Record<string, unknown>) => void;
+};
+
+export type SendOutcome = "sent" | "deferred" | "failed";
+
+// 발송 1회 — 시도 기록(사전 증가) → 발송 → 사후 정리.
+// deferred = 카운터를 못 올려 이번 실행은 보내지 않음(마커는 그대로라 다음 실행이 이어받는다).
+export async function dispatchMail(
+  deps: RegrantDeps,
+  args: { userId: string; email: string; due: MailDue; grantCredits: number }
+): Promise<{ outcome: SendOutcome; sealFailed: boolean }> {
+  const { userId, email, due, grantCredits } = args;
+  const dispatched = effectiveDispatched(due);
+  // 사전 증가 — 보내기 "전에" 시도 횟수를 올린다. 발송 후에 올리면, 이 row 의 쓰기가
+  // 지속적으로 실패하는 상황(문장 타임아웃·락 점유)에서 발송은 매번 성공하는데
+  // attempts 는 영원히 0이라 상한이 걸리지 않아 같은 광고 메일이 무한 재발송된다.
+  // 카운터를 못 올리면 이번 실행은 보내지 않는다 — 다음 실행이 그대로 다시 시도한다.
+  // dispatched 를 함께 명시해 두면 다음 실행이 레거시 backfill 을 되풀이하지 않는다.
+  const attempted: MailDue = {
+    ...due,
+    attempts: (due.attempts ?? 0) + 1,
+    dispatched,
+  };
+  if (!(await deps.markers.set(userId, attempted))) {
+    deps.warn("[expiry-regrant] 시도 횟수 기록 실패 — 이번 실행 발송 보류", { user_id: userId });
+    return { outcome: "deferred", sealFailed: false };
+  }
+
+  const { subject, html } = buildRegrantEmail(userId, attempted, grantCredits);
+  const ok = await deps.mailer.send({
+    to: email,
+    subject,
+    html,
+    idempotencyKey: mailIdempotencyKey(userId, attempted),
+  });
+
+  if (ok) {
+    // 발송 성공 후 마커 제거 — 제거가 실패하면 "발송 완료"로 봉인한다.
+    // 마커를 그대로 두면 (3a)는 지급 기록이 있어 orphan 으로 안 걸리므로, sent_at 으로
+    // (3) 진입 즉시 걸러낸다. 두 상한도 함께 채워 이중으로 막지만, 이 봉인 쓰기 자체가
+    // 실패해도 사전 증가된 attempts 가 중복을 하드 상한 안으로 묶어 준다.
+    if (await deps.markers.set(userId, null)) return { outcome: "sent", sealFailed: false };
+    const sealed: MailDue = {
+      ...attempted,
+      sent_at: new Date(deps.now()).toISOString(),
+      attempts: MAX_MAIL_ATTEMPTS_HARD,
+      dispatched: MAX_MAIL_DISPATCHES,
+    };
+    if (await deps.markers.set(userId, sealed)) return { outcome: "sent", sealFailed: false };
+    // 해당 row 의 jsonb 쓰기가 계속 실패하는 상태 — 수동 확인이 필요하다.
+    deps.warn("[expiry-regrant] 발송 후 마커 봉인 실패 — 재발송 위험", { user_id: userId });
+    return { outcome: "sent", sealFailed: true };
+  }
+
+  // 발송 실패 — "sendMail 호출까지 도달했다"는 사실만 남긴다(최선 노력).
+  // attempts 는 위에서 이미 올렸으므로 여기서 또 올리지 않는다. 이 쓰기가 실패해도
+  // 하드 상한(attempts)은 그대로 유효하다 — 그래서 실패를 따로 처리하지 않는다.
+  await deps.markers.set(userId, { ...attempted, dispatched: dispatched + 1 });
+  return { outcome: "failed", sealFailed: false };
+}
+
+export type RetryOutcome =
+  | "cleared_invalid" // 수신거부·무효 마커 — 발송 없이 정리
+  | "cleared_sent" // 지난 실행에서 발송 완료(sent_at 봉인) — 정리만
+  | "cleared_orphan" // 마커만 있고 지급 기록 없음 — 발송 없이 정리
+  | "cleared_stale" // 지급이 마커보다 오래됨(과거 지급) — 발송 없이 정리
+  | "cleared_exhausted" // 상한 도달 — 포기
+  | SendOutcome;
+
+// (3) 미발송 재시도 한 건. grantedAt = promo_redemptions 의 지급 시각(없으면 undefined).
+export async function runRetryRow(
+  deps: RegrantDeps,
+  row: {
+    id: string;
+    email: string | null;
+    marketing_opt_in: boolean | null;
+    regrant_mail_due: unknown;
+  },
+  grantedAt: string | undefined,
+  grantCredits: number
+): Promise<{ outcome: RetryOutcome; sealFailed: boolean }> {
+  const clean = { sealFailed: false } as const;
+  const due = row.regrant_mail_due;
+  // 그 사이 수신거부한 계정·무효 마커는 발송 없이 표시만 지운다.
+  if (!isMailDue(due) || row.marketing_opt_in !== true || !row.email) {
+    await deps.markers.set(row.id, null);
+    return { outcome: "cleared_invalid", ...clean };
+  }
+  if (due.sent_at) {
+    // 지난 실행에서 발송은 끝났고 마커 제거만 실패한 흔적 — 재발송 없이 지우기만 한다.
+    await deps.markers.set(row.id, null);
+    return { outcome: "cleared_sent", ...clean };
+  }
+  if (grantedAt === undefined) {
+    // 마커는 있는데 지급 기록이 없다 — 마커 선기록 직후 죽은 흔적. 안내할 지급이
+    // 없으니 발송하지 않고 마커만 지운다. 이 계정은 이번 실행의 후보 수집(1)이
+    // 이미 미지급자로 잡아 뒀으므로 (4)에서 정상 지급되고 메일도 나간다.
+    deps.warn("[expiry-regrant] 마커만 있고 지급 기록 없음 — 발송 없이 마커 제거", {
+      user_id: row.id,
+    });
+    await deps.markers.set(row.id, null);
+    return { outcome: "cleared_orphan", ...clean };
+  }
+  // 지급 기록이 이 마커보다 앞서면 "이 마커가 안내하려던 지급"이 아니다
+  // (normalized_email 중복이 아니라 user_id 중복으로 already_redeemed 가 났고,
+  //  롤백까지 실패한 경우). 마커의 만료일은 이번 실행이 예측한 값이라 그대로
+  // 보내면 없던 지급의 유효기간을 안내하게 된다 — 발송 없이 마커만 지운다.
+  const queuedMs = due.queued_at ? Date.parse(due.queued_at) : NaN;
+  const grantedMs = Date.parse(grantedAt);
+  if (
+    Number.isFinite(queuedMs) &&
+    Number.isFinite(grantedMs) &&
+    grantedMs < queuedMs - GRANT_CLOCK_SKEW_MS
+  ) {
+    deps.warn("[expiry-regrant] 마커보다 오래된 지급 — 발송 없이 마커 제거", {
+      user_id: row.id,
+      granted_at: grantedAt,
+      queued_at: due.queued_at,
+    });
+    await deps.markers.set(row.id, null);
+    return { outcome: "cleared_stale", ...clean };
+  }
+  if (isMailExhausted(due)) {
+    // 계속 실패하는 주소(반송 등) — 포기하고 마커를 지워 다른 재시도를 막지 않는다.
+    deps.warn("[expiry-regrant] 재시도 상한 초과 — 발송 포기", { user_id: row.id });
+    await deps.markers.set(row.id, null);
+    return { outcome: "cleared_exhausted", ...clean };
+  }
+  return dispatchMail(deps, {
+    userId: row.id,
+    email: row.email,
+    due,
+    grantCredits,
+  });
+}
+
+export type GrantOutcome =
+  | { kind: "marker_failed" }
+  | { kind: "grant_failed"; reason: string }
+  | { kind: "grant_uncertain"; reason: string }
+  | { kind: "already_redeemed" }
+  | { kind: "granted"; mail: SendOutcome | "none"; sealFailed: boolean };
+
+// (4) 지급 대상 한 건 — 마커 선기록 → 지급 RPC → 신규 발송.
+export async function runGrantTarget(
+  deps: RegrantDeps,
+  target: { id: string; email: string; credits: number; expires_at: string; mail: boolean },
+  ctx: { nowMs: number; nowIso: string; grantCredits: number; validityDays: number }
+): Promise<GrantOutcome> {
+  // 메일 대상은 "지급 RPC 전에" 재시도 마커를 먼저 남긴다 — 순서를 되돌리지 말 것.
+  //   지급 → 마커 순서면 그 사이에 프로세스가 죽었을 때 마커가 없는 채로 지급만
+  //   남고, 다음 실행의 후보 수집(1)이 already_granted 로 걸러내 지급도 메일도
+  //   영영 재시도되지 않는다(지급은 계정당 평생 1회 + 발송 이력 테이블 없음).
+  //   반대 방향(마커만 남고 지급 실패)은 회복된다 — DB가 확정적으로 거절한 실패는
+  //   아래에서 즉시 롤백하고, 불명확한 실패(응답 유실 가능)는 마커를 남긴 채
+  //   runRetryRow 의 지급 검증이 다음 실행에서 발송 여부를 정확히 판정한다.
+  let due: MailDue | null = null;
+  if (target.mail) {
+    due = {
+      lost: target.credits,
+      lost_at: target.expires_at,
+      // 지급 전이라 RPC가 정할 만료 시각을 아직 모른다 — 같은 규칙(지급일 + validity_days)
+      // 으로 예측해 두고, 지급 성공 후 실제 값과 다르면 곧바로 고쳐 쓴다.
+      new_expires: new Date(ctx.nowMs + ctx.validityDays * DAY_MS).toISOString(),
+      // 이 마커가 "언제의 지급"을 안내하려는 것인지 — 재시도가 과거 지급과 구분할 때 쓴다.
+      // 실행 시작 시각이라 실제 마커 기록보다 이르지만, 그 방향은 안전하다
+      // (오래된 지급 판정이 보수적으로만 작동한다).
+      queued_at: ctx.nowIso,
+    };
+    if (!(await deps.markers.set(target.id, due))) {
+      // 마커를 못 남기면 메일 유실을 감지할 방법이 없다 — 지급도 다음 실행으로 미룬다.
+      // 아무것도 쓰지 않았으므로 이 계정은 다음 실행에서 그대로 다시 후보가 된다.
+      return { kind: "marker_failed" };
+    }
+  }
+
+  // 지급 — 실패해도 다른 대상은 계속 처리한다. RPC가 원자적으로
+  // (redemption 기록 → 크레딧·유효기간 갱신 → payments 기록)을 수행한다.
+  const { result, rpcError } = await deps.grants.redeem(target.id, target.email);
+  if (rpcError || result?.success !== true) {
+    // 마커 롤백은 "DB가 확정적으로 거절한 경우"에만 — rpcError 없이 result 가
+    // 돌아왔다는 건 DB가 답을 줬다는 뜻이라 지급이 없음을 확신할 수 있다
+    // (exhausted·invalid_source 등은 여기서 즉시 정리된다).
+    //   반대로 rpcError 는 네트워크 오류·타임아웃·5xx 를 포함한다 — supabase-js 는
+    //   이것들을 throw 하지 않고 error 로 돌려주므로, RPC 는 커밋됐는데 응답만
+    //   유실됐을 수 있다. 그때 마커까지 지우면 다음 실행의 후보 수집이
+    //   already_granted 로 걸러내고 재시도 큐에도 안 잡혀 메일이 영영 유실된다.
+    if (due && !rpcError) await deps.markers.set(target.id, null);
+    const reason = rpcError?.message ?? result?.error ?? "unknown";
+    if (rpcError) {
+      // 응답만 유실됐을 수 있어 "지급이 커밋됐을 수도 있는" 상태 — 진짜 실패와
+      // 섞어 집계하면 다음 실행이 처리할 건과 구분되지 않는다. 별도로 노출한다.
+      deps.warn("[expiry-regrant] grant uncertain — 다음 실행이 판정", {
+        user_id: target.id,
+        reason,
+      });
+      return { kind: "grant_uncertain", reason };
+    }
+    // already_redeemed 는 수집 단계와의 경합일 뿐이라 실패로 치지 않는다
+    if (result?.error === "already_redeemed") return { kind: "already_redeemed" };
+    deps.warn("[expiry-regrant] grant failed", { user_id: target.id, reason });
+    return { kind: "grant_failed", reason };
+  }
+
+  // 메일 — 마케팅 동의자에게만. 지급은 이미 끝났으므로 메일 실패가 지급을 되돌리지 않는다.
+  if (!due) return { kind: "granted", mail: "none", sealFailed: false };
+  if (typeof result.expires_at === "string" && result.expires_at !== due.new_expires) {
+    // 실제 만료 시각으로 정정 — 재시도로 나가는 메일도 같은 날짜를 쓴다.
+    // (만료일 정정은 dispatchMail 의 사전 증가 쓰기에 함께 실린다)
+    due = { ...due, new_expires: result.expires_at };
+  }
+  const sent = await dispatchMail(deps, {
+    userId: target.id,
+    email: target.email,
+    due,
+    grantCredits: ctx.grantCredits,
+  });
+  return { kind: "granted", mail: sent.outcome, sealFailed: sent.sealFailed };
+}
 
 export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
@@ -450,23 +794,33 @@ export async function GET(req: NextRequest) {
   const mailDeferred: string[] = [];
   const mailSealFailed: string[] = [];
 
-  // 발송 성공 후 마커 제거 — 제거가 실패하면 "발송 완료"로 봉인한다.
-  // 마커를 그대로 두면 (3a)는 지급 기록이 있어 orphan 으로 안 걸리므로, sent_at 으로
-  // (3) 진입 즉시 걸러낸다. attempts 도 상한까지 올려 이중으로 막지만, 이 봉인 쓰기
-  // 자체가 실패해도 사전 증가된 attempts 가 중복을 MAX_MAIL_ATTEMPTS 회로 막아 준다.
-  async function clearMarkerAfterSend(userId: string, due: MailDue, email: string) {
-    if (await setMarker(userId, null)) return;
-    const sealed: MailDue = {
-      ...due,
-      sent_at: new Date().toISOString(),
-      attempts: MAX_MAIL_ATTEMPTS,
-    };
-    if (!(await setMarker(userId, sealed))) {
-      // 해당 row 의 jsonb 쓰기가 계속 실패하는 상태 — 수동 확인이 필요하다.
-      console.warn("[expiry-regrant] 발송 후 마커 봉인 실패 — 재발송 위험", { user_id: userId });
-      mailSealFailed.push(email);
-    }
-  }
+  // 상태 머신에 꽂을 실제 구현체 — 판정·순서는 전부 위쪽 순수 함수가 갖는다.
+  const deps: RegrantDeps = {
+    markers: { set: setMarker },
+    mailer: {
+      send: ({ to, subject, html, idempotencyKey }) =>
+        sendMail(apiKey as string, to, subject, html, idempotencyKey),
+    },
+    grants: {
+      redeem: async (userId, email) => {
+        const { data, error } = await supabase.rpc("redeem_promo_code", {
+          p_user_id: userId,
+          p_code: GRANT_CODE,
+          p_source: "system",
+          p_normalized_email: normalizeEmailAlias(email),
+        });
+        return {
+          result: (data as GrantResult | null) ?? null,
+          rpcError: error ? { message: error.message } : null,
+        };
+      },
+    },
+    now: () => Date.now(),
+    warn: (message, meta) => console.warn(message, meta),
+  };
+
+  // Resend rate limit(초당 2건) 보호 — 실제로 발송을 시도한 뒤에만 쉰다.
+  const rateLimitPause = () => new Promise((r) => setTimeout(r, 600));
 
   // (3a) 재시도 대상의 "실제 지급 여부 + 지급 시각" 확인 — (4)가 마커를 지급보다
   //      먼저 남기므로 마커만 있고 지급은 안 된 행이 존재할 수 있다(마커 기록 직후
@@ -500,173 +854,53 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // (3) 미발송 재시도 — 그 사이 수신거부한 계정·무효 마커는 발송 없이 표시만 지운다.
+  // (3) 미발송 재시도 — 판정은 runRetryRow 가 하고, 여기서는 집계와 rate limit 만 본다.
   for (const row of retryQueue) {
-    const due = row.regrant_mail_due;
-    if (!isMailDue(due) || row.marketing_opt_in !== true || !row.email) {
-      await setMarker(row.id, null);
-      continue;
-    }
-    if (due.sent_at) {
-      // 지난 실행에서 발송은 끝났고 마커 제거만 실패한 흔적 — 재발송 없이 지우기만 한다.
-      await setMarker(row.id, null);
-      mailAlreadySent += 1;
-      continue;
-    }
-    const grantedAt = retryGrantedAt.get(row.id);
-    if (grantedAt === undefined) {
-      // 마커는 있는데 지급 기록이 없다 — 마커 선기록 직후 죽은 흔적. 안내할 지급이
-      // 없으니 발송하지 않고 마커만 지운다. 이 계정은 이번 실행의 후보 수집(1)이
-      // 이미 미지급자로 잡아 뒀으므로 아래 (4)에서 정상 지급되고 메일도 나간다.
-      console.warn("[expiry-regrant] 마커만 있고 지급 기록 없음 — 발송 없이 마커 제거", {
-        user_id: row.id,
-      });
-      await setMarker(row.id, null);
-      mailOrphaned += 1;
-      continue;
-    }
-    // 지급 기록이 이 마커보다 앞서면 "이 마커가 안내하려던 지급"이 아니다
-    // (normalized_email 중복이 아니라 user_id 중복으로 already_redeemed 가 났고,
-    //  롤백까지 실패한 경우). 마커의 만료일은 이번 실행이 예측한 값이라 그대로
-    // 보내면 없던 지급의 유효기간을 안내하게 된다 — 발송 없이 마커만 지운다.
-    const queuedMs = due.queued_at ? Date.parse(due.queued_at) : NaN;
-    const grantedMs = Date.parse(grantedAt);
-    if (
-      Number.isFinite(queuedMs) &&
-      Number.isFinite(grantedMs) &&
-      grantedMs < queuedMs - GRANT_CLOCK_SKEW_MS
-    ) {
-      console.warn("[expiry-regrant] 마커보다 오래된 지급 — 발송 없이 마커 제거", {
-        user_id: row.id,
-        granted_at: grantedAt,
-        queued_at: due.queued_at,
-      });
-      await setMarker(row.id, null);
-      mailStale += 1;
-      continue;
-    }
-    if ((due.attempts ?? 0) >= MAX_MAIL_ATTEMPTS) {
-      // 계속 실패하는 주소(반송 등) — 포기하고 마커를 지워 다른 재시도를 막지 않는다.
-      console.warn("[expiry-regrant] 재시도 상한 초과 — 발송 포기", { user_id: row.id });
-      await setMarker(row.id, null);
-      continue;
-    }
-    // 사전 증가 — 보내기 "전에" 시도 횟수를 올린다. 발송 후에 올리면, 이 row 의 쓰기가
-    // 지속적으로 실패하는 상황(문장 타임아웃·락 점유)에서 발송은 매번 성공하는데
-    // attempts 는 영원히 0이라 상한이 걸리지 않아 같은 광고 메일이 무한 재발송된다.
-    // 카운터를 못 올리면 이번 실행은 보내지 않는다 — 다음 실행이 그대로 다시 시도한다.
-    const attempted: MailDue = { ...due, attempts: (due.attempts ?? 0) + 1 };
-    if (!(await setMarker(row.id, attempted))) {
-      console.warn("[expiry-regrant] 시도 횟수 기록 실패 — 이번 실행 발송 보류", { user_id: row.id });
-      mailDeferred.push(row.email);
-      continue;
-    }
-    const { subject, html } = buildRegrantEmail(row.id, attempted, promo.credits);
-    if (await sendMail(apiKey as string, row.email, subject, html)) {
-      mailRetried += 1;
-      await clearMarkerAfterSend(row.id, attempted, row.email);
-    } else {
-      // attempts 는 위에서 이미 올렸다 — 여기서 또 올리면 이중 증가가 된다.
-      mailFailed.push(row.email);
-    }
-    // Resend rate limit(초당 2건) 보호
-    await new Promise((r) => setTimeout(r, 600));
+    const { outcome, sealFailed } = await runRetryRow(
+      deps,
+      row,
+      retryGrantedAt.get(row.id),
+      promo.credits
+    );
+    if (sealFailed && row.email) mailSealFailed.push(row.email);
+    if (outcome === "cleared_sent") mailAlreadySent += 1;
+    else if (outcome === "cleared_orphan") mailOrphaned += 1;
+    else if (outcome === "cleared_stale") mailStale += 1;
+    else if (outcome === "sent") mailRetried += 1;
+    else if (outcome === "deferred" && row.email) mailDeferred.push(row.email);
+    else if (outcome === "failed" && row.email) mailFailed.push(row.email);
+    if (outcome === "sent" || outcome === "failed") await rateLimitPause();
   }
 
-  // (4) 지급 + 신규 메일
+  // (4) 지급 + 신규 메일 — 순서·롤백 규칙은 runGrantTarget 안에 있다.
+  const grantCtx = {
+    nowMs: now,
+    nowIso,
+    grantCredits: promo.credits,
+    validityDays: promo.validity_days ?? 7,
+  };
   for (const p of targets) {
-    // 메일 대상은 "지급 RPC 전에" 재시도 마커를 먼저 남긴다 — 순서를 되돌리지 말 것.
-    //   지급 → 마커 순서면 그 사이에 프로세스가 죽었을 때 마커가 없는 채로 지급만
-    //   남고, 다음 실행의 후보 수집(1)이 already_granted 로 걸러내 지급도 메일도
-    //   영영 재시도되지 않는다(지급은 계정당 평생 1회 + 발송 이력 테이블 없음).
-    //   반대 방향(마커만 남고 지급 실패)은 회복된다 — DB가 확정적으로 거절한 실패는
-    //   아래에서 즉시 롤백하고, 불명확한 실패(응답 유실 가능)는 마커를 남긴 채
-    //   (3a)/(3)의 지급 검증이 다음 실행에서 발송 여부를 정확히 판정한다.
-    let due: MailDue | null = null;
-    if (p.mail) {
-      due = {
-        lost: p.credits,
-        lost_at: p.expires_at,
-        // 지급 전이라 RPC가 정할 만료 시각을 아직 모른다 — 같은 규칙(지급일 + validity_days)
-        // 으로 예측해 두고, 지급 성공 후 실제 값과 다르면 곧바로 고쳐 쓴다.
-        new_expires: new Date(now + (promo.validity_days ?? 7) * DAY_MS).toISOString(),
-        // 이 마커가 "언제의 지급"을 안내하려는 것인지 — (3)이 과거 지급과 구분할 때 쓴다.
-        // 실행 시작 시각이라 실제 마커 기록보다 이르지만, 그 방향은 안전하다
-        // (오래된 지급 판정이 보수적으로만 작동한다).
-        queued_at: nowIso,
-      };
-      if (!(await setMarker(p.id, due))) {
-        // 마커를 못 남기면 메일 유실을 감지할 방법이 없다 — 지급도 다음 실행으로 미룬다.
-        // 아무것도 쓰지 않았으므로 이 계정은 다음 실행에서 그대로 다시 후보가 된다.
-        markerFailed.push(p.email);
-        continue;
-      }
-    }
-
-    // 지급 — 실패해도 다른 대상은 계속 처리한다. RPC가 원자적으로
-    // (redemption 기록 → 크레딧·유효기간 갱신 → payments 기록)을 수행한다.
-    const { data: result, error: rpcError } = await supabase.rpc("redeem_promo_code", {
-      p_user_id: p.id,
-      p_code: GRANT_CODE,
-      p_source: "system",
-      p_normalized_email: normalizeEmailAlias(p.email),
-    });
-    if (rpcError || result?.success !== true) {
-      // 마커 롤백은 "DB가 확정적으로 거절한 경우"에만 — rpcError 없이 result 가
-      // 돌아왔다는 건 DB가 답을 줬다는 뜻이라 지급이 없음을 확신할 수 있다
-      // (exhausted·invalid_source 등은 여기서 즉시 정리된다).
-      //   반대로 rpcError 는 네트워크 오류·타임아웃·5xx 를 포함한다 — supabase-js 는
-      //   이것들을 throw 하지 않고 error 로 돌려주므로, RPC 는 커밋됐는데 응답만
-      //   유실됐을 수 있다. 그때 마커까지 지우면 다음 실행의 후보 수집이
-      //   already_granted 로 걸러내고 재시도 큐에도 안 잡혀 메일이 영영 유실된다.
-      //   그래서 불명확한 실패는 마커를 남기고 (3a)/(3)에 판정을 맡긴다 — 지급
-      //   기록이 있으면 하루 뒤 발송되고, 없으면 발송 없이 마커만 정리된다.
-      if (due && !rpcError) await setMarker(p.id, null);
-      const reason = rpcError?.message ?? result?.error ?? "unknown";
-      if (rpcError) {
-        // 응답만 유실됐을 수 있어 "지급이 커밋됐을 수도 있는" 상태 — 진짜 실패와
-        // 섞어 집계하면 다음 실행이 처리할 건과 구분되지 않는다. 별도로 노출한다.
-        console.warn("[expiry-regrant] grant uncertain — 다음 실행이 판정", {
-          user_id: p.id,
-          reason,
-        });
-        grantUncertain.push(p.email);
-      } else if (result?.error !== "already_redeemed") {
-        // already_redeemed 는 수집 단계와의 경합일 뿐이라 실패로 치지 않는다
-        console.warn("[expiry-regrant] grant failed", { user_id: p.id, reason });
-        grantFailed.push(p.email);
-      }
+    const outcome = await runGrantTarget(deps, p, grantCtx);
+    if (outcome.kind === "marker_failed") {
+      markerFailed.push(p.email);
       continue;
     }
+    if (outcome.kind === "grant_uncertain") {
+      grantUncertain.push(p.email);
+      continue;
+    }
+    if (outcome.kind === "grant_failed") {
+      grantFailed.push(p.email);
+      continue;
+    }
+    if (outcome.kind === "already_redeemed") continue;
+
     granted += 1;
-
-    // 메일 — 마케팅 동의자에게만. 지급은 이미 끝났으므로 메일 실패가 지급을 되돌리지 않는다.
-    if (!due) continue;
-    if (typeof result.expires_at === "string" && result.expires_at !== due.new_expires) {
-      // 실제 만료 시각으로 정정 — 재시도로 나가는 메일도 같은 날짜를 쓴다.
-      due = { ...due, new_expires: result.expires_at };
-    }
-    // 신규 발송도 재시도 경로와 대칭 — 보내기 전에 시도 횟수를 올리고, 그 쓰기가
-    // 실패하면 이번 실행은 보내지 않는다(카운터 없이는 광고 메일을 보내지 않는다).
-    // 마커는 지급 전에 이미 남겨 뒀으므로, 여기서 보류해도 다음 실행의 재시도 큐가
-    // 그대로 이어받는다. 만료일 정정도 이 한 번의 쓰기에 함께 실린다.
-    const attempted: MailDue = { ...due, attempts: (due.attempts ?? 0) + 1 };
-    if (!(await setMarker(p.id, attempted))) {
-      console.warn("[expiry-regrant] 시도 횟수 기록 실패 — 이번 실행 발송 보류", { user_id: p.id });
-      mailDeferred.push(p.email);
-      continue;
-    }
-    due = attempted;
-    const { subject, html } = buildRegrantEmail(p.id, due, promo.credits);
-    if (await sendMail(apiKey as string, p.email, subject, html)) {
-      mailed += 1;
-      await clearMarkerAfterSend(p.id, due, p.email);
-    } else {
-      // attempts 는 위에서 이미 올렸다 — 여기서 또 올리면 이중 증가가 된다.
-      mailFailed.push(p.email);
-    }
-    // Resend rate limit(초당 2건) 보호
-    await new Promise((r) => setTimeout(r, 600));
+    if (outcome.sealFailed) mailSealFailed.push(p.email);
+    if (outcome.mail === "sent") mailed += 1;
+    else if (outcome.mail === "deferred") mailDeferred.push(p.email);
+    else if (outcome.mail === "failed") mailFailed.push(p.email);
+    if (outcome.mail === "sent" || outcome.mail === "failed") await rateLimitPause();
   }
 
   return NextResponse.json({
