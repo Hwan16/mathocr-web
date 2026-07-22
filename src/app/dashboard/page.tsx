@@ -477,9 +477,18 @@ export default function DashboardPage() {
                 <div className="text-sm font-medium text-zinc-800">
                   회원 탈퇴
                 </div>
+                {/* 고지 수준은 아래 DeleteAccountModal 과 맞출 것 — 요약만 보고
+                    탈퇴하는 이용자가 있으므로 보존 기록을 이 줄에서도 알려야 한다.
+                    근거: api/account/delete/route.ts — payments·user_consents 는
+                    SET NULL + 이메일 스냅샷으로 남고 방침 제3조가 5년 보존을 고지한다.
+                    ⚠️ promo_redemptions 도 같은 방식으로 남지만 여기에 쓰지 말 것 —
+                    그 보존은 전자상거래법 5년이 아니라 중복 수령 방지 목적이고
+                    파기 잡이 없어 사실상 무기한이라, 근거·기간이 모두 어긋난다.
+                    고지하려면 방침 제3조에 보유 항목을 먼저 신설해야 한다. */}
                 <p className="text-sm text-zinc-500">
                   계정과 이용 데이터가 삭제되며, 잔여 크레딧은 복구할 수
-                  없습니다.
+                  없습니다. 결제·동의 기록은 계정 연결이 해제된 상태로 가입
+                  이메일과 함께 전자상거래법에 따라 5년간 보존됩니다.
                 </p>
               </div>
               <button
