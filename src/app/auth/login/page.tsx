@@ -165,7 +165,17 @@ function LoginForm() {
       }
 
       trackEvent("login", { method: "password" });
-      router.push(redirect);
+      // 인증 메일 링크를 타고 온 로그인(만료 링크 재방문 포함)은 마이페이지 대신
+      // 시작 안내(/start)로 보낸다 — 인증 직후가 프로그램 설치를 안내할 유일한
+      // 접점(2026-07-23: 가입 38명 중 17명이 변환 0건, 안내 메일은 동의자 한정).
+      // 명시적 redirect 파라미터가 있으면 그 목적지를 우선한다.
+      // justConfirmed 외에 confirmBanner도 보는 이유: 인증 도착 효과가 URL 정리
+      // (history.replaceState)를 한 뒤에는 searchParams가 갱신될 수 있어서다.
+      const explicitRedirect = searchParams.get("redirect");
+      const fromConfirmation = justConfirmed || confirmBanner !== null;
+      router.push(
+        explicitRedirect ? redirect : fromConfirmation ? "/start" : redirect
+      );
       router.refresh();
     } catch {
       setError("로그인 중 오류가 발생했습니다.");
@@ -189,7 +199,8 @@ function LoginForm() {
 
       {confirmBanner === "success" && (
         <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-          이메일 인증이 완료되었습니다. 로그인해주세요. 🎉
+          이메일 인증이 완료되었습니다. 🎉 로그인하면 크레딧 확인과 함께
+          프로그램 설치 안내로 이어져요.
         </div>
       )}
       {confirmBanner === "failed" && (

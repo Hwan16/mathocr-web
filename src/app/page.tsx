@@ -8,10 +8,8 @@ import { FaqStructuredData } from "./structured-data";
 import { PLANS, SIGNUP_FREE_CREDITS, SIGNUP_FREE_VALIDITY_DAYS, CREDIT_RULE } from "@/lib/plans";
 import EarlyBirdPopup from "@/components/EarlyBirdPopup";
 import DownloadGuideModal from "@/components/DownloadGuideModal";
-
-const DOWNLOAD_URL =
-  "https://github.com/Hwan16/mathocr-web/releases/download/v2.1.5/MathOCR-Setup-v2.1.5.exe";
-const DOWNLOAD_LABEL = "v2.1.5 (114MB)";
+// 다운로드 링크 단일 출처 — 릴리스 시 lib/download.ts만 갱신 (홈·/start·마이페이지 공유)
+import { DOWNLOAD_URL, DOWNLOAD_LABEL } from "@/lib/download";
 
 // 결제 오픈 게이트 — Vercel 환경변수에 NEXT_PUBLIC_PAYMENTS_ENABLED=true 를
 // 넣기 전까지 구매 버튼은 기존 "곧 오픈" 안내를 유지한다.

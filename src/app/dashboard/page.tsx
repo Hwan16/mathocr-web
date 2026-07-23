@@ -5,6 +5,9 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import ExpiryConsentBanner from "@/components/ExpiryConsentBanner";
+import DownloadGuideModal from "@/components/DownloadGuideModal";
+import { trackEvent } from "@/lib/analytics";
+import { DOWNLOAD_URL, DOWNLOAD_LABEL } from "@/lib/download";
 
 interface Profile {
   credits: number;
@@ -38,6 +41,8 @@ export default function DashboardPage() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  // 설치 카드의 다운로드 버튼 → 보안 경고(미서명) 유지 절차 안내 모달
+  const [downloadGuideOpen, setDownloadGuideOpen] = useState(false);
   const [promoNotice, setPromoNotice] = useState<PromoNotice | null>(null);
   const [consentHighlight, setConsentHighlight] = useState(false);
   const router = useRouter();
@@ -216,6 +221,51 @@ export default function DashboardPage() {
           />
         )}
 
+        {/* 프로그램 미설치 안내 — 변환 이력이 0건인 계정에만.
+            배경(2026-07-23): 가입 38명 중 17명(44.7%)이 변환 0건. 모바일 가입자가
+            인증까지 마쳐도 "PC에서 프로그램을 받으라"는 안내를 받을 통로가 없었다
+            (안내 메일은 마케팅 동의자 한정·동의율 5%, 마이페이지에 설치 문구 0건). */}
+        {!loading && totalConversions === 0 && (
+          <div className="mb-6 rounded-2xl border-2 border-[var(--accent)]/25 bg-gradient-to-br from-violet-50 to-white p-6">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-bold text-zinc-900 mb-1">
+                  아직 프로그램을 설치하지 않으셨어요
+                </h2>
+                <p className="text-sm text-zinc-600 leading-relaxed">
+                  시험지 변환은{" "}
+                  <strong className="text-zinc-900">Windows PC 프로그램</strong>
+                  에서 진행돼요. 크레딧은 이 계정에 이미 지급되어 있습니다.
+                </p>
+                <p className="text-xs text-zinc-500 mt-1">
+                  Windows 10 / 11 · 정품 한글(한컴오피스) 필요
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+                <a
+                  href={DOWNLOAD_URL}
+                  onClick={() => {
+                    trackEvent("app_download", {
+                      version: DOWNLOAD_LABEL,
+                      source: "dashboard",
+                    });
+                    setDownloadGuideOpen(true);
+                  }}
+                  className="btn-primary px-5 py-2.5 rounded-lg text-sm font-semibold text-center"
+                >
+                  Windows용 다운로드
+                </a>
+                <a
+                  href="/start"
+                  className="px-5 py-2.5 rounded-lg text-sm text-center border border-zinc-300 bg-white hover:bg-zinc-50 transition-colors"
+                >
+                  휴대폰이신가요? 설치 안내
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           {/* 크레딧 */}
@@ -227,6 +277,16 @@ export default function DashboardPage() {
                 회
               </span>
             </div>
+            {/* 충전 경로 — 이전에는 웹 어디에도 /charge로 가는 링크가 없었다(2026-07-23) */}
+            <a
+              href="/charge"
+              onClick={() =>
+                trackEvent("charge_click", { source: "dashboard_credits" })
+              }
+              className="mt-2 inline-block text-sm font-medium text-[var(--accent)] hover:underline"
+            >
+              크레딧 충전 →
+            </a>
             {/* 미동의자 전용 상시 상태 표시 — 배너를 닫은 사용자를 위한 잔류 경로.
                 동의 처리는 계정 설정 토글에서만 한다(설명을 읽는 지점에서 동의).
 
@@ -508,6 +568,11 @@ export default function DashboardPage() {
           onClose={() => setShowDeleteModal(false)}
         />
       )}
+
+      <DownloadGuideModal
+        open={downloadGuideOpen}
+        onClose={() => setDownloadGuideOpen(false)}
+      />
     </div>
   );
 }

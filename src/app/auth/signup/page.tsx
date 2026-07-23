@@ -315,6 +315,11 @@ function SignupForm() {
                 자동으로 지급됩니다.
               </p>
             )}
+            <p className="text-sm text-zinc-600 leading-relaxed mb-1">
+              인증을 마치고 로그인하면{" "}
+              <strong className="text-zinc-900">프로그램 설치 안내</strong>로
+              바로 이어집니다.
+            </p>
             <p className="text-xs text-zinc-400 leading-relaxed mb-4">
               메일이 안 보이면 스팸함을 확인해주세요. 이미 가입된 이메일이라면
               메일이 오지 않을 수 있어요 — 바로 로그인해 보세요.
