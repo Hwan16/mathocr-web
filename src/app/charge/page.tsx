@@ -6,7 +6,7 @@ import Script from "next/script";
 import { loadTossPayments } from "@tosspayments/tosspayments-sdk";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
-import { PLANS } from "@/lib/plans";
+import { PLANS, creditsAsProblems } from "@/lib/plans";
 import { buildOrderId, getPlan } from "@/lib/payments";
 import { trackEvent } from "@/lib/analytics";
 
@@ -255,6 +255,13 @@ function ChargeInner() {
                     <div className="text-xs text-zinc-500">
                       {plan.credits} 크레딧 · {plan.validityDays}일 · 크레딧당{" "}
                       {plan.perUnit}원
+                    </div>
+                    {/* 환산 눈금 — 홈 요금제 카드와 동일 표기 (2026-07-23 DM 문의) */}
+                    <div
+                      className="text-xs font-semibold mt-0.5"
+                      style={{ color: plan.color }}
+                    >
+                      ≈ {creditsAsProblems(plan.credits)}
                     </div>
                   </button>
                 );

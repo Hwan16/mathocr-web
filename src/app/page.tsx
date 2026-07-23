@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { trackEvent } from "@/lib/analytics";
 import { FAQS } from "@/lib/faqs";
 import { FaqStructuredData } from "./structured-data";
-import { PLANS, SIGNUP_FREE_CREDITS, SIGNUP_FREE_VALIDITY_DAYS, CREDIT_RULE } from "@/lib/plans";
+import { PLANS, SIGNUP_FREE_CREDITS, SIGNUP_FREE_VALIDITY_DAYS, CREDIT_RULE, creditsAsProblems } from "@/lib/plans";
 import EarlyBirdPopup from "@/components/EarlyBirdPopup";
 import DownloadGuideModal from "@/components/DownloadGuideModal";
 // 다운로드 링크 단일 출처 — 릴리스 시 lib/download.ts만 갱신 (홈·/start·마이페이지 공유)
@@ -659,8 +659,15 @@ export default function Home() {
                     {plan.name}
                   </span>
                 </div>
-                <div className="text-sm text-zinc-500 mb-4">
+                {/* 크레딧(계산 단위) + 환산 눈금(규모 가늠). 2026-07-23 DM 문의로 추가 */}
+                <div className="text-sm text-zinc-500 mb-1">
                   {plan.credits} 크레딧 · 유효기간 {plan.validityDays}일
+                </div>
+                <div
+                  className="text-sm font-semibold mb-4"
+                  style={{ color: plan.color }}
+                >
+                  ≈ {creditsAsProblems(plan.credits)}
                 </div>
 
                 {/* 절약률은 실재하는 우리 판매가(Starter 단가) 대비 비교만 표시 —
@@ -810,6 +817,13 @@ export default function Home() {
                 </div>
               ))}
             </dl>
+            {/* 카드의 "≈ 문제 N개 분량"이 왜 '분량'인지 — 해설을 함께 담으면 달라진다 */}
+            <p className="mt-4 text-sm text-zinc-500 leading-relaxed">
+              그래서 <strong className="text-zinc-700">100 크레딧이면 문제 100개</strong>를
+              변환할 수 있습니다. 해설까지 함께 담으면 해설 1개당 1크레딧이 더
+              들어, 같은 100 크레딧으로 문제 50개 + 해설 50개가 됩니다.{" "}
+              <strong className="text-zinc-700">문제 속 그래프·도형은 몇 개가 있든 무료</strong>입니다.
+            </p>
           </div>
         </div>
       </section>
