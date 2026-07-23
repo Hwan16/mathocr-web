@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { unsubscribeToken } from "@/lib/unsubscribe";
+import { REPLY_TO } from "@/lib/mail";
 
 // 온보딩 메일 2통 (마케팅 백로그 §6-2) — vercel.json cron이 매시 30분에 호출한다.
 //
@@ -340,7 +341,13 @@ export async function GET(req: NextRequest) {
             Authorization: `Bearer ${apiKey}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ from: FROM, to: p.email, subject, html }),
+          body: JSON.stringify({
+            from: FROM,
+            reply_to: REPLY_TO,
+            to: p.email,
+            subject,
+            html,
+          }),
         });
         if (resp.ok) {
           sent += 1;

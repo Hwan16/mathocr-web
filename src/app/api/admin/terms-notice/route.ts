@@ -5,6 +5,7 @@ import {
   TERMS_NOTICE_HTML,
   TERMS_NOTICE_BATCH,
 } from "@/lib/terms-notice-mail";
+import { REPLY_TO } from "@/lib/mail";
 
 // ── 약관 개정 개별 고지 발송 (2026-07-22 신설) ──
 //
@@ -156,6 +157,9 @@ export async function GET(request: NextRequest) {
         },
         body: JSON.stringify({
           from: FROM,
+          // 답장을 실제 문의 주소로 (발신 noreply 는 수신 불가라 답장이 반송된다).
+          // 제목·본문(발송 증거)은 그대로 — 이 필드는 전달 경로만 바꾼다.
+          reply_to: REPLY_TO,
           to: [t.email], // 반드시 1명씩 — 수신자 상호 노출 방지
           subject: TERMS_NOTICE_SUBJECT,
           html: TERMS_NOTICE_HTML,

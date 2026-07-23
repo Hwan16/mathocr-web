@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { unsubscribeToken } from "@/lib/unsubscribe";
 import { normalizeEmailAlias } from "@/lib/email";
+import { REPLY_TO } from "@/lib/mail";
 
 // 만료 크레딧 자동 재지급 (2026-07-22 결정) — vercel.json cron이 매일 1회 호출한다.
 //
@@ -258,7 +259,7 @@ async function sendMail(
         // 보존 창이 cron 주기와 같아 '다음날 재시도'까지는 못 막는다(mailIdempotencyKey 주석).
         "Idempotency-Key": idempotencyKey,
       },
-      body: JSON.stringify({ from: FROM, to, subject, html }),
+      body: JSON.stringify({ from: FROM, reply_to: REPLY_TO, to, subject, html }),
       // 응답 없는 커넥션 하나가 뒤의 모든 대상까지 굶기지 않도록 요청 자체에 상한을 둔다.
       signal: AbortSignal.timeout(MAIL_TIMEOUT_MS),
     });
