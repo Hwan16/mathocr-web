@@ -13,7 +13,11 @@
 // color: 플랜별 강조색(이름 뱃지·절약 뱃지·체크 아이콘에 사용).
 // colorHover: color를 한 단계 진하게 — featured 카드의 구매 버튼 hover에 사용.
 // featured: 추천 카드(테두리·추천 뱃지·채운 구매 버튼). 2026-07-21 Basic→Pro 이동
-//   (단가 최저·유효기간 2배로 추천 근거가 가장 강한 플랜이라 사용자 결정).
+//   (단가 최저·유효기간 최장으로 추천 근거가 가장 강한 플랜이라 사용자 결정).
+// validityDays: 2026-07-25 개편 — Starter 30 유지, Basic 30→60, Pro 60→180.
+//   경쟁사(PLANA 365일·일타조교 무기한) 대비 30일 소멸이 최대 약점이라는 가격
+//   분석에 따른 사용자 결정. 소급 적용 없음 — 만료일은 지급 시점에 DB에 저장되므로
+//   기존 보유 크레딧의 만료일은 그대로다(연장하려면 관리자에서 수동 조정).
 export const PLANS = [
   {
     id: "starter",
@@ -32,7 +36,7 @@ export const PLANS = [
     name: "Basic",
     credits: 200,
     price: 34900,
-    validityDays: 30,
+    validityDays: 60,
     perUnit: 175,
     savePctVsStarter: 12,
     featured: false,
@@ -44,7 +48,7 @@ export const PLANS = [
     name: "Pro",
     credits: 500,
     price: 69900,
-    validityDays: 60,
+    validityDays: 180,
     perUnit: 140,
     savePctVsStarter: 29,
     featured: true,

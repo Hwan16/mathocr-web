@@ -702,8 +702,8 @@ export default function Home() {
                     {plan.credits} 크레딧 충전
                   </li>
                   {plan.validityDays > 30 ? (
-                    // Pro만 유효기간 60일(다른 플랜의 2배) — 박스로 별도 강조.
-                    // "2배"는 실재하는 우리 플랜(30일)끼리의 비교라 LA-01 원칙에 부합
+                    // Starter(30일)보다 긴 유효기간(Basic 60·Pro 180)은 박스로 별도 강조.
+                    // "Starter의 N배"는 실재하는 우리 플랜끼리의 비교라 LA-01 원칙에 부합
                     <li
                       className="-mx-3 flex items-start gap-2.5 rounded-lg border px-3 py-2"
                       style={{
@@ -725,7 +725,7 @@ export default function Home() {
                           className="ml-2 inline-block align-[2px] text-[11px] font-bold px-2 py-0.5 rounded-full text-white"
                           style={{ backgroundColor: plan.color }}
                         >
-                          다른 플랜의 2배
+                          Starter의 {plan.validityDays / 30}배
                         </span>
                         <span className="block text-[13px] text-zinc-500 mt-0.5">
                           재충전 시 함께 연장
