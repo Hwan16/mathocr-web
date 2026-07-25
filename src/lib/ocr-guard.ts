@@ -15,7 +15,7 @@ import { createHash } from "crypto";
 // 상한 자체는 계속 작동한다 — 완전 fail-open이던 기존 동작의 보강.
 // 근본 해결(변환 티켓에 호출 결속)은 LA-04 근본 항목에서 별도 진행.
 
-export type OcrProvider = "claude" | "mathpix";
+export type OcrProvider = "claude" | "mathpix" | "gemini";
 
 // ── 1. 시스템 프롬프트 허용 목록 ─────────────────────────────
 // 데스크톱 structure_analyzer.py의 SYSTEM_PROMPT / SOLUTION_SYSTEM_PROMPT.
@@ -56,17 +56,20 @@ export function isAllowedSystemPrompt(system: string): boolean {
 const DEFAULT_DAILY_COST_LIMIT_USD: Record<OcrProvider, number> = {
   claude: 20,
   mathpix: 10,
+  // 자동 영역 인식(gemini-3.6-flash) — 쪽당 ~$0.009라 $10이면 하루 약 1,100쪽.
+  gemini: 10,
 };
 // 사용자당 일일 호출 상한. 정상 최대치(교사 1명이 하루 종일 변환)보다 크게:
 // 50문제 변환 1건 ≈ 문제·해설 각 1회씩 최대 200호출 → 하루 4건 = 800.
 const DEFAULT_USER_DAILY_CALL_LIMIT = 800;
 
 export function dailyCostLimitUsd(provider: OcrProvider): number {
-  const env =
-    provider === "claude"
-      ? process.env.OCR_DAILY_COST_LIMIT_CLAUDE_USD
-      : process.env.OCR_DAILY_COST_LIMIT_MATHPIX_USD;
-  const parsed = Number(env);
+  const envByProvider: Record<OcrProvider, string | undefined> = {
+    claude: process.env.OCR_DAILY_COST_LIMIT_CLAUDE_USD,
+    mathpix: process.env.OCR_DAILY_COST_LIMIT_MATHPIX_USD,
+    gemini: process.env.OCR_DAILY_COST_LIMIT_GEMINI_USD,
+  };
+  const parsed = Number(envByProvider[provider]);
   return Number.isFinite(parsed) && parsed > 0
     ? parsed
     : DEFAULT_DAILY_COST_LIMIT_USD[provider];
@@ -108,6 +111,25 @@ export function estimateClaudeCostUsd(usage: {
 export function mathpixCostPerCallUsd(): number {
   const parsed = Number(process.env.MATHPIX_COST_PER_CALL_USD);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0.004;
+}
+
+// gemini-3.6-flash 단가 (USD/1M tokens, ai.google.dev/gemini-api/docs/pricing
+// 2026-07-25 확인): 입력 $1.50 · 출력 $7.50. 내부 추론(thoughts) 토큰도 출력
+// 단가로 과금되므로 합산한다.
+const GEMINI_USD_PER_MTOK = { input: 1.5, output: 7.5 };
+
+export function estimateGeminiCostUsd(usage: {
+  promptTokenCount?: number;
+  candidatesTokenCount?: number;
+  thoughtsTokenCount?: number;
+}): number {
+  const n = (v: unknown) => (typeof v === "number" && v > 0 ? v : 0);
+  return (
+    (n(usage.promptTokenCount) * GEMINI_USD_PER_MTOK.input +
+      (n(usage.candidatesTokenCount) + n(usage.thoughtsTokenCount)) *
+        GEMINI_USD_PER_MTOK.output) /
+    1_000_000
+  );
 }
 
 // ── Redis 헬퍼 (rate-limit.ts와 같은 Upstash REST, 실패 시 null) ──
