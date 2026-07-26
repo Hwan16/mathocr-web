@@ -7,6 +7,7 @@ import { FAQS } from "@/lib/faqs";
 import { FaqStructuredData } from "./structured-data";
 import { PLANS, SIGNUP_FREE_CREDITS, SIGNUP_FREE_VALIDITY_DAYS, CREDIT_RULE, creditsAsProblems } from "@/lib/plans";
 import EarlyBirdPopup from "@/components/EarlyBirdPopup";
+import AutoDetectShowcase from "@/components/AutoDetectShowcase";
 import DownloadGuideModal from "@/components/DownloadGuideModal";
 // 다운로드 링크 단일 출처 — 릴리스 시 lib/download.ts만 갱신 (홈·/start·마이페이지 공유)
 import { DOWNLOAD_URL, DOWNLOAD_LABEL } from "@/lib/download";
@@ -198,6 +199,8 @@ export default function Home() {
                   <span className="ml-1.5 px-2.5 py-1 rounded-lg bg-sky-500 text-white text-[10px] font-semibold">문제</span>
                   <span className="px-2.5 py-1 rounded-lg border border-zinc-200 bg-white text-zinc-500 text-[10px]">그림</span>
                   <span className="px-2.5 py-1 rounded-lg border border-zinc-200 bg-white text-zinc-500 text-[10px]">해설</span>
+                  {/* v2.2.0 자동 인식 — 앱 툴바와 동일 위치·그라데이션 (기능 섹션에서 상세 소개) */}
+                  <span className="ml-1.5 px-2.5 py-1 rounded-lg bg-gradient-to-br from-[#7C3AED] to-[#8B5CF6] text-white text-[10px] font-semibold">✨ 자동 인식</span>
                   <span className="ml-1.5 px-2 py-1 border border-zinc-200 rounded-md text-[10px] text-zinc-600">설정</span>
                   {/* 계정 칩: 이메일 · 크레딧 pill · 유효기간 */}
                   <div className="ml-auto flex items-center gap-1.5 bg-zinc-100 rounded-full pl-2.5 pr-1.5 py-[3px]">
@@ -319,6 +322,31 @@ export default function Home() {
               AI가 원문만 골라 복원하고, 문제·그림·해설 영역을 원하는 대로
               지정해 완성된 HWP로 만들어 드립니다.
             </p>
+          </div>
+
+          {/* 대표 기능: AI 자동 인식 (v2.2.0 신규) — 텍스트 + 목업 2단 카드 */}
+          <div className="card rounded-xl p-8 lg:p-10 mb-5 !border-[var(--accent-border)]">
+            <div className="grid md:grid-cols-2 gap-8 lg:gap-12 items-center">
+              <div>
+                <span className="inline-block text-[11px] font-bold tracking-widest text-violet-700 bg-violet-100 rounded-full px-3 py-1 mb-4">
+                  NEW · v2.2.0
+                </span>
+                <h3 className="text-2xl lg:text-3xl font-bold mb-4">
+                  박스는 AI가 먼저 그려드립니다
+                </h3>
+                <p className="text-zinc-600 leading-relaxed mb-4">
+                  파일을 열고 <strong className="text-zinc-900 font-semibold">[✨ 자동 인식] 버튼
+                  하나</strong>면 문제·그림 영역 초안이 페이지마다 자동으로
+                  그려집니다. 초안을 확인하며 다듬기만 하면 되고,{" "}
+                  <strong className="text-zinc-900 font-semibold">크레딧 차감 없이 무료</strong>입니다.
+                </p>
+                <p className="text-zinc-600 leading-relaxed">
+                  손글씨 풀이가 가득한 시험지 사진에서도 인쇄된 문제와 그림만
+                  골라 잡아냅니다.
+                </p>
+              </div>
+              <AutoDetectShowcase />
+            </div>
           </div>
 
           <div className="grid md:grid-cols-2 gap-5">
@@ -549,7 +577,7 @@ export default function Home() {
               {
                 n: 3,
                 title: "문제 영역을 드래그로 지정",
-                desc: "변환할 문제를 마우스 드래그로 감싸면 파란 박스가 생깁니다. 문제 안에 그래프나 도형이 있으면 [그림] 모드로 그림 영역을, 해설이 있으면 [해설] 모드로 해설 영역을 따로 지정하세요. 우측 목록에 답안도 미리 입력할 수 있으며, 입력한 답안과 해설은 모두 해당 문제에 미주로 연결됩니다.",
+                desc: "[✨ 자동 인식] 버튼을 누르면 AI가 문제·그림 박스 초안을 자동으로 그려줍니다(무료). 물론 직접 드래그로 감싸서 만들 수도 있어요. 문제 안에 그래프나 도형이 있으면 [그림] 모드로 그림 영역을, 해설이 있으면 [해설] 모드로 해설 영역을 따로 지정하세요. 우측 목록에 답안도 미리 입력할 수 있으며, 입력한 답안과 해설은 모두 해당 문제에 미주로 연결됩니다.",
                 img: "step-3.webp",
                 imgW: 1600,
                 imgH: 1104,
