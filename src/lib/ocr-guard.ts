@@ -56,8 +56,9 @@ export function isAllowedSystemPrompt(system: string): boolean {
 const DEFAULT_DAILY_COST_LIMIT_USD: Record<OcrProvider, number> = {
   claude: 20,
   mathpix: 10,
-  // 자동 영역 인식(gemini-3.6-flash) — 쪽당 ~$0.009라 $10이면 하루 약 1,100쪽.
-  gemini: 10,
+  // 자동 영역 인식(gemini-3.6-flash) — 쪽당 ~$0.009라 $20이면 하루 약 2,200쪽.
+  // (2026-07-26 출시 직후 $10 → $20 상향, 사용자 지시)
+  gemini: 20,
 };
 // 사용자당 일일 호출 상한. 정상 최대치(교사 1명이 하루 종일 변환)보다 크게:
 // 50문제 변환 1건 ≈ 문제·해설 각 1회씩 최대 200호출 → 하루 4건 = 800.
