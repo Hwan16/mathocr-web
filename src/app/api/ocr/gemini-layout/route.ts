@@ -206,7 +206,9 @@ export async function POST(request: NextRequest) {
     return errorResponse(creditCheck.message, creditCheck.status);
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  // trim(): CLI로 env를 넣을 때 셸 인코딩이 BOM(U+FEFF)·개행을 붙일 수 있고,
+  // 그러면 fetch가 헤더 값을 거부한다 (2026-07-26 실사고 — JS trim은 BOM도 제거)
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) {
     return errorResponse("Gemini API 키가 설정되지 않았습니다.", 500);
   }
