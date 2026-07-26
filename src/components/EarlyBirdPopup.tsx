@@ -11,11 +11,12 @@ import AutoDetectShowcase from "@/components/AutoDetectShowcase";
 // 이동 — 미인증 가입이 선착순을 소진하지 못하게 하고, 문구도 이에 맞춤.
 // 2026-07-12 소진 자동 숨김(Codex 리뷰): 표시 전에 validate-promo로 코드 상태를
 // 확인해 소진·비활성이면 얼리버드는 띄우지 않는다 (표시광고 리스크 차단).
-// 2026-07-26 신규 기능 팝업(사용자 결정): 얼리버드 코드가 비활성/소진으로
-// 확인되면(valid=false) 그 자리에 AI 자동 인식(v2.2.0) 안내를 대신 띄운다.
-// 확인 자체가 실패하면 아무것도 띄우지 않는다 (fail-closed 유지).
-// 얼리버드 프로모션을 끝낼 때: 관리자에서 earlybird 코드 비활성 → 이 팝업이
-// 자동으로 신규 기능 안내로 전환된다 (배포 불필요).
+// 2026-07-26 신규 기능 팝업(사용자 결정): ① 방문자가 얼리버드 팝업을 닫으면
+// 이어서 AI 자동 인식(v2.2.0) 안내를 띄운다 (닫는 방법 무관 — X·바깥 클릭·
+// ESC·오늘 하루 숨김. CTA로 가입 페이지 이동 시엔 제외). ② 얼리버드 코드가
+// 비활성/소진으로 확인되면(valid=false) 처음부터 신규 기능 안내를 대신 띄운다
+// — 관리자에서 코드만 비활성하면 배포 없이 전환. 확인 자체가 실패하면
+// 아무것도 띄우지 않는다 (fail-closed 유지).
 const POPUP_ENABLED = true;
 const PROMO_CODE = "earlybird";
 // [보지 않기]로 숨긴 만료 시각(epoch ms)을 브라우저에 저장 — 모드별 분리
@@ -97,11 +98,25 @@ export default function EarlyBirdPopup() {
   useEffect(() => {
     if (!mode) return;
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") setMode(null);
+      if (e.key !== "Escape") return;
+      if (mode === "earlybird") closeEarlybird();
+      else setMode(null);
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
+
+  // 얼리버드를 닫으면 잠깐 사이를 두고 신규 기능 안내로 이어간다
+  // (기능 안내를 [다시 보지 않기]로 숨긴 방문자에게는 그냥 닫힘)
+  function closeEarlybird() {
+    setMode(null);
+    if (isHidden(FEATURE_STORAGE_KEY)) return;
+    window.setTimeout(() => {
+      setMode("feature");
+      trackEvent("autodetect_popup_shown");
+    }, 450);
+  }
 
   function hideFor(key: string, ms: number) {
     try {
@@ -109,7 +124,8 @@ export default function EarlyBirdPopup() {
     } catch {
       // 저장 실패해도 이번 세션에서는 닫는다
     }
-    setMode(null);
+    if (key === EARLYBIRD_STORAGE_KEY) closeEarlybird();
+    else setMode(null);
   }
 
   if (!mode) return null;
@@ -182,13 +198,13 @@ export default function EarlyBirdPopup() {
       aria-modal="true"
       aria-label="얼리버드 혜택 — 가입하고 이메일 인증하면 30문제 무료"
     >
-      {/* 배경 클릭 = 이번만 닫기 */}
-      <div className="absolute inset-0 bg-black/50" onClick={() => setMode(null)} />
+      {/* 배경 클릭 = 이번만 닫기 (닫으면 신규 기능 안내로 이어짐) */}
+      <div className="absolute inset-0 bg-black/50" onClick={closeEarlybird} />
 
       <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
         <button
           type="button"
-          onClick={() => setMode(null)}
+          onClick={closeEarlybird}
           className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full text-zinc-500 hover:text-zinc-800 hover:bg-black/5 transition-colors"
           aria-label="닫기"
         >
