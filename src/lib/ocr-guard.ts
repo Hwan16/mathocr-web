@@ -68,6 +68,12 @@ const DEFAULT_DAILY_COST_LIMIT_USD: Record<OcrProvider, number> = {
 // 사용자당 일일 호출 상한. 정상 최대치(교사 1명이 하루 종일 변환)보다 크게:
 // 50문제 변환 1건 ≈ 문제·해설 각 1회씩 최대 200호출 → 하루 4건 = 800.
 const DEFAULT_USER_DAILY_CALL_LIMIT = 800;
+// gemini(자동 인식)는 크레딧을 차감하지 않는 무료 기능 — 유료 변환 기준 800을
+// 그대로 쓰면 무료 계정 3개(각 800회 × 쪽당 ~$0.009 ≈ $7.2)로 공급자 일일
+// 상한($20)을 소진해 전체 사용자의 자동 인식을 막을 수 있다. 자동 인식은
+// 페이지당 1회 호출이라 200이면 하루 200쪽(20페이지 실행 10번) — 정상 사용을
+// 막지 않으면서 계정당 최대 소진을 $1.8 수준으로 묶는다 (2026-07-26 검증 후속).
+const DEFAULT_USER_DAILY_CALL_LIMIT_GEMINI = 200;
 
 export function dailyCostLimitUsd(provider: OcrProvider): number {
   const envByProvider: Record<OcrProvider, string | undefined> = {
@@ -81,11 +87,19 @@ export function dailyCostLimitUsd(provider: OcrProvider): number {
     : DEFAULT_DAILY_COST_LIMIT_USD[provider];
 }
 
-function userDailyCallLimit(): number {
-  const parsed = Number(process.env.OCR_USER_DAILY_CALL_LIMIT);
-  return Number.isFinite(parsed) && parsed > 0
-    ? Math.floor(parsed)
-    : DEFAULT_USER_DAILY_CALL_LIMIT;
+function userDailyCallLimit(provider: OcrProvider): number {
+  // gemini는 전용 env(OCR_USER_DAILY_CALL_LIMIT_GEMINI)만 본다 — 공용 env가
+  // 유료 변환 기준으로 커져 있어도 무료 기능 상한이 따라 커지지 않게.
+  const envRaw =
+    provider === "gemini"
+      ? process.env.OCR_USER_DAILY_CALL_LIMIT_GEMINI
+      : process.env.OCR_USER_DAILY_CALL_LIMIT;
+  const fallback =
+    provider === "gemini"
+      ? DEFAULT_USER_DAILY_CALL_LIMIT_GEMINI
+      : DEFAULT_USER_DAILY_CALL_LIMIT;
+  const parsed = Number(envRaw);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
 }
 
 // ── 비용 추정 ────────────────────────────────────────────────
@@ -213,7 +227,7 @@ export async function checkAndCountUserCall(
   provider: OcrProvider,
   userId: string
 ): Promise<{ allowed: boolean; count: number; limit: number }> {
-  const limit = userDailyCallLimit();
+  const limit = userDailyCallLimit(provider);
   const key = `ocrcalls:${provider}:${userId}:${kstDayKey()}`;
 
   const results = await redisPipeline([

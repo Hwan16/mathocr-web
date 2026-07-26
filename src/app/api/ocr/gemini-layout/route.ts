@@ -210,17 +210,27 @@ export async function POST(request: NextRequest) {
 
   // trim(): CLI로 env를 넣을 때 셸 인코딩이 BOM(U+FEFF)·개행을 붙일 수 있고,
   // 그러면 fetch가 헤더 값을 거부한다 (2026-07-26 실사고 — JS trim은 BOM도 제거)
+  // 오류 응답에 업스트림/설정 내부 정보를 싣지 않는다 — 모델명은 대외 비공개
+  // 방침이고, 데스크톱 앱은 이 error 문자열을 실패 다이얼로그에 그대로 띄운다.
+  // 원인은 서버 로그에만 남긴다 (2026-07-26 릴리즈 검증 후속).
   const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) {
-    return errorResponse("Gemini API 키가 설정되지 않았습니다.", 500);
+    console.error("[gemini-layout] GEMINI_API_KEY not configured");
+    return errorResponse(
+      "자동 인식 서버 설정에 문제가 있습니다. 잠시 후 다시 시도해주세요.",
+      500
+    );
   }
 
   let model: string;
   try {
     model = resolveModel();
   } catch (error) {
+    console.error("[gemini-layout] invalid model config", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return errorResponse(
-      error instanceof Error ? error.message : "Invalid GEMINI_LAYOUT_MODEL",
+      "자동 인식 서버 설정에 문제가 있습니다. 잠시 후 다시 시도해주세요.",
       500
     );
   }
@@ -292,17 +302,56 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify(geminiBody),
     });
-    const data = await response.json();
+    let data;
+    try {
+      data = await response.json();
+    } catch (parseError) {
+      // 200인데 본문 수신/파싱이 깨진 드문 경우도 과금은 이미 발생 —
+      // 보수 적립 후 바깥 catch(고정 문구 500)로 넘긴다
+      if (response.ok) {
+        await recordCost(
+          "gemini",
+          estimateGeminiCostUsd({
+            promptTokenCount: 2_000,
+            candidatesTokenCount: MAX_OUTPUT_TOKENS,
+          })
+        );
+      }
+      throw parseError;
+    }
     const durationMs = Date.now() - startedAt;
 
+    // 비용 적립은 응답 "해석"보다 먼저 한다 — Google 과금은 이미 발생했으므로,
+    // 잘리거나 깨진 응답(가장 비싼 호출)이 일일 상한·경보 밖으로 새면 안 된다
+    // (2026-07-26 릴리즈 검증에서 발견된 상한 우회 구멍 수정).
+    // usageMetadata가 없으면 최악치(출력 상한 전액)로 보수 적립한다.
+    const usage = data?.usageMetadata ?? {};
+    let estCostUsd = estimateGeminiCostUsd(usage);
+    if (response.ok && !(estCostUsd > 0)) {
+      estCostUsd = estimateGeminiCostUsd({
+        promptTokenCount: 2_000,
+        candidatesTokenCount: MAX_OUTPUT_TOKENS,
+      });
+    }
+    await recordCost("gemini", estCostUsd);
+
     if (!response.ok) {
+      // 업스트림 원본 메시지(모델명 포함 가능)는 로그에만 — 클라이언트에는 고정 문구
+      console.error("[gemini-layout] upstream error", {
+        status: response.status,
+        message:
+          typeof data?.error?.message === "string" ? data.error.message : null,
+      });
       logOcrUsage({
         provider: "gemini", user_id: user.id, ok: false,
         status: response.status, duration_ms: durationMs,
+        est_cost_usd: Number(estCostUsd.toFixed(6)),
       });
-      return NextResponse.json(
-        { error: data.error?.message ?? `Gemini API 오류 (HTTP ${response.status})` },
-        { status: response.status === 429 ? 429 : 502 }
+      return errorResponse(
+        response.status === 429
+          ? "요청이 많아 잠시 후 다시 시도해주세요."
+          : "자동 인식 서버에 일시적인 문제가 발생했습니다. 잠시 후 다시 시도해주세요.",
+        response.status === 429 ? 429 : 502
       );
     }
 
@@ -315,13 +364,11 @@ export async function POST(request: NextRequest) {
       logOcrUsage({
         provider: "gemini", user_id: user.id, ok: false, status: 502,
         duration_ms: durationMs, blocked_reason: "unparseable_response",
+        est_cost_usd: Number(estCostUsd.toFixed(6)),
       });
       return errorResponse("분석 결과를 해석하지 못했습니다. 다시 시도해주세요.", 502);
     }
 
-    const usage = data.usageMetadata ?? {};
-    const estCostUsd = estimateGeminiCostUsd(usage);
-    await recordCost("gemini", estCostUsd);
     logOcrUsage({
       provider: "gemini", user_id: user.id, ok: true, status: 200,
       duration_ms: durationMs, est_cost_usd: Number(estCostUsd.toFixed(6)),
@@ -339,8 +386,12 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
+    // error.message에 업스트림/런타임 내부 정보가 실릴 수 있어 원문은 로그에만
+    console.error("[gemini-layout] proxy error", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return errorResponse(
-      `프록시 오류: ${error instanceof Error ? error.message : "알 수 없는 오류"}`,
+      "자동 인식 서버에 일시적인 문제가 발생했습니다. 잠시 후 다시 시도해주세요.",
       500
     );
   }
