@@ -24,4 +24,7 @@ npm-debug.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# 1회성 발송 스크립트의 수신자 기록 (고객 이메일 — public repo에 커밋 금지)
+scripts/.*_sent.json
+
 .vercel
