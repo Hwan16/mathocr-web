@@ -4,6 +4,7 @@ import {
   useEffect,
   useState,
   useCallback,
+  useMemo,
   useRef,
   type RefObject,
   type ReactNode,
@@ -1127,6 +1128,14 @@ const CONV_STATUS_LABELS: Record<string, string> = {
   pending: "진행 중",
 };
 
+// 자동 인식 사용 행 (0023_auto_detect_usage) — 행 1건 = 페이지 1장 분석
+interface AutoDetectUsageRow {
+  id: string;
+  problem_count: number;
+  figure_count: number;
+  created_at: string;
+}
+
 function DetailSection({
   title,
   children,
@@ -1153,17 +1162,23 @@ function UserDetailModal({
 }) {
   const [events, setEvents] = useState<UserCreditEvent[] | null>(null);
   const [convs, setConvs] = useState<UserConversion[] | null>(null);
+  const [autoDetect, setAutoDetect] = useState<AutoDetectUsageRow[] | null>(
+    null
+  );
   const [logs, setLogs] = useState<ErrorLogEntry[] | null>(null);
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [ev, cv, lg] = await Promise.all([
+      const [ev, cv, ad, lg] = await Promise.all([
         fetch(`/api/credits/history?user_id=${user.id}`).then((r) =>
           r.ok ? r.json() : null
         ),
         fetch(`/api/admin/users/${user.id}/conversions`).then((r) =>
+          r.ok ? r.json() : null
+        ),
+        fetch(`/api/admin/users/${user.id}/auto-detect`).then((r) =>
           r.ok ? r.json() : null
         ),
         fetch(`/api/admin/logs?user_id=${user.id}&limit=20`).then((r) =>
@@ -1173,12 +1188,32 @@ function UserDetailModal({
       if (cancelled) return;
       setEvents(ev?.events ?? []);
       setConvs(cv?.conversions ?? []);
+      setAutoDetect(ad?.usage ?? []);
       setLogs(lg?.logs ?? []);
     })();
     return () => {
       cancelled = true;
     };
   }, [user.id]);
+
+  // 자동 인식 호출(=페이지)을 일자별로 묶는다 — 행이 최신순이라 Map 삽입
+  // 순서가 그대로 최신 날짜부터가 된다
+  const autoDetectDays = useMemo(() => {
+    if (autoDetect === null) return null;
+    const byDay = new Map<
+      string,
+      { pages: number; problems: number; figures: number }
+    >();
+    for (const row of autoDetect) {
+      const day = new Date(row.created_at).toLocaleDateString("ko-KR");
+      const acc = byDay.get(day) ?? { pages: 0, problems: 0, figures: 0 };
+      acc.pages += 1;
+      acc.problems += row.problem_count;
+      acc.figures += row.figure_count;
+      byDay.set(day, acc);
+    }
+    return Array.from(byDay, ([day, v]) => ({ day, ...v }));
+  }, [autoDetect]);
 
   const isExpired =
     user.expires_at && new Date(user.expires_at) < new Date();
@@ -1358,6 +1393,59 @@ function UserDetailModal({
                 </li>
               ))}
             </ul>
+          )}
+        </DetailSection>
+
+        {/* 자동 인식 사용 — 변환 이력 바로 위에 둬서 "자동 인식을 써보고
+            변환까지 갔는지"를 한 화면에서 위→아래로 읽을 수 있게 한다 */}
+        <DetailSection title="자동 인식 사용 (일자별, 최근 200페이지분)">
+          {autoDetectDays === null ? (
+            <p className="text-sm text-zinc-400">불러오는 중…</p>
+          ) : autoDetectDays.length === 0 ? (
+            <p className="text-sm text-zinc-500">
+              자동 인식 사용 기록이 없습니다.
+              <span className="ml-1 text-zinc-400">
+                (2026. 7. 28. 이후 사용분부터 기록됩니다)
+              </span>
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-left text-zinc-500 border-b border-[var(--border-subtle)]">
+                    <th className="py-2 pr-3 font-medium">날짜</th>
+                    <th className="py-2 pr-3 font-medium text-center">
+                      분석 페이지
+                    </th>
+                    <th className="py-2 pr-3 font-medium text-center">
+                      인식 문제
+                    </th>
+                    <th className="py-2 font-medium text-center">인식 그림</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {autoDetectDays.map((d) => (
+                    <tr
+                      key={d.day}
+                      className="border-b border-[var(--border-subtle)] last:border-0"
+                    >
+                      <td className="py-2 pr-3 text-zinc-500 whitespace-nowrap">
+                        {d.day}
+                      </td>
+                      <td className="py-2 pr-3 text-center text-zinc-700">
+                        {d.pages}
+                      </td>
+                      <td className="py-2 pr-3 text-center text-zinc-700">
+                        {d.problems}
+                      </td>
+                      <td className="py-2 text-center text-zinc-700">
+                        {d.figures}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </DetailSection>
 

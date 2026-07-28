@@ -755,3 +755,23 @@ create index if not exists idx_earlybird_signups_created_at
   on public.earlybird_signups (created_at);
 
 alter table public.earlybird_signups enable row level security;
+
+-- ============================================
+-- 15. 자동 인식 사용 기록 (0023)
+-- ============================================
+-- 관리자 유저 상세의 "자동 인식 사용" 섹션용. 호출 1건 = 페이지 1장 분석.
+-- 크레딧 차감 없는 무료 기능이라 conversions에는 안 남으므로 별도 테이블.
+create table if not exists public.auto_detect_usage (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  problem_count integer not null default 0,  -- 이 페이지에서 인식된 문제 수
+  figure_count integer not null default 0,   -- 이 페이지에서 인식된 그림 수
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_auto_detect_usage_user_created
+  on public.auto_detect_usage (user_id, created_at desc);
+create index if not exists idx_auto_detect_usage_created_at
+  on public.auto_detect_usage (created_at);
+
+alter table public.auto_detect_usage enable row level security;

@@ -1,4 +1,5 @@
 import { getAuthUser } from "@/lib/supabase/auth-helper";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { ensureUsableCredits } from "@/lib/supabase/credit-guard";
 import { checkRateLimit } from "@/lib/rate-limit";
 import {
@@ -8,7 +9,7 @@ import {
   estimateGeminiCostUsd,
   logOcrUsage,
 } from "@/lib/ocr-guard";
-import { NextRequest, NextResponse } from "next/server";
+import { after, NextRequest, NextResponse } from "next/server";
 
 // 자동 영역 인식 프록시 (v2.2.0)
 // 데스크톱 앱 → 우리 서버 → Gemini API (API 키는 서버에만).
@@ -375,6 +376,36 @@ export async function POST(request: NextRequest) {
       input_tokens: usage.promptTokenCount ?? 0,
       output_tokens:
         (usage.candidatesTokenCount ?? 0) + (usage.thoughtsTokenCount ?? 0),
+    });
+
+    // 관리자 유저 상세 "자동 인식 사용" 표시용 영구 기록 (0023). 위 콘솔
+    // 로그와 달리 Supabase에 남는다. after()로 응답 반환 뒤에 실행해 분석
+    // 응답 지연에 더해지지 않으며(Vercel이 함수 종료 전 완료 보장), 테이블
+    // 미적용·일시 장애로 실패해도 로그만 남긴다 (fail-open).
+    const figureCount = problems.reduce((n, p) => n + p.figures.length, 0);
+    const problemCount = problems.length;
+    after(async () => {
+      try {
+        const { error: usageInsertError } = await createAdminClient()
+          .from("auto_detect_usage")
+          .insert({
+            user_id: user.id,
+            problem_count: problemCount,
+            figure_count: figureCount,
+          });
+        if (usageInsertError) {
+          console.error("[gemini-layout] usage insert failed", {
+            message: usageInsertError.message,
+          });
+        }
+      } catch (usageInsertError) {
+        console.error("[gemini-layout] usage insert failed", {
+          error:
+            usageInsertError instanceof Error
+              ? usageInsertError.message
+              : String(usageInsertError),
+        });
+      }
     });
 
     return NextResponse.json({
