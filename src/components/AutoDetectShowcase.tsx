@@ -6,9 +6,10 @@
 export default function AutoDetectShowcase() {
   return (
     <div className="rounded-xl border border-zinc-300 bg-white shadow-[0_24px_64px_-16px_rgba(24,24,27,0.18)] overflow-hidden select-none">
-      {/* 툴바 — 자동 인식 버튼이 주인공 */}
-      <div className="flex items-center gap-1.5 px-3 h-11 border-b border-zinc-200 bg-white whitespace-nowrap overflow-hidden">
-        <span className="px-2 py-1 border border-zinc-200 rounded-md text-[10px] text-zinc-600">
+      {/* 툴바 — 자동 인식 버튼이 주인공. 좁은 화면(모바일·태블릿 반쪽 카드)에서는
+          강조 버튼이 잘리는 대신 [✨ 자동 인식]+NEW 묶음이 둘째 줄로 내려온다 */}
+      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-2 px-3 py-2 min-h-11 border-b border-zinc-200 bg-white">
+        <span className="px-2 py-1 border border-zinc-200 rounded-md text-[10px] text-zinc-600 whitespace-nowrap">
           파일 열기
         </span>
         <span className="px-2.5 py-1 rounded-lg bg-sky-500 text-white text-[10px] font-semibold">
@@ -20,14 +21,16 @@ export default function AutoDetectShowcase() {
         <span className="px-2.5 py-1 rounded-lg border border-zinc-200 bg-white text-zinc-500 text-[10px]">
           해설
         </span>
-        <span className="relative ml-2" aria-hidden>
-          <span className="absolute -inset-1.5 rounded-xl bg-violet-400/40 blur-md animate-pulse" />
-          <span className="relative inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-gradient-to-br from-[#7C3AED] to-[#8B5CF6] text-white text-[10px] font-bold shadow-sm">
-            ✨ 자동 인식
+        <span className="ml-2 flex items-center gap-1.5">
+          <span className="relative" aria-hidden>
+            <span className="absolute -inset-1.5 rounded-xl bg-violet-400/40 blur-md animate-pulse" />
+            <span className="relative inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-gradient-to-br from-[#7C3AED] to-[#8B5CF6] text-white text-[10px] font-bold shadow-sm whitespace-nowrap">
+              ✨ 자동 인식
+            </span>
           </span>
-        </span>
-        <span className="text-[9px] font-bold tracking-wide text-violet-700 bg-violet-100 rounded-full px-2 py-0.5">
-          NEW
+          <span className="text-[9px] font-bold tracking-wide text-violet-700 bg-violet-100 rounded-full px-2 py-0.5">
+            NEW
+          </span>
         </span>
       </div>
 
