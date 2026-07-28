@@ -42,6 +42,13 @@ function SignupForm() {
   // 마케팅 수신 동의 (LA-09) — 순수 선택·기본 해제. 얼리버드 등 혜택 지급과
   // 무관하며, 체크하지 않아도 가입·혜택에 아무 영향이 없다.
   const [agreeMarketing, setAgreeMarketing] = useState(false);
+  // 전체 동의 — 별도 상태 없이 세 항목에서 파생. 개별 해제하면 자동으로 풀린다.
+  const allAgreed = agreeTerms && agreePrivacy && agreeMarketing;
+  function handleAgreeAll(checked: boolean) {
+    setAgreeTerms(checked);
+    setAgreePrivacy(checked);
+    setAgreeMarketing(checked);
+  }
   const [loading, setLoading] = useState(false);
   // 이메일 인증(Confirm email)이 켜진 경우: 가입 후 "메일 확인" 안내 화면으로 전환
   const [confirmEmailSent, setConfirmEmailSent] = useState(false);
@@ -438,6 +445,26 @@ function SignupForm() {
 
             {/* 약관 동의 (이용약관 / 개인정보 수집·이용을 각각 구분하여 받음) */}
             <div className="space-y-2.5 rounded-lg border border-zinc-200 p-4">
+              {/* 전체 동의 — 선택 항목(마케팅 수신) 포함임을 명시해야 하며,
+                  아래 개별 항목의 (필수)/(선택) 구분·개별 해제는 그대로 유지한다 */}
+              <div className="flex items-start gap-3 pb-2.5 border-b border-zinc-200">
+                <input
+                  type="checkbox"
+                  id="agree-all"
+                  checked={allAgreed}
+                  onChange={(e) => handleAgreeAll(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded border-zinc-300 accent-[var(--accent)] cursor-pointer shrink-0"
+                />
+                <label
+                  htmlFor="agree-all"
+                  className="text-sm font-semibold text-zinc-800 leading-snug cursor-pointer"
+                >
+                  전체 동의
+                  <span className="mt-0.5 block text-[11px] font-normal text-zinc-400">
+                    선택 항목을 포함해 모두 동의합니다. 개별로 해제할 수 있어요.
+                  </span>
+                </label>
+              </div>
               <div className="flex items-start gap-3">
                 <input
                   type="checkbox"
