@@ -109,10 +109,12 @@ export async function claimPendingPromo(
     // 실패 사유(promo_pending_error)는 app_metadata 에 기록한다 — 관리자 화면이
     // 이 값을 상태 배지로 신뢰하는데, user_metadata 는 본인 세션으로
     // supabase.auth.updateUser 를 호출해 마음대로 위조·삭제할 수 있기 때문.
-    const existingMetadata = user.user_metadata ?? {};
+    // GoTrue 는 user_metadata/app_metadata 를 병합(merge)한다: 보낸 키만 갱신되고
+    // null 은 키 삭제. 요청 시점 스냅샷을 통째로 되보내면 동시 로그인(웹+데스크톱)
+    // 등에서 다른 정리 작업이 지운 키가 옛 값으로 되살아날 수 있어 의도한 키만
+    // 보낸다 (2026-07-30 pending_promo_code 되살아남 사고와 같은 계열).
     const { error: metadataError } = await admin.auth.admin.updateUserById(user.id, {
       user_metadata: {
-        ...existingMetadata,
         pending_promo_code: null,
         ...(success || ownRedemption ? { promo_code: code } : {}),
       },
@@ -120,7 +122,6 @@ export async function claimPendingPromo(
         ? {}
         : {
             app_metadata: {
-              ...(user.app_metadata ?? {}),
               promo_pending_error: errorCode,
             },
           }),

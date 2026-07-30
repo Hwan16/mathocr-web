@@ -97,9 +97,12 @@ export async function claimPendingMarketingConsent(
   }
 
   // (3) pending 플래그 정리 — 실패해도 다음 로그인 때 멱등하게 재처리된다.
-  const existingMetadata = user.user_metadata ?? {};
+  // GoTrue 는 user_metadata 를 병합(merge)한다: 보낸 키만 갱신되고 null 은 키 삭제.
+  // 요청 시점 스냅샷을 통째로 되보내면 직전에 claimPendingPromo 가 지운
+  // pending_promo_code 가 스냅샷의 옛 값으로 되살아나므로(2026-07-30 관리자
+  // 화면 '지급 대기' 오표시 사고) 의도한 키만 보낸다.
   const { error: metadataError } = await admin.auth.admin.updateUserById(user.id, {
-    user_metadata: { ...existingMetadata, pending_marketing_opt_in: null },
+    user_metadata: { pending_marketing_opt_in: null },
   });
   if (metadataError) {
     console.warn("[marketing-consent] metadata cleanup failed", {
