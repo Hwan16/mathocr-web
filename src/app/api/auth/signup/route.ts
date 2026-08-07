@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { isDisposableEmail, emailDomain } from "@/lib/disposable-email";
 import { claimPendingPromo } from "@/lib/promo-claim";
 import { claimPendingMarketingConsent } from "@/lib/marketing-consent";
 import { CONSENT_VERSION } from "@/lib/consent";
@@ -128,6 +129,24 @@ export async function POST(request: NextRequest) {
   if (!email || !password) {
     return NextResponse.json(
       { error: "이메일과 비밀번호를 입력해주세요." },
+      { status: 400 }
+    );
+  }
+
+  // 일회용(임시) 메일 차단 — 무료 크레딧 파밍 방어의 2차 저지선.
+  // IP 제한(위)은 VPN 로테이션으로 뚫리므로, 계정을 무한히 찍어내는 근원인
+  // 임시 메일 주소 자체를 막는다 (2026-08-08 사고 대응, lib/disposable-email.ts).
+  if (isDisposableEmail(email)) {
+    // 새 도메인으로 갈아타는지 관찰하려면 이 경고를 본다 (Vercel 함수 로그).
+    console.warn("[signup] disposable email blocked", {
+      domain: emailDomain(email),
+      ip: clientIp,
+    });
+    return NextResponse.json(
+      {
+        error:
+          "일회용 이메일 주소로는 가입할 수 없습니다. 평소 사용하는 이메일 주소를 입력해주세요.",
+      },
       { status: 400 }
     );
   }
