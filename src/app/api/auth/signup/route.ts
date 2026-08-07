@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { isDisposableEmail, emailDomain } from "@/lib/disposable-email";
+import { checkSignupSurge, checkBlockedSignupSurge } from "@/lib/signup-alert";
 import { claimPendingPromo } from "@/lib/promo-claim";
 import { claimPendingMarketingConsent } from "@/lib/marketing-consent";
 import { CONSENT_VERSION } from "@/lib/consent";
@@ -138,10 +139,13 @@ export async function POST(request: NextRequest) {
   // 임시 메일 주소 자체를 막는다 (2026-08-08 사고 대응, lib/disposable-email.ts).
   if (isDisposableEmail(email)) {
     // 새 도메인으로 갈아타는지 관찰하려면 이 경고를 본다 (Vercel 함수 로그).
+    const blockedDomain = emailDomain(email);
     console.warn("[signup] disposable email blocked", {
-      domain: emailDomain(email),
+      domain: blockedDomain,
       ip: clientIp,
     });
+    // 차단이 잦아지면 공격이 다시 온 것 — 계정이 안 생겨도 알 수 있게 경보한다.
+    await checkBlockedSignupSurge(blockedDomain);
     return NextResponse.json(
       {
         error:
@@ -309,6 +313,12 @@ export async function POST(request: NextRequest) {
       });
     }
   }
+
+  // 가입 급증 감시 — 최근 1시간 가입이 임계를 넘으면 관리자에게 경보 메일.
+  // 미인증 가입도 세는 것이 맞다: 어뷰징은 인증까지 자동으로 마치므로 인증 완료만
+  // 세면 늦고, 무엇보다 "계정이 폭증하는 중"이라는 사실 자체가 신호다.
+  // 내부에서 모든 예외를 삼키므로 가입 성공에는 영향이 없다.
+  await checkSignupSurge();
 
   // 이메일 인증(Confirm email)이 켜져 있으면 세션 없이 반환된다 →
   // 클라이언트는 "인증 메일을 확인하세요" 화면으로 분기한다.
