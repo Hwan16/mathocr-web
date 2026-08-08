@@ -280,7 +280,7 @@ type Candidate = {
 type Scanned = Candidate & {
   grant: boolean;
   mail: boolean;
-  skip: "already_granted" | "unconfirmed" | "mail_budget_deferred" | null;
+  skip: "already_granted" | "unconfirmed" | "banned" | "mail_budget_deferred" | null;
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -681,8 +681,10 @@ export async function GET(req: NextRequest) {
         continue;
       }
 
-      // 이메일 인증 확인 — 미인증(또는 조회 실패)이면 지급·메일 모두 제외 (fail-closed)
+      // 이메일 인증 + 정지 여부 확인 — 같은 조회 1회로 둘 다 판정한다.
+      // 미인증·정지·조회 실패는 모두 지급·메일 제외 (fail-closed).
       let confirmed = false;
+      let banned = false;
       try {
         const { data: userData, error: userError } = await supabase.auth.admin.getUserById(p.id);
         if (userError) {
@@ -692,6 +694,15 @@ export async function GET(req: NextRequest) {
           });
         } else {
           confirmed = !!userData?.user?.email_confirmed_at;
+          // 정지 계정 제외 (2026-08-08 어뷰징 사고 후속).
+          // 어뷰징으로 정지시킨 계정이라도, 정지 시점에 진행 중이던 변환이
+          // stale-conversions cron 으로 자동 환불되면 잔여 크레딧이 MIN_LOST 를
+          // 넘어 이 재지급의 후보가 된다 — 실제로 2계정이 만료일에 30크레딧씩
+          // 받을 뻔했다. banned_until 은 GoTrue 가 미래 시각으로 세팅하며,
+          // 정지 해제 시 과거/null 이 되므로 "미래인지"로 판정한다.
+          const bannedUntil = (userData?.user as { banned_until?: string | null } | undefined)
+            ?.banned_until;
+          banned = !!bannedUntil && new Date(bannedUntil).getTime() > Date.now();
         }
       } catch (lookupError) {
         console.warn("[expiry-regrant] user lookup threw — skipping (fail-closed)", {
@@ -701,6 +712,11 @@ export async function GET(req: NextRequest) {
       }
       if (!confirmed) {
         scanned.push({ ...p, grant: false, mail: false, skip: "unconfirmed" });
+        continue;
+      }
+      if (banned) {
+        console.info("[expiry-regrant] banned account — skipped", { user_id: p.id });
+        scanned.push({ ...p, grant: false, mail: false, skip: "banned" });
         continue;
       }
 
