@@ -37,6 +37,24 @@ function SignupForm() {
   // 코드에 유효기간이 지정된 경우(일수) — 가입 시 만료일이 최소 now()+n일로 연장됨
   const [promoValidityDays, setPromoValidityDays] = useState<number | null>(null);
   const [error, setError] = useState("");
+  // 지메일 점(.) 실시간 판정 — 서버(api/auth/signup)와 같은 규칙을 화면에서 미리 알린다.
+  // 지메일 계열만 대상. 회사·학교 메일은 점이 의미를 가지므로 건드리지 않는다.
+  const dottedGmail = (() => {
+    const at = email.trim().toLowerCase().lastIndexOf("@");
+    if (at <= 0) return false;
+    const [local, domain] = [
+      email.trim().toLowerCase().slice(0, at),
+      email.trim().toLowerCase().slice(at + 1),
+    ];
+    return (domain === "gmail.com" || domain === "googlemail.com") && local.includes(".");
+  })();
+  const suggestedGmail = dottedGmail
+    ? (() => {
+        const t = email.trim().toLowerCase();
+        const at = t.lastIndexOf("@");
+        return `${t.slice(0, at).split(".").join("")}@${t.slice(at + 1)}`;
+      })()
+    : "";
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [agreePrivacy, setAgreePrivacy] = useState(false);
   // 마케팅 수신 동의 (LA-09) — 순수 선택·기본 해제. 얼리버드 등 혜택 지급과
@@ -141,6 +159,14 @@ function SignupForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+
+    // 지메일 점(.) — 서버가 400으로 막지만, 헛클릭 없이 즉시 안내한다.
+    if (dottedGmail) {
+      setError(
+        `지메일은 점(.)을 무시해서 같은 메일함으로 도착합니다. 점을 뺀 ${suggestedGmail} 로 가입해주세요.`
+      );
+      return;
+    }
 
     if (password.length < 6) {
       setError("비밀번호는 6자 이상이어야 합니다.");
@@ -355,8 +381,32 @@ function SignupForm() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="example@email.com"
                 required
-                className="w-full px-4 py-3 rounded-lg bg-white border border-zinc-300 text-zinc-900 placeholder-zinc-400 text-sm focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-border)] transition-colors"
+                aria-invalid={dottedGmail}
+                // 오류 테두리는 인라인으로 준다 — 유틸리티 클래스가 캐스케이드에서
+                // 밀려 색이 안 먹는 것을 확인했다(2026-08-08 실측).
+                style={dottedGmail ? { borderColor: "#ef4444" } : undefined}
+                className="w-full px-4 py-3 rounded-lg bg-white text-zinc-900 placeholder-zinc-400 text-sm border border-zinc-300 focus:outline-none focus:ring-2 focus:border-[var(--accent)] focus:ring-[var(--accent-border)] transition-colors"
               />
+              {/* 지메일 점(.) 안내 — 서버도 같은 규칙으로 막지만, 제출 전에 바로 알려준다.
+                  지메일은 점을 무시하므로 점을 뺀 주소가 같은 메일함이다(계정 무한 증식 차단). */}
+              {dottedGmail && (
+                <p className="mt-1.5 text-xs text-red-600">
+                  지메일은 점(.)을 무시해서 같은 메일함으로 도착합니다. 점을 빼고
+                  입력해주세요.
+                  {suggestedGmail && (
+                    <>
+                      {" "}
+                      <button
+                        type="button"
+                        onClick={() => setEmail(suggestedGmail)}
+                        className="underline font-medium"
+                      >
+                        {suggestedGmail}(으)로 고치기
+                      </button>
+                    </>
+                  )}
+                </p>
+              )}
             </div>
 
             <div>

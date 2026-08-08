@@ -3,6 +3,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { isDisposableEmail, emailDomain } from "@/lib/disposable-email";
 import { checkSignupSurge, checkBlockedSignupSurge } from "@/lib/signup-alert";
+import { isDottedGmail } from "@/lib/email";
+import { isDatacenterIp } from "@/lib/datacenter-ip";
 import { claimPendingPromo } from "@/lib/promo-claim";
 import { claimPendingMarketingConsent } from "@/lib/marketing-consent";
 import { CONSENT_VERSION } from "@/lib/consent";
@@ -176,6 +178,39 @@ export async function POST(request: NextRequest) {
       {
         error:
           "별칭(+)이 포함된 이메일 주소로는 가입할 수 없습니다. 기본 이메일 주소로 가입해주세요.",
+      },
+      { status: 400 }
+    );
+  }
+
+  // 지메일 점(.) 차단 — 4차 저지선 (2026-08-08 사용자 결정).
+  // 지메일은 점을 무시하므로 a.b@ / ab@ / a.b.c@ 가 전부 같은 메일함이다.
+  // 별칭(+)을 막으면 이게 다음 우회로가 되므로, 지메일 계열만 점을 막아
+  // 메일함 하나당 쓸 수 있는 주소를 하나로 고정한다.
+  // 회사·학교 메일은 점이 의미를 가지므로 대상이 아니다(lib/email.ts 주석 참조).
+  if (isDottedGmail(email)) {
+    console.warn("[signup] dotted gmail blocked", { ip: clientIp });
+    await checkBlockedSignupSurge(emailDomain(email));
+    return NextResponse.json(
+      {
+        error:
+          "지메일은 점(.)을 무시하기 때문에 점이 없는 주소로만 가입할 수 있습니다. 점을 빼고 입력해주세요. (예: hong.gil@gmail.com → honggil@gmail.com — 같은 메일함으로 도착합니다)",
+      },
+      { status: 400 }
+    );
+  }
+
+  // 데이터센터·VPN IP 차단 — 5차 저지선 (2026-08-08).
+  // 이메일 트릭은 계속 바뀌지만 접속 경로는 바꾸기 어렵다. 실측상 정상 고객은
+  // 전원 한국 가정용·모바일 회선이고 어뷰징은 전원 해외 데이터센터라 겹침이 없다.
+  // 판정 불가(IPv6·형식 오류·IP 없음)는 통과시킨다(fail-open).
+  if (isDatacenterIp(clientIp)) {
+    console.warn("[signup] datacenter/vpn ip blocked", { ip: clientIp });
+    await checkBlockedSignupSurge(emailDomain(email));
+    return NextResponse.json(
+      {
+        error:
+          "VPN·프록시 환경에서는 가입할 수 없습니다. VPN을 끄고 다시 시도해주세요.",
       },
       { status: 400 }
     );
