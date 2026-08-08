@@ -155,6 +155,32 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // 메일 별칭(+) 가입 차단 — 3차 저지선 (2026-08-08 낮 2차 어뷰징 대응).
+  // 일회용 도메인이 막히자 같은 공격자가 진짜 MS 계정 ~20개에 +별칭을 붙여
+  // 2시간 만에 26계정을 만들었다 (pzfepxa9743f+a, pzfepxa9743f+b, ...).
+  // +별칭은 하나의 실계정으로 무한 가입이 가능한 통로라 가입 자체를 막는다.
+  // 정상 가입자가 +를 쓰는 경우는 드물고, 기본 주소로 안내하면 그대로 가입 가능.
+  // 프로모션 중복은 normalizeEmailAlias(0013)가 이미 접고 있으므로 이 차단은
+  // "계정 수 × 가입 무료 크레딧" 증식을 끊는 것이 목적.
+  // 해제가 필요하면 env ALLOW_PLUS_ALIAS_SIGNUP=true (배포 불필요).
+  if (
+    process.env.ALLOW_PLUS_ALIAS_SIGNUP !== "true" &&
+    email.split("@")[0]?.includes("+")
+  ) {
+    console.warn("[signup] plus-alias email blocked", {
+      domain: emailDomain(email),
+      ip: clientIp,
+    });
+    await checkBlockedSignupSurge(emailDomain(email));
+    return NextResponse.json(
+      {
+        error:
+          "별칭(+)이 포함된 이메일 주소로는 가입할 수 없습니다. 기본 이메일 주소로 가입해주세요.",
+      },
+      { status: 400 }
+    );
+  }
+
   if (password.length < 6) {
     return NextResponse.json(
       { error: "비밀번호는 6자 이상이어야 합니다." },
