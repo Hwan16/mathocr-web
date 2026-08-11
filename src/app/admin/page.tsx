@@ -12,7 +12,14 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 
-type Tab = "users" | "logs" | "stats" | "reports" | "refunds" | "promos";
+type Tab =
+  | "users"
+  | "payments"
+  | "logs"
+  | "stats"
+  | "reports"
+  | "refunds"
+  | "promos";
 
 interface AdminUser {
   id: string;
@@ -193,6 +200,7 @@ export default function AdminPage() {
 
   const tabs: { key: Tab; label: string }[] = [
     { key: "users", label: "유저 관리" },
+    { key: "payments", label: "결제 내역" },
     { key: "promos", label: "프로모션 코드" },
     { key: "reports", label: "변환 리포트" },
     { key: "refunds", label: "크레딧 반환" },
@@ -251,6 +259,7 @@ export default function AdminPage() {
         <PaymentRecoveryNotice />
 
         {tab === "users" && <UsersTab />}
+        {tab === "payments" && <PaymentsTab />}
         {tab === "promos" && <PromosTab />}
         {tab === "reports" && <ReportsTab />}
         {tab === "refunds" && <RefundsTab />}
@@ -3009,6 +3018,300 @@ function RefundsTab() {
       {totalPages > 1 && (
         <div className="px-6 py-4 border-t border-[var(--border-subtle)] flex items-center justify-between">
           <span className="text-sm text-zinc-500">{total}건</span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="px-3 py-1 rounded-lg text-sm border border-[var(--border-light)] text-zinc-600 disabled:opacity-30"
+            >
+              이전
+            </button>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="px-3 py-1 rounded-lg text-sm border border-[var(--border-light)] text-zinc-600 disabled:opacity-30"
+            >
+              다음
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── 결제 내역 탭 ──
+   "이 날 결제가 있었는데 누가 했지?"를 관리자 화면에서 바로 확인하기 위한 목록.
+   통계 탭은 건수·금액만 집계하므로 결제자 이메일은 여기서만 볼 수 있다.
+   기간 필터 없이 최신순 전체를 보여준다. */
+type PaymentKind =
+  | "purchase"
+  | "promo"
+  | "admin_grant"
+  | "admin_recover"
+  | "report_reward"
+  | "manual_grant"
+  | "other";
+
+interface PaymentEntry {
+  id: string;
+  user_id: string | null;
+  email: string | null;
+  withdrawn: boolean;
+  amount: number;
+  credits_added: number;
+  plan_name: string | null;
+  kind: PaymentKind;
+  pg_transaction_id: string | null;
+  status: string;
+  created_at: string;
+}
+
+const PAYMENT_KIND_LABELS: Record<PaymentKind, string> = {
+  purchase: "카드 결제",
+  promo: "프로모션",
+  admin_grant: "관리자 지급",
+  admin_recover: "관리자 회수",
+  report_reward: "리포트 보상",
+  manual_grant: "수동 지급",
+  other: "기타",
+};
+
+const PAYMENT_STATUS_LABELS: Record<string, string> = {
+  completed: "완료",
+  pending: "대기",
+  failed: "실패",
+  refunded: "환불",
+};
+
+function PaymentsTab() {
+  const [payments, setPayments] = useState<PaymentEntry[]>([]);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [revenue, setRevenue] = useState(0);
+  const [revenueTruncated, setRevenueTruncated] = useState(false);
+  // payments 테이블에는 프로모션·관리자 지급(0원)도 함께 쌓인다. 기본은 실결제만
+  // 보여주고, 크레딧이 어디서 들어왔는지 추적할 때만 토글로 펼친다.
+  const [includeFree, setIncludeFree] = useState(false);
+  const [filterUserId, setFilterUserId] = useState<string | null>(null);
+  const [filterEmail, setFilterEmail] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const limit = 50;
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+    });
+    if (includeFree) params.set("include", "all");
+    if (filterUserId) params.set("user_id", filterUserId);
+
+    try {
+      const res = await fetch(`/api/admin/payments/list?${params.toString()}`);
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        setPayments([]);
+        setTotal(0);
+        setRevenue(0);
+        setError(data?.error ?? "결제 내역을 불러오지 못했습니다.");
+        return;
+      }
+      setPayments((data.payments as PaymentEntry[]) ?? []);
+      setTotal(data.total ?? 0);
+      setRevenue(data.revenue ?? 0);
+      setRevenueTruncated(data.revenue_truncated === true);
+    } catch {
+      setPayments([]);
+      setTotal(0);
+      setRevenue(0);
+      setError("결제 내역을 불러오지 못했습니다. 네트워크를 확인해주세요.");
+    } finally {
+      setLoading(false);
+    }
+  }, [page, includeFree, filterUserId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  function toggleUser(userId: string | null, email: string | null) {
+    // 탈퇴 회원은 user_id가 없어 필터 대상이 될 수 없다.
+    if (!userId) return;
+    if (filterUserId === userId) {
+      setFilterUserId(null);
+      setFilterEmail(null);
+    } else {
+      setFilterUserId(userId);
+      setFilterEmail(email);
+    }
+    setPage(1);
+  }
+
+  const totalPages = Math.ceil(total / limit);
+
+  return (
+    <div className="bezel-card rounded-2xl overflow-hidden">
+      <div className="px-6 py-4 border-b border-[var(--border-subtle)] flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h2 className="text-lg font-semibold">
+            결제 내역{" "}
+            <span className="text-sm font-normal text-zinc-500">({total}건)</span>
+          </h2>
+          {/* 통계 탭 매출과 같은 기준(완료·유료)으로 집계한다 — 기준이 다르면
+              두 화면의 매출이 어긋나 보인다. */}
+          <p className="text-xs text-zinc-500 mt-0.5">
+            실결제 합계{" "}
+            <span className="font-semibold text-zinc-700">
+              {revenue.toLocaleString()}원{revenueTruncated && " 이상"}
+            </span>
+            <span className="text-zinc-400"> (환불 제외)</span>
+            {filterEmail ? " · 선택한 유저 기준" : ""}
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          {filterEmail && (
+            <button
+              onClick={() => {
+                setFilterUserId(null);
+                setFilterEmail(null);
+                setPage(1);
+              }}
+              className="flex items-center gap-2 text-xs px-3 py-1 rounded-full bg-[var(--accent)]/10 text-[var(--accent)] border border-[var(--accent)]/20 hover:opacity-80 transition-opacity"
+            >
+              {filterEmail}
+              <span>✕</span>
+            </button>
+          )}
+          <label className="flex items-center gap-1.5 text-xs text-zinc-600 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={includeFree}
+              onChange={(e) => {
+                setIncludeFree(e.target.checked);
+                setPage(1);
+              }}
+              className="accent-[var(--accent)]"
+            />
+            무료 지급 포함
+          </label>
+          <button
+            onClick={load}
+            className="text-xs px-3 py-1.5 rounded-lg border border-[var(--border-light)] text-zinc-600 hover:bg-zinc-50 transition-colors"
+          >
+            새로고침
+          </button>
+        </div>
+      </div>
+
+      {error ? (
+        <div className="px-6 py-12 text-center text-red-600 text-sm">{error}</div>
+      ) : loading ? (
+        <div className="px-6 py-12 text-center text-zinc-500">불러오는 중…</div>
+      ) : payments.length === 0 ? (
+        <div className="px-6 py-12 text-center text-zinc-500">
+          {filterEmail
+            ? `${filterEmail}의 결제 내역이 없습니다.`
+            : includeFree
+              ? "내역이 없습니다."
+              : "결제 내역이 없습니다."}
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-zinc-500 border-b border-[var(--border-subtle)]">
+                <th className="px-6 py-3 font-medium">결제일시</th>
+                <th className="px-6 py-3 font-medium">유저</th>
+                <th className="px-6 py-3 font-medium">구분</th>
+                <th className="px-6 py-3 font-medium text-right">금액</th>
+                <th className="px-6 py-3 font-medium text-center">크레딧</th>
+                <th className="px-6 py-3 font-medium text-center">상태</th>
+                <th className="px-6 py-3 font-medium">거래 ID</th>
+              </tr>
+            </thead>
+            <tbody>
+              {payments.map((p) => (
+                <tr
+                  key={p.id}
+                  className="border-b border-[var(--border-subtle)] last:border-0 hover:bg-zinc-50"
+                >
+                  <td className="px-6 py-3 text-zinc-600 whitespace-nowrap">
+                    {new Date(p.created_at).toLocaleString("ko-KR")}
+                  </td>
+                  <td className="px-6 py-3">
+                    {p.user_id ? (
+                      <button
+                        onClick={() => toggleUser(p.user_id, p.email)}
+                        className={`hover:text-[var(--accent)] transition-colors ${
+                          filterUserId === p.user_id
+                            ? "text-[var(--accent)] font-semibold"
+                            : "text-zinc-700"
+                        }`}
+                      >
+                        {p.email ?? p.user_id.slice(0, 8)}
+                      </button>
+                    ) : (
+                      <span className="text-zinc-500">
+                        {p.email ?? "(알 수 없음)"}
+                        <span className="ml-1.5 text-[11px] text-zinc-400">탈퇴</span>
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-6 py-3 text-zinc-700">
+                    {p.kind === "purchase"
+                      ? (p.plan_name ?? "카드 결제")
+                      : PAYMENT_KIND_LABELS[p.kind]}
+                  </td>
+                  <td
+                    className={`px-6 py-3 text-right whitespace-nowrap ${
+                      p.amount > 0 ? "font-semibold text-zinc-900" : "text-zinc-400"
+                    }`}
+                  >
+                    {p.amount > 0 ? `${p.amount.toLocaleString()}원` : "—"}
+                  </td>
+                  {/* 어뷰징 대응 회수 기록은 credits_added가 음수다 — 부호를 값에서
+                      직접 만들어 "+-25" 같은 표기를 막는다. */}
+                  <td
+                    className={`px-6 py-3 text-center ${
+                      p.credits_added < 0 ? "text-red-600 font-medium" : "text-zinc-600"
+                    }`}
+                  >
+                    {p.credits_added > 0 ? `+${p.credits_added}` : p.credits_added}
+                  </td>
+                  <td className="px-6 py-3 text-center">
+                    <span
+                      className={`text-xs px-2 py-0.5 rounded-full border ${
+                        p.status === "completed"
+                          ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                          : p.status === "failed"
+                            ? "bg-red-500/10 text-red-600 border-red-500/20"
+                            : "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                      }`}
+                    >
+                      {PAYMENT_STATUS_LABELS[p.status] ?? p.status}
+                    </span>
+                  </td>
+                  <td
+                    className="px-6 py-3 text-xs text-zinc-400 max-w-[180px] truncate"
+                    title={p.pg_transaction_id ?? ""}
+                  >
+                    {p.pg_transaction_id ?? "—"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="px-6 py-4 border-t border-[var(--border-subtle)] flex items-center justify-between">
+          <span className="text-sm text-zinc-500">
+            {page} / {totalPages} 페이지 · 총 {total}건
+          </span>
           <div className="flex gap-2">
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
