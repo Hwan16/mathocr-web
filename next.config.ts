@@ -39,7 +39,13 @@ const devConnectSrc = isDev ? " ws://localhost:* http://localhost:*" : "";
 
 const CSP_ENFORCED = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${devScriptSrc} https://www.googletagmanager.com https://connect.facebook.net https://pay.nicepay.co.kr https://wcs.naver.net`,
+  // ssl.pstatic.net — 네이버 wcslog.js 가 **실행 중에 2차로** 불러오는 모듈
+  // (gfp-nac-module/synchronizer.js). 우리 코드에는 이 주소가 없어 번들 정적
+  // 분석으로는 안 잡히고, Report-Only 관찰에서도 놓쳤다가 2026-08-12 enforce 승격
+  // 직후 프로덕션에서 실제 차단으로 발견했다.
+  // ⚠️ 교훈: 서드파티 추적 스크립트는 자기가 또 다른 스크립트를 부른다.
+  //    CSP 를 손댈 때는 배포 후 반드시 실제 브라우저로 재확인할 것.
+  `script-src 'self' 'unsafe-inline'${devScriptSrc} https://www.googletagmanager.com https://connect.facebook.net https://pay.nicepay.co.kr https://wcs.naver.net https://ssl.pstatic.net`,
   "style-src 'self' 'unsafe-inline'",
   // analytics.google.com(GA4 수집 지역 변형)·www.google.com/co.kr(구글 애즈 전환
   // 링커 핑)은 프로덕션 Report-Only 실관찰(2026-07-18)에서 확인돼 추가 — 빠지면
@@ -47,7 +53,9 @@ const CSP_ENFORCED = [
   // *.supabase.co — 관리자 신고 이미지가 Storage 서명 URL로 표시된다
   // (admin/reports 의 createSignedUrls). enforce 승격 전 필수 게이트였던 P1-6 항목:
   // 빠진 채 켜면 관리자 화면에서 신고 이미지만 안 보인다.
-  "img-src 'self' data: blob: https://*.supabase.co https://www.facebook.com https://www.googletagmanager.com https://*.google-analytics.com https://www.google.com https://www.google.co.kr https://wcs.naver.net https://wcs.naver.com",
+  // ssl.pstatic.net 병기 — 네이버 모듈이 픽셀 이미지 방식도 쓸 수 있다(정적 CDN이라
+  // 데이터를 받는 엔드포인트가 아니므로 허용 위험이 사실상 없다).
+  "img-src 'self' data: blob: https://*.supabase.co https://www.facebook.com https://www.googletagmanager.com https://*.google-analytics.com https://www.google.com https://www.google.co.kr https://wcs.naver.net https://wcs.naver.com https://ssl.pstatic.net",
   "font-src 'self' data:",
   `connect-src 'self'${devConnectSrc} https://*.supabase.co wss://*.supabase.co https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://www.googletagmanager.com https://stats.g.doubleclick.net https://www.google.com https://www.google.co.kr https://www.facebook.com https://connect.facebook.net https://wcs.naver.net https://wcs.naver.com`,
   // www.facebook.com — 메타 픽셀이 iframe·form POST 폴백 경로를 쓴다.
