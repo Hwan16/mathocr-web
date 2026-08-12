@@ -20,6 +20,10 @@ async function requireAdmin() {
 // 코드 형식: 영문/숫자/하이픈/언더스코어 2~50자 (소문자 정규화 후 저장)
 const CODE_PATTERN = /^[a-z0-9_-]{2,50}$/;
 
+// 시스템 전용 이름은 새로 만들 수 없다 — [id]/route.ts 의 활성화·삭제 가드와 한 쌍.
+// (삭제 후 같은 이름으로 재생성하면 활성 상태로 부활해 가드를 우회하게 된다)
+const SYSTEM_ONLY_CODES = new Set(["re_earlybird"]);
+
 // 관리자: 프로모션 코드 목록 (+ 사용 이력 포함)
 export async function GET() {
   const admin = await requireAdmin();
@@ -77,6 +81,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { error: "코드는 영문/숫자/하이픈/언더스코어 2~50자여야 합니다." },
       { status: 400 }
+    );
+  }
+
+  if (SYSTEM_ONLY_CODES.has(code)) {
+    return NextResponse.json(
+      { error: `'${code}' 는 시스템이 예약한 이름이라 만들 수 없습니다.` },
+      { status: 409 }
     );
   }
 

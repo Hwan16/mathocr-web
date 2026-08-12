@@ -1,6 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { claimPendingPromo } from "@/lib/promo-claim";
 import { claimPendingMarketingConsent } from "@/lib/marketing-consent";
+import {
+  checkLoginRateLimit,
+  recordLoginFailure,
+  loginTooMany,
+} from "@/lib/login-rate-limit";
 import { NextRequest, NextResponse } from "next/server";
 
 function getClientIp(request: NextRequest): string | null {
@@ -13,14 +18,25 @@ function getClientIp(request: NextRequest): string | null {
 }
 
 export async function POST(request: NextRequest) {
-  const { email, password } = await request.json();
+  let email: unknown;
+  let password: unknown;
+  try {
+    ({ email, password } = await request.json());
+  } catch {
+    return NextResponse.json({ error: "요청을 읽을 수 없습니다." }, { status: 400 });
+  }
 
-  if (!email || !password) {
+  // 문자열이 아닌 값이 오면 아래 정규화에서 예외가 나 500 이 된다 — 400 으로 끊는다.
+  if (typeof email !== "string" || typeof password !== "string" || !email || !password) {
     return NextResponse.json(
       { error: "이메일과 비밀번호를 입력해주세요." },
       { status: 400 }
     );
   }
+
+  const clientIp = getClientIp(request);
+  const gate = await checkLoginRateLimit(clientIp, email);
+  if (gate) return loginTooMany(gate);
 
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithPassword({
@@ -30,6 +46,7 @@ export async function POST(request: NextRequest) {
 
   if (error) {
     // 이메일 인증 미완료는 별도 안내 (데스크톱 앱이 이 메시지를 그대로 표시)
+    // 자격증명 추측이 아니므로 시도 횟수에 세지 않는다.
     if (
       error.code === "email_not_confirmed" ||
       error.message?.includes("not confirmed")
@@ -42,6 +59,7 @@ export async function POST(request: NextRequest) {
         { status: 403 }
       );
     }
+    await recordLoginFailure(clientIp, email);
     return NextResponse.json({ error: "이메일 또는 비밀번호가 올바르지 않습니다." }, { status: 401 });
   }
 

@@ -88,10 +88,18 @@ export async function checkSignupSurge(): Promise<void> {
       `<p>최근 1시간 동안 <strong>${recent.length}명</strong>이 가입했습니다. 평소 같은 창의 최대치는 2명입니다.</p>
   <p><strong>도메인 분포</strong></p><ul>${domainRows}</ul>
   <p><strong>가입 목록 (KST)</strong></p><ul>${listRows}</ul>
-  <p style="font-size:13px;color:#555;">한 도메인에 몰려 있거나 처음 보는 도메인이면 어뷰징을 의심하세요.
-  대응: ① 관리자 페이지에서 얼리버드 코드 비활성화(즉시 지급 중단) ② Vercel 환경변수
-  <code>BLOCKED_EMAIL_DOMAINS</code>에 도메인 추가(배포 불필요) ③ 해당 계정 크레딧 회수·정지.</p>
-  <p style="font-size:12px;color:#888;">마케팅이 터져 진짜로 몰린 것이라면 <code>SIGNUP_ALERT_THRESHOLD</code>를 올리세요.</p>`
+  <p style="font-size:13px;color:#555;">한 도메인에 몰려 있거나 처음 보는 도메인이면 어뷰징을 의심하세요.</p>
+  <p style="font-size:13px;color:#555;"><strong>대응 순서</strong><br />
+  ① <strong>관리자 페이지 → 프로모션 코드 → 얼리버드 비활성화</strong> — DB 기반이라 누르는 즉시 반영됩니다(배포 불필요). 가장 빠른 지혈입니다.<br />
+  ② <strong>Vercel 환경변수 <code>BLOCKED_EMAIL_DOMAINS</code>에 도메인 추가</strong> —
+  ⚠️ 저장만 하면 반영되지 않습니다. 저장 후 반드시
+  <strong>Vercel → 프로젝트 → Deployments 탭 → 상단 필터를 Production 으로 → 가장 최근 Production 배포의
+  ⋯ 메뉴 → Redeploy</strong>까지 눌러야 적용됩니다(1~2분 소요).
+  목록 맨 위가 Preview 배포일 수 있으니 <strong>반드시 Production 인지 확인</strong>하세요.
+  반영 확인: 차단된 도메인으로 가입을 한 번 시도해 막히는지 보면 됩니다.
+  이 단계를 빼먹으면 막은 줄 알았는데 계속 뚫립니다.<br />
+  ③ 해당 계정 크레딧 회수·정지 — 현재 관리자 화면에는 회수 기능이 없어 Supabase 콘솔에서 처리해야 합니다.</p>
+  <p style="font-size:12px;color:#888;">마케팅이 터져 진짜로 몰린 것이라면 <code>SIGNUP_ALERT_THRESHOLD</code>를 올리세요(이것도 Redeploy 필요).</p>`
     );
   } catch (error) {
     console.warn("[signup-alert] 급증 감시 실패", {

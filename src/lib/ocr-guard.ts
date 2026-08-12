@@ -35,7 +35,8 @@ const ALLOWED_SYSTEM_PROMPT_HASHES = new Set<string>([
   "3ff95bd73896dbdd1d39719a4d0626cd189d451adb7009d2b1306ec8d1ab449c",
 ]);
 
-// 긴급 탈출구: 코드 배포 없이 env로 해시 추가 (쉼표 구분 64자 hex)
+// 긴급 탈출구: 코드 수정 없이 env로 해시 추가 (쉼표 구분 64자 hex)
+// ⚠️ env 저장 후 Vercel Deployments 탭에서 Redeploy 를 해야 반영된다(빌드 없이는 안 됨).
 function extraPromptHashes(): string[] {
   return (process.env.OCR_EXTRA_PROMPT_HASHES ?? "")
     .split(",")
@@ -128,9 +129,29 @@ export function estimateClaudeCostUsd(usage: {
   );
 }
 
+// Mathpix 단가 (USD/건) — 우리가 쓰는 엔드포인트는 v3/text = **이미지 서비스**라
+// 공식 요금표(mathpix.com/pricing/api, 2026-08-12 확인) 기준 0~100만 건 $0.002/이미지.
+// (v3/pdf 의 $0.005/페이지는 우리가 쓰지 않는 경로다.)
+//
+// 2026-08-11 감사 수정: 여기 기본값만 0.004 로 2배 과대였다. 그 결과 차단선이
+// 의도의 절반에서 걸렸다 — 상한 $15 설정 시 실제로는 $7.50어치(3,750건)에서
+// 전원 503 이 나고, 대시보드는 같은 날 "$7.50 사용"으로 표시해 원인 파악이 막혔다.
+//
+// env 이름은 대시보드·관리자 화면이 이미 쓰는 MATHPIX_COST_PER_REQUEST 로 통일한다.
+//
+// ⚠️ 옛 이름(MATHPIX_COST_PER_CALL_USD)은 **일부러 읽지 않는다**. 운영 환경에
+// 그 값이 0.004 로 남아 있을 수 있는데, 폴백으로 읽으면 이번 수정이 프로덕션에서만
+// 조용히 무효가 된다(어느 쪽이 이겼는지 로그도 안 남는다). 남아 있으면 경고만 찍고
+// 무시해, 코드가 항상 정답(0.002 또는 새 env)을 쓰도록 한다.
 export function mathpixCostPerCallUsd(): number {
-  const parsed = Number(process.env.MATHPIX_COST_PER_CALL_USD);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0.004;
+  if (process.env.MATHPIX_COST_PER_CALL_USD) {
+    console.warn(
+      "[ocr-guard] MATHPIX_COST_PER_CALL_USD 는 더 이상 쓰지 않습니다 — " +
+        "MATHPIX_COST_PER_REQUEST 로 옮기고 삭제하세요. 이번 실행에서는 무시합니다."
+    );
+  }
+  const parsed = Number(process.env.MATHPIX_COST_PER_REQUEST);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0.002;
 }
 
 // gemini-3.6-flash 단가 (USD/1M tokens, ai.google.dev/gemini-api/docs/pricing

@@ -573,12 +573,35 @@ function PromosTab() {
   }
 
   async function handleToggleActive(promo: PromoCode) {
+    // 활성화는 되돌리기 전까지 누구나 코드를 받을 수 있으므로 확인을 받는다.
+    // (비활성화는 지혈 방향이라 즉시 실행 — 급할 때 확인창이 방해가 되면 안 된다)
+    if (!promo.is_active) {
+      const unlimited = promo.max_uses === null;
+      const warning = unlimited
+        ? `\n\n⚠️ 이 코드는 사용 상한이 없습니다. 활성화하면 인원 제한 없이 ${promo.credits}크레딧이 지급됩니다.`
+        : "";
+      if (
+        !confirm(
+          `코드 "${promo.code}"를 활성화할까요?\n\n` +
+            `활성화하면 마이페이지 코드 입력창과 가입 링크로 누구나 ${promo.credits}크레딧을 받을 수 있습니다.${warning}`
+        )
+      ) {
+        return;
+      }
+    }
     const res = await fetch(`/api/admin/promo-codes/${promo.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ is_active: !promo.is_active }),
     });
-    if (res.ok) loadCodes();
+    if (res.ok) {
+      loadCodes();
+      return;
+    }
+    // 서버가 막은 경우(시스템 전용 코드 등) 사유를 그대로 보여준다 — 조용히 실패하면
+    // 관리자가 "눌렀는데 안 바뀐다"고 오해한다.
+    const result = await res.json().catch(() => null);
+    alert(result?.error ?? "코드 상태를 바꾸지 못했습니다. 잠시 후 다시 시도해주세요.");
   }
 
   async function handleDelete(promo: PromoCode) {

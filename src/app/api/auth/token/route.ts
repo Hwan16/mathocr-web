@@ -1,6 +1,11 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { claimPendingPromo } from "@/lib/promo-claim";
 import { claimPendingMarketingConsent } from "@/lib/marketing-consent";
+import {
+  checkLoginRateLimit,
+  recordLoginFailure,
+  loginTooMany,
+} from "@/lib/login-rate-limit";
 import { NextRequest, NextResponse } from "next/server";
 
 function getClientIp(request: NextRequest): string | null {
@@ -14,15 +19,32 @@ function getClientIp(request: NextRequest): string | null {
 
 // 데스크톱 앱 전용: 이메일/비밀번호로 토큰 발급
 // 브라우저 쿠키 대신 access_token/refresh_token을 직접 반환
+//
+// ⚠️ 이 라우트는 service_role 클라이언트로 로그인을 **대행**한다. 즉 GoTrue 가
+// 보는 소스 IP 가 모든 사용자가 공유하는 Vercel egress IP 하나다. 제한이 없으면
+// 외부에서 무의미한 요청을 쏟아부어 그 공유 IP 의 auth 한도를 소진시킬 수 있고,
+// 그러면 정상 고객의 앱 로그인이 전부 실패한다 = 앱은 로그인 없이 변환이 불가하므로
+// 유료 제품이 통째로 멈춘다. 그래서 무차별 대입 방어보다 **가용성** 이유가 더 크다.
 export async function POST(request: NextRequest) {
-  const { email, password } = await request.json();
+  let email: unknown;
+  let password: unknown;
+  try {
+    ({ email, password } = await request.json());
+  } catch {
+    return NextResponse.json({ error: "요청을 읽을 수 없습니다." }, { status: 400 });
+  }
 
-  if (!email || !password) {
+  // 문자열이 아닌 값이 오면 아래 정규화에서 예외가 나 500 이 된다 — 400 으로 끊는다.
+  if (typeof email !== "string" || typeof password !== "string" || !email || !password) {
     return NextResponse.json(
       { error: "이메일과 비밀번호를 입력해주세요." },
       { status: 400 }
     );
   }
+
+  const clientIp = getClientIp(request);
+  const gate = await checkLoginRateLimit(clientIp, email);
+  if (gate) return loginTooMany(gate);
 
   const admin = createAdminClient();
 
@@ -35,6 +57,8 @@ export async function POST(request: NextRequest) {
   if (error) {
     // 이메일 인증 미완료는 별도 안내 — "비밀번호가 틀렸다"로 오인해
     // 재설정을 반복하는 혼란을 막는다 (웹 로그인 라우트와 동일 정책)
+    // 이 경우는 자격증명 추측이 아니므로 시도 횟수에 세지 않는다 — 인증 메일을
+    // 기다리며 반복 시도하는 정상 사용자가 잠기면 안 된다.
     if (
       error.code === "email_not_confirmed" ||
       error.message?.includes("not confirmed")
@@ -47,6 +71,8 @@ export async function POST(request: NextRequest) {
         { status: 403 }
       );
     }
+    // 자격증명 실패만 카운트 — 정상 사용자는 사실상 영향이 없다.
+    await recordLoginFailure(clientIp, email);
     return NextResponse.json(
       { error: "이메일 또는 비밀번호가 올바르지 않습니다." },
       { status: 401 }

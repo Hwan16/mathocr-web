@@ -164,7 +164,8 @@ export async function POST(request: NextRequest) {
   // 정상 가입자가 +를 쓰는 경우는 드물고, 기본 주소로 안내하면 그대로 가입 가능.
   // 프로모션 중복은 normalizeEmailAlias(0013)가 이미 접고 있으므로 이 차단은
   // "계정 수 × 가입 무료 크레딧" 증식을 끊는 것이 목적.
-  // 해제가 필요하면 env ALLOW_PLUS_ALIAS_SIGNUP=true (배포 불필요).
+  // 해제가 필요하면 env ALLOW_PLUS_ALIAS_SIGNUP=true
+  // (⚠️ 저장 후 Vercel Deployments 탭에서 Redeploy 까지 해야 반영된다).
   if (
     process.env.ALLOW_PLUS_ALIAS_SIGNUP !== "true" &&
     email.split("@")[0]?.includes("+")

@@ -3,12 +3,20 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { unsubscribeToken } from "@/lib/unsubscribe";
 import { REPLY_TO } from "@/lib/mail";
 
-// 크레딧 만료 임박 안내 (F9) — vercel.json cron이 매일 1회 호출한다.
+// 크레딧 만료 임박 안내 (F9) — vercel.json cron이 매일 1회(00:00 UTC) 호출한다.
 //
-// 대상: 크레딧을 보유하고 유효기간 만료가 REMIND_BEFORE_DAYS일 앞으로 다가온
-// 사용자. 조회 창을 [만료 6일 전, 7일 전)으로 잡아 매일 실행 시 사용자당
-// 정확히 한 번만 발송된다. (재충전으로 만료일이 미래로 옮겨지면 새 만료일이
-// 다가올 때 다시 안내되는데, 이는 의도된 동작)
+// 대상: 크레딧을 보유하고 유효기간 만료가 REMIND_BEFORE_DAYS일 안으로 다가온 사용자.
+//
+// 중복 방지 방식 (2026-08-12 변경 — 고치기 전에 반드시 읽을 것):
+//   조회 창은 [지금, 만료 7일 전) 이고, 중복은 **창이 아니라 expiry_reminder_sent_at
+//   마커(0024)** 가 막는다. 예전에는 창이 [만료 6일 전, 7일 전) 하루짜리라 창 자체가
+//   중복을 막았지만, 그 구조는 한 번 실패하면 다음 날 창이 지나가 **영구 유실**이었다.
+//   지금은 실패해도 마커가 안 찍히므로 다음 실행이 자동으로 재시도한다.
+//   ⚠️ 창을 다시 좁히거나 마커 로직을 지우면 전원에게 중복 발송된다(광고성 메일 포함).
+//   0024 미적용 환경에서는 usingMarker=false 로 옛 하루짜리 창에 자동 폴백한다.
+//
+// (재충전으로 만료일이 미래로 옮겨지면 새 만료일이 다가올 때 다시 안내되는데,
+//  이는 의도된 동작 — 마커가 새 창보다 과거가 되어 재진입한다)
 //
 // 정책(2026-07-09 확정): 만료 후 연장·복구는 없다. 약관 제6조가 이 사전 안내를
 // 전제하므로 cron 등록을 해제하지 말 것.
@@ -29,9 +37,19 @@ import { REPLY_TO } from "@/lib/mail";
 // 시에도 발송하지 않는다(fail-closed).
 
 export const dynamic = "force-dynamic";
+// 조회 창이 하루 → 7일로 넓어져 후보가 늘 수 있다. 후보 1명당 인증여부 조회 1회 +
+// 발송당 0.6초 대기를 순차로 돌므로, 형제 cron(expiry-regrant)과 동일하게 상한을 올린다.
+// 없으면 기본 실행시간(10~15초)에서 잘려 그날 한 통도 못 나갈 수 있다.
+export const maxDuration = 300;
 
 const REMIND_BEFORE_DAYS = 7;
-const MAX_PER_RUN = 200; // 안전 상한 (Resend 무료 티어 일 100통 — 초과 시 플랜 확인)
+const MAX_PER_RUN = 200; // 발송 안전 상한 (Resend 무료 티어 일 100통 — 초과 시 플랜 확인)
+// 조회 상한은 발송 상한과 분리한다 (2026-08-12).
+//   창이 7일로 넓어지면서 "이미 안내를 받은 사람"도 함께 조회된다. 조회를 200으로
+//   자르면 만료가 임박한(=이미 받은) 사람들이 앞자리를 채우고 **오늘의 실제 대상이
+//   통째로 잘린다** — 에러 없이 발송 0건이 되는 조용한 실패다.
+//   얼리버드 무료 크레딧이 7일 유효라 이 인원은 가입 수에 비례해 계속 늘어난다.
+const FETCH_LIMIT = 1000;
 const SITE_URL = "https://mathocr.ai.kr";
 const CHARGE_URL = `${SITE_URL}/charge`;
 const FROM = "AI MathOCR <noreply@mathocr.ai.kr>";
@@ -132,42 +150,95 @@ export async function GET(req: NextRequest) {
   const dryRun = req.nextUrl.searchParams.get("dry") === "1";
 
   const dayMs = 24 * 60 * 60 * 1000;
-  const windowStart = new Date(
-    Date.now() + (REMIND_BEFORE_DAYS - 1) * dayMs
-  ).toISOString();
+  const nowIso = new Date().toISOString();
   const windowEnd = new Date(
     Date.now() + REMIND_BEFORE_DAYS * dayMs
   ).toISOString();
+  // 하루짜리 창의 하한(기존 동작) — 0024 미적용 폴백에서만 쓴다.
+  const legacyWindowStart = new Date(
+    Date.now() + (REMIND_BEFORE_DAYS - 1) * dayMs
+  ).toISOString();
 
   const supabase = createAdminClient();
-  // onboarding_welcome_sent_at(0018)은 온보딩 환영 메일과의 중복 방지용.
-  // 0018 미적용 환경에서는 컬럼 없이 재조회해 기존 동작을 유지한다(폴백).
+
+  // 0024(expiry_reminder_sent_at) 적용 후 기본 경로:
+  //   창을 "지금 ~ 만료 7일 전"으로 **넓히고**, 발송 마커로 중복을 막는다.
+  //   이렇게 하면 cron 이 하루 걸러뛰거나 개별 발송이 실패해도 다음 실행이 자동 복구한다.
+  //   (기존의 하루짜리 창은 한 번 놓치면 영구 유실이었다 — 2026-08-11 감사 B-1)
+  //
+  //   재충전으로 expires_at 이 미래로 밀리면 sent_at 이 그보다 과거가 되므로
+  //   `expiry_reminder_sent_at < expires_at - 7일` 조건이 다시 참이 되어 재안내된다.
+  //   그 판정은 SQL 로 표현하기 번거로워 아래 코드에서 처리한다.
+  //
+  // 정렬(.order)을 넣어 MAX_PER_RUN 절단이 결정적이 되게 한다 — 정렬이 없으면
+  // 대상이 많을 때 특정 사용자가 매번 뒤로 밀려 영영 못 받을 수 있었다.
+  let usingMarker = true;
   let { data: profiles, error } = await supabase
     .from("profiles")
-    .select("id, email, credits, expires_at, marketing_opt_in, onboarding_welcome_sent_at")
+    .select(
+      "id, email, credits, expires_at, marketing_opt_in, onboarding_welcome_sent_at, expiry_reminder_sent_at"
+    )
     .gt("credits", 0)
-    .gte("expires_at", windowStart)
+    .gte("expires_at", nowIso)
     .lt("expires_at", windowEnd)
-    .limit(MAX_PER_RUN);
+    .order("expires_at", { ascending: true })
+    .order("id", { ascending: true })
+    .limit(FETCH_LIMIT);
+
+  // 0024 미적용 환경 — 기존 하루짜리 창 그대로 동작시킨다(발송이 멈추지 않게).
+  if (error && /expiry_reminder_sent_at/.test(error.message)) {
+    console.warn("[expiry-reminder] 0024 미적용 — 발송 기록 없이 기존 창으로 진행");
+    usingMarker = false;
+    const legacy = await supabase
+      .from("profiles")
+      .select("id, email, credits, expires_at, marketing_opt_in, onboarding_welcome_sent_at")
+      .gt("credits", 0)
+      .gte("expires_at", legacyWindowStart)
+      .lt("expires_at", windowEnd)
+      .order("expires_at", { ascending: true })
+      .order("id", { ascending: true })
+      .limit(FETCH_LIMIT);
+    profiles = (legacy.data ?? []).map((p) => ({
+      ...p,
+      expiry_reminder_sent_at: null,
+    }));
+    error = legacy.error;
+  }
 
   if (error && /onboarding_welcome_sent_at/.test(error.message)) {
     console.warn("[expiry-reminder] 0018 미적용 — 온보딩 중복 방지 없이 진행");
+    usingMarker = false;
     const legacy = await supabase
       .from("profiles")
       .select("id, email, credits, expires_at, marketing_opt_in")
       .gt("credits", 0)
-      .gte("expires_at", windowStart)
+      .gte("expires_at", legacyWindowStart)
       .lt("expires_at", windowEnd)
-      .limit(MAX_PER_RUN);
+      .order("expires_at", { ascending: true })
+      .order("id", { ascending: true })
+      .limit(FETCH_LIMIT);
     profiles = (legacy.data ?? []).map((p) => ({
       ...p,
       onboarding_welcome_sent_at: null,
+      expiry_reminder_sent_at: null,
     }));
     error = legacy.error;
   }
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  // 마커 경로에서만: 이번 만료일에 대해 이미 보낸 사람을 제외한다.
+  // 기준은 "현재 만료일의 안내 창(만료 7일 전) 이후에 보냈는가" —
+  // 재충전으로 만료일이 밀리면 옛 발송은 새 창보다 과거라 다시 대상이 된다.
+  function alreadyReminded(p: {
+    expires_at: string | null;
+    expiry_reminder_sent_at?: string | null;
+  }): boolean {
+    if (!usingMarker || !p.expiry_reminder_sent_at || !p.expires_at) return false;
+    const windowOpensAt = Date.parse(p.expires_at) - REMIND_BEFORE_DAYS * dayMs;
+    return Date.parse(p.expiry_reminder_sent_at) >= windowOpensAt;
   }
 
   // 온보딩 환영 메일(0018)을 최근 7일 안에 받은 사용자는 건너뛴다 — 환영 메일이
@@ -184,7 +255,7 @@ export async function GET(req: NextRequest) {
   }
 
   const candidates = (profiles ?? []).filter(
-    (p) => p.email && p.expires_at && !welcomeRecent(p)
+    (p) => p.email && p.expires_at && !welcomeRecent(p) && !alreadyReminded(p)
   );
 
   // (1) 이메일 인증 확인 — 미인증(또는 조회 실패)이면 어떤 메일도 보내지 않는다.
@@ -277,15 +348,30 @@ export async function GET(req: NextRequest) {
     return paidUserIds.has(p.id) ? "neutral" : null; // 비동의자는 유료 구매자만
   }
 
-  const targets = candidates
+  const allTargets = candidates
     .map((p) => ({ ...p, kind: decideKind(p) }))
     .filter((p): p is typeof p & { kind: "marketing" | "neutral" } => p.kind !== null);
+
+  // 발송 상한은 **판정이 끝난 뒤** 적용한다 — 조회 단계에서 자르면 이미 안내를 받은
+  // 사람들이 앞자리를 채워 오늘의 실제 대상이 통째로 잘린다. 잘린 사람은 마커가
+  // 안 찍히므로 다음 실행에서 자동으로 이어서 발송된다(유실 아님).
+  const targets = allTargets.slice(0, MAX_PER_RUN);
+  const deferred = allTargets.length - targets.length;
+  if (deferred > 0) {
+    console.warn("[expiry-reminder] 발송 상한 초과 — 다음 실행으로 이월", {
+      total: allTargets.length,
+      sending: targets.length,
+      deferred,
+    });
+  }
 
   if (dryRun) {
     return NextResponse.json({
       dryRun: true,
       resendKeyConfigured: !!process.env.RESEND_API_KEY, // 운영 점검용 (값은 노출 안 함)
-      window: { start: windowStart, end: windowEnd },
+      // usingMarker=false 면 0024 미적용 상태(하루짜리 창·재시도 없음)라는 뜻
+      usingMarker,
+      window: { start: usingMarker ? nowIso : legacyWindowStart, end: windowEnd },
       candidates: candidates.length,
       count: targets.length,
       // 창에 걸린 전원을 판정 근거와 함께 보여준다 — 제외 사유 검증용
@@ -325,6 +411,11 @@ export async function GET(req: NextRequest) {
         headers: {
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json",
+          // 같은 만료일에 대한 재시도가 중복 메일이 되지 않게 한다.
+          // ⚠️ 이것만 믿으면 안 된다 — Resend 멱등키 보관은 24시간 수준이고 이 cron 도
+          // 하루 1회라, 마커 기록이 실패한 경우의 재시도는 경계를 넘길 수 있다.
+          // 중복 방지의 주 수단은 어디까지나 expiry_reminder_sent_at 마커다.
+          "Idempotency-Key": `expiry-reminder:${p.id}:${p.expires_at}`,
         },
         body: JSON.stringify({
           from: FROM,
@@ -336,6 +427,20 @@ export async function GET(req: NextRequest) {
       });
       if (resp.ok) {
         sent += 1;
+        // 발송 성공을 기록한다 — 실패해도 메일은 이미 나갔으므로 경고만 남긴다.
+        // (기록 실패 시 최악은 다음 실행의 중복 시도인데, 위 Idempotency-Key 가 막는다)
+        if (usingMarker) {
+          const { error: markError } = await supabase
+            .from("profiles")
+            .update({ expiry_reminder_sent_at: new Date().toISOString() })
+            .eq("id", p.id);
+          if (markError) {
+            console.warn("[expiry-reminder] 발송 기록 실패", {
+              user_id: p.id,
+              error: markError.message,
+            });
+          }
+        }
       } else {
         failed.push(p.email);
       }
@@ -346,5 +451,13 @@ export async function GET(req: NextRequest) {
     await new Promise((r) => setTimeout(r, 600));
   }
 
-  return NextResponse.json({ count: targets.length, sent, failed });
+  // failed 가 남아도 마커를 안 찍었으므로 다음 실행이 자동으로 재시도한다
+  // (0024 적용 전에는 재시도 없이 유실됐다).
+  return NextResponse.json({
+    count: targets.length,
+    sent,
+    failed,
+    deferred, // 발송 상한 초과로 다음 실행에 넘긴 수 (마커 미기록이라 유실 아님)
+    retryable: usingMarker,
+  });
 }

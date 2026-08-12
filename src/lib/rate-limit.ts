@@ -129,3 +129,104 @@ export async function checkRateLimit(
 
   return checkRateLimitMemory(key, limit, windowMs);
 }
+
+// ── 조회/증가 분리 API ──
+//
+// 로그인처럼 "실패했을 때만 카운트"해야 하는 곳에서 쓴다. checkRateLimit 은
+// 호출 자체가 카운트를 올리므로, 성공한 로그인까지 한도에 포함돼 정상 사용자가
+// 막힐 수 있다(공유 IP 뒤의 학원 강사 여러 명 등). peek 로 판정하고 실패 경로에서만
+// bump 하면 정상 사용자는 사실상 영향을 받지 않는다.
+
+function redisKeyFor(key: string, windowMs: number): string {
+  return `rl:${key}:${Math.floor(Date.now() / windowMs)}`;
+}
+
+function retryAfterFor(windowMs: number): number {
+  const now = Date.now();
+  const windowEnd = (Math.floor(now / windowMs) + 1) * windowMs;
+  return Math.max(1, Math.ceil((windowEnd - now) / 1000));
+}
+
+/** 카운트를 올리지 않고 현재 한도 초과 여부만 본다. 조회 실패 시 allowed(fail-open). */
+export async function peekRateLimit(
+  key: string,
+  limit: number,
+  windowMs: number
+): Promise<RateLimitResult> {
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+
+  if (url && token) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), REDIS_TIMEOUT_MS);
+    try {
+      const res = await fetch(`${url.replace(/\/$/, "")}/get/${encodeURIComponent(redisKeyFor(key, windowMs))}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        signal: controller.signal,
+        cache: "no-store",
+      });
+      if (res.ok) {
+        const data: unknown = await res.json();
+        const count = Number((data as { result?: unknown } | null)?.result ?? 0);
+        if (Number.isFinite(count) && count >= limit) {
+          return { allowed: false, retryAfter: retryAfterFor(windowMs) };
+        }
+        return { allowed: true, retryAfter: 0 };
+      }
+      console.warn("[rate-limit] peek http error", { status: res.status });
+    } catch (error) {
+      console.warn("[rate-limit] peek unreachable, falling back to memory", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  const bucket = buckets.get(key);
+  if (!bucket || Date.now() - bucket.windowStart >= windowMs) {
+    return { allowed: true, retryAfter: 0 };
+  }
+  if (bucket.count >= limit) {
+    const retryAfter = Math.max(
+      1,
+      Math.ceil((windowMs - (Date.now() - bucket.windowStart)) / 1000)
+    );
+    return { allowed: false, retryAfter };
+  }
+  return { allowed: true, retryAfter: 0 };
+}
+
+/** 카운트만 1 올린다. 실패해도 예외를 던지지 않는다(방어 실패가 요청을 깨지 않게). */
+export async function bumpRateLimit(key: string, windowMs: number): Promise<void> {
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+
+  if (url && token) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), REDIS_TIMEOUT_MS);
+    try {
+      const redisKey = redisKeyFor(key, windowMs);
+      const res = await fetch(`${url.replace(/\/$/, "")}/pipeline`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify([
+          ["INCR", redisKey],
+          ["PEXPIRE", redisKey, String(windowMs * 2)],
+        ]),
+        signal: controller.signal,
+        cache: "no-store",
+      });
+      if (res.ok) return;
+      console.warn("[rate-limit] bump http error", { status: res.status });
+    } catch (error) {
+      console.warn("[rate-limit] bump unreachable, falling back to memory", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  checkRateLimitMemory(key, Number.MAX_SAFE_INTEGER, windowMs);
+}

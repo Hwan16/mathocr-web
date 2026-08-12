@@ -4,7 +4,9 @@
 //       실제 확인된 도메인 6개(colaname/tnbeta/usdtbeta/colabeta/linshiyou/fft.edu.do).
 //
 // 갱신 방법: 위 저장소의 conf 파일을 받아 같은 형식으로 다시 생성한다.
-// 개별 도메인 추가·해제는 이 파일을 고치지 말고 환경변수로 한다 (배포 없이 즉시 적용):
+// 개별 도메인 추가·해제는 이 파일을 고치지 말고 환경변수로 한다.
+// ⚠️ 환경변수 저장만으로는 반영되지 않는다 — 저장 후 Vercel Deployments 탭에서
+//    **Redeploy** 까지 눌러야 적용된다(1~2분). 빼먹으면 막은 줄 알고 계속 뚫린다.
 //   BLOCKED_EMAIL_DOMAINS  — 추가 차단할 도메인 (쉼표 구분)
 //   ALLOWED_EMAIL_DOMAINS  — 오탐 해제할 도메인 (쉼표 구분, 차단보다 우선)
 //
