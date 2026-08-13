@@ -9,10 +9,7 @@ import { claimPendingPromo } from "@/lib/promo-claim";
 import { claimPendingMarketingConsent } from "@/lib/marketing-consent";
 import { CONSENT_VERSION } from "@/lib/consent";
 import { isRetiredSignupPromo } from "@/lib/promo";
-import {
-  LEGACY_SIGNUP_FREE_CREDITS,
-  SIGNUP_FREE_CREDITS,
-} from "@/lib/plans";
+import { SIGNUP_FREE_CREDITS } from "@/lib/plans";
 import { NextRequest, NextResponse } from "next/server";
 
 // IP당 가입 시도 제한 (B3 — 무료 크레딧 파밍 봇 방어의 1차 저지선).
@@ -96,26 +93,6 @@ async function waitForProfile(
   }
 
   return false;
-}
-
-// 웹 코드와 DB 마이그레이션이 배포되는 몇 분 사이에도 신규 가입자가 예전 기본값
-// 5크레딧을 받지 않도록 보정한다. DB가 이미 15로 바뀐 뒤에는 아무 것도 하지 않는다.
-async function ensureCurrentSignupCredits(
-  admin: ReturnType<typeof createAdminClient>,
-  userId: string
-): Promise<void> {
-  const { error } = await admin
-    .from("profiles")
-    .update({ credits: SIGNUP_FREE_CREDITS })
-    .eq("id", userId)
-    .eq("credits", LEGACY_SIGNUP_FREE_CREDITS);
-
-  if (error) {
-    console.warn("[signup] signup credit migration bridge failed", {
-      user_id: userId,
-      error: error.message,
-    });
-  }
 }
 
 export async function POST(request: NextRequest) {
@@ -330,8 +307,6 @@ export async function POST(request: NextRequest) {
       const profileReady = await waitForProfile(admin, userId);
 
       if (profileReady) {
-        await ensureCurrentSignupCredits(admin, userId);
-
         // (1) 동의 이력 기록 (append-only 감사 로그, 서버 버전으로 기록).
         // 원자적 도장은 위 signUp user_metadata 에 이미 남았으므로 이 기록 실패가
         // 가입을 막지는 않는다(추후 백필 가능). email 은 탈퇴(user_id=null) 후에도

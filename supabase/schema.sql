@@ -585,7 +585,7 @@ create table if not exists public.promo_redemptions (
   user_id uuid references public.profiles(id) on delete set null,
   email text,
   credits_granted integer not null,
-  source text not null default 'mypage' check (source in ('mypage', 'signup')),
+  source text not null default 'mypage' check (source in ('mypage', 'signup', 'system')),
   normalized_email text, -- 알리아스 접은 이메일 (0013 어뷰징 가드 — 탈퇴 후에도 남아 재수령 차단)
   ip text,               -- 상환 요청 IP (0013 — 같은 코드 IP당 24시간 2회 제한)
   created_at timestamptz not null default now(),
@@ -604,6 +604,17 @@ create index if not exists idx_promo_redemptions_code_ip
 
 alter table public.promo_codes enable row level security;
 alter table public.promo_redemptions enable row level security;
+
+-- 얼리버드 종료 시점의 미상환 대상 고정 명단(0026). user_metadata는 회원이
+-- 수정할 수 있으므로 지급 자격에는 이 서버 전용 테이블만 사용한다.
+create table if not exists public.earlybird_grandfathered_users (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  snapshotted_at timestamptz not null default now(),
+  redeemed_at timestamptz
+);
+alter table public.earlybird_grandfathered_users enable row level security;
+revoke all on table public.earlybird_grandfathered_users from public, anon, authenticated;
+grant select, insert, update, delete on table public.earlybird_grandfathered_users to service_role;
 
 -- 상환 함수 (원자적). 본문은 migrations/0013_earlybird.sql 과 동일하게 유지.
 -- 가드(0013): 알리아스 정규화 이메일 중복 차단 + 같은 IP 24시간 2회 제한
@@ -624,12 +635,13 @@ declare
   v_ip_count integer;
   v_new_credits integer;
   v_new_expires timestamptz;
+  v_earlybird_eligible boolean;
 begin
-  if p_source not in ('mypage', 'signup') then
+  if p_source not in ('mypage', 'signup', 'system') then
     return jsonb_build_object('success', false, 'error', 'invalid_source');
   end if;
 
-  select id, credits, max_uses, is_active, validity_days into v_promo
+  select id, code, credits, max_uses, is_active, validity_days into v_promo
   from public.promo_codes
   where code = lower(btrim(coalesce(p_code, '')))
   for update;
@@ -638,8 +650,21 @@ begin
     return jsonb_build_object('success', false, 'error', 'invalid_code');
   end if;
 
-  if not v_promo.is_active then
+  if not v_promo.is_active and p_source <> 'system' then
     return jsonb_build_object('success', false, 'error', 'inactive_code');
+  end if;
+
+  if v_promo.code = 'earlybird' then
+    select exists (
+      select 1
+      from public.earlybird_grandfathered_users eg
+      where eg.user_id = p_user_id
+        and eg.redeemed_at is null
+    ) into v_earlybird_eligible;
+
+    if p_source <> 'signup' or not v_earlybird_eligible then
+      return jsonb_build_object('success', false, 'error', 'not_eligible');
+    end if;
   end if;
 
   select email into v_email
@@ -721,6 +746,12 @@ begin
   insert into public.payments (user_id, amount, credits_added, pg_transaction_id, status)
   values (p_user_id, 0, v_promo.credits, 'promo_' || v_promo.id::text || '_' || p_user_id::text, 'completed');
 
+  if v_promo.code = 'earlybird' then
+    update public.earlybird_grandfathered_users
+    set redeemed_at = now()
+    where user_id = p_user_id;
+  end if;
+
   return jsonb_build_object(
     'success', true,
     'credits_granted', v_promo.credits,
@@ -736,7 +767,7 @@ grant execute on function public.redeem_promo_code(uuid, text, text, text, text)
 -- ============================================
 -- 14. 얼리버드 사전 신청 (0015 — 신청제)
 -- ============================================
--- 오픈 전 이메일 리드. 오픈 날 관리자 탭에서 30문제 코드(earlybird) 메일 발송.
+-- 과거 얼리버드 이메일 리드 보존용. 캠페인은 2026-08-14 종료됨.
 create table if not exists public.earlybird_signups (
   id uuid primary key default gen_random_uuid(),
   email text not null,

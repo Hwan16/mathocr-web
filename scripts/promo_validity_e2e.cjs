@@ -68,7 +68,7 @@ async function main() {
       p_user_id: uid, p_code: codeA, p_source: "mypage",
     });
     check("유효기간 코드 상환 성공", !rpcAErr && redeemA?.success === true, rpcAErr?.message ?? JSON.stringify(redeemA));
-    check("크레딧 지급 (5+77=82)", redeemA?.new_credits === 82, `new_credits=${redeemA?.new_credits}`);
+    check("크레딧 지급 (15+77=92)", redeemA?.new_credits === 92, `new_credits=${redeemA?.new_credits}`);
     check("만료일 ~30일로 연장", redeemA?.expires_at && Math.abs(daysFromNow(redeemA.expires_at) - 30) < 0.5,
       `expiry=${redeemA?.expires_at ? daysFromNow(redeemA.expires_at).toFixed(1) : "null"}일`);
 
@@ -91,7 +91,7 @@ async function main() {
       p_user_id: uid, p_code: codeB, p_source: "signup",
     });
     check("무기간 코드 상환 성공 (signup 경로)", redeemB?.success === true, JSON.stringify(redeemB));
-    check("크레딧 누적 (82+11=93)", redeemB?.new_credits === 93, `new_credits=${redeemB?.new_credits}`);
+    check("크레딧 누적 (92+11=103)", redeemB?.new_credits === 103, `new_credits=${redeemB?.new_credits}`);
     check("만료일 유지 (~30일 그대로)", redeemB?.expires_at && Math.abs(daysFromNow(redeemB.expires_at) - 30) < 0.5,
       `expiry=${redeemB?.expires_at ? daysFromNow(redeemB.expires_at).toFixed(1) : "null"}일`);
 

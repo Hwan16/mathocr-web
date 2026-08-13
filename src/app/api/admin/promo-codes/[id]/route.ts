@@ -17,7 +17,7 @@ async function requireAdmin() {
   return user;
 }
 
-// 시스템 전용 코드 — 관리자 화면에서 **활성화할 수 없다**(비활성화는 허용).
+// 재활성화 금지 코드 — 관리자 화면에서도 종료 상태를 되돌릴 수 없다.
 //
 // re_earlybird 는 만료 재지급 cron(0022)이 내부적으로만 쓰는 코드다.
 // 15크레딧이고 max_uses 가 null(상한 없음)이라, 실수로 활성화되는 순간
@@ -26,7 +26,8 @@ async function requireAdmin() {
 // 2026-08-08 어뷰징 공격자는 이미 그 조합을 뚫은 전례가 있다.
 //
 // 화면 쪽 확인창만으로는 부족해서(토글에는 confirm 이 없었다) 서버에서 막는다.
-const SYSTEM_ONLY_CODES = new Set(["re_earlybird"]);
+const NEVER_REACTIVATE_CODES = new Set(["re_earlybird", "earlybird"]);
+const RETIRED_EARLYBIRD_CODE = "earlybird";
 
 // 관리자: 프로모션 코드 활성/비활성 전환
 export async function PATCH(
@@ -56,38 +57,63 @@ export async function PATCH(
 
   const adminClient = createAdminClient();
 
-  // 시스템 전용 코드의 활성화 요청은 거부한다 (비활성화·그 외 코드는 그대로 통과).
+  // 보호 코드 상태를 판단하려면 활성/비활성 양쪽 모두 실제 코드를 먼저 조회한다.
   //
   // ⚠️ fail-closed — 조회가 실패하면 활성화하지 않는다. 조회 오류를 무시하면
   // 하필 그 순간 '활성화'를 누른 관리자에게 서버가 200을 돌려주고, 실제로는
   // 상한 없는 15크레딧 코드가 공개돼 버린다(관리자는 막혔다고 착각).
-  if (body.is_active === true) {
-    const { data: target, error: lookupError } = await adminClient
-      .from("promo_codes")
-      .select("code")
-      .eq("id", id)
-      .maybeSingle();
+  const { data: target, error: lookupError } = await adminClient
+    .from("promo_codes")
+    .select("code")
+    .eq("id", id)
+    .maybeSingle();
 
-    if (lookupError) {
-      console.error("[admin/promo-codes:PATCH] 활성화 전 코드 조회 실패", lookupError);
+  if (lookupError) {
+    console.error("[admin/promo-codes:PATCH] 상태 변경 전 코드 조회 실패", lookupError);
+    return NextResponse.json(
+      { error: "코드를 확인하지 못해 상태 변경을 취소했습니다. 잠시 후 다시 시도해주세요." },
+      { status: 503 }
+    );
+  }
+  if (!target) {
+    return NextResponse.json({ error: "코드를 찾을 수 없습니다." }, { status: 404 });
+  }
+
+  if (body.is_active === true && NEVER_REACTIVATE_CODES.has(target.code)) {
+    console.warn("[admin/promo-codes:PATCH] protected code activation blocked", {
+      code: target.code,
+      admin_id: admin.id,
+    });
+    return NextResponse.json(
+      {
+        error:
+          target.code === RETIRED_EARLYBIRD_CODE
+            ? "'earlybird'는 종료된 코드라 다시 활성화할 수 없습니다."
+            : "'re_earlybird'는 시스템 전용 코드라 활성화할 수 없습니다.",
+      },
+      { status: 409 }
+    );
+  }
+
+  // 진짜 지급 대기자가 남아 있는 동안 earlybird를 끄면 로그인 순간
+  // inactive_code가 영구 실패로 정리된다. 남은 고정 명단이 0명일 때만 허용한다.
+  if (body.is_active === false && target.code === RETIRED_EARLYBIRD_CODE) {
+    const { count, error: pendingError } = await adminClient
+      .from("earlybird_grandfathered_users")
+      .select("user_id", { count: "exact", head: true })
+      .is("redeemed_at", null);
+
+    if (pendingError) {
+      console.error("[admin/promo-codes:PATCH] earlybird 대기자 조회 실패", pendingError);
       return NextResponse.json(
-        { error: "코드를 확인하지 못해 활성화를 취소했습니다. 잠시 후 다시 시도해주세요." },
+        { error: "남은 얼리버드 지급 대상을 확인하지 못해 비활성화를 취소했습니다." },
         { status: 503 }
       );
     }
-    if (!target) {
-      return NextResponse.json({ error: "코드를 찾을 수 없습니다." }, { status: 404 });
-    }
-    if (SYSTEM_ONLY_CODES.has(target.code)) {
-      console.warn("[admin/promo-codes:PATCH] system-only code activation blocked", {
-        code: target.code,
-        admin_id: admin.id,
-      });
+    if ((count ?? 0) > 0) {
       return NextResponse.json(
         {
-          error:
-            `'${target.code}' 는 시스템 전용 코드라 활성화할 수 없습니다. ` +
-            "만료 재지급 cron 이 내부적으로만 사용하며, 공개되면 상한 없이 15크레딧이 지급됩니다.",
+          error: `기존 얼리버드 지급 대기자가 ${count}명 남아 있어 아직 비활성화할 수 없습니다. 모두 처리된 뒤 다시 시도해주세요.`,
         },
         { status: 409 }
       );
@@ -143,10 +169,10 @@ export async function DELETE(
       { status: 503 }
     );
   }
-  if (target?.code && SYSTEM_ONLY_CODES.has(target.code)) {
+  if (target?.code && NEVER_REACTIVATE_CODES.has(target.code)) {
     return NextResponse.json(
       {
-        error: `'${target.code}' 는 시스템 전용 코드라 삭제할 수 없습니다. 만료 재지급 cron 이 이 코드를 참조합니다.`,
+        error: `'${target.code}' 는 지급 이력 보존을 위해 삭제할 수 없습니다. 종료 시에는 비활성화 상태로 보관하세요.`,
       },
       { status: 409 }
     );

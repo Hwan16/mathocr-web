@@ -31,6 +31,7 @@ export type PromoClaimResult = {
 const PERMANENT_ERRORS = new Set([
   "invalid_code",
   "inactive_code",
+  "not_eligible",
   "already_redeemed",
   "exhausted",
   "invalid_source",
@@ -84,6 +85,40 @@ export async function claimPendingPromo(
       });
     }
     return { applied: false, credits_granted: 0, error: "inactive_code" };
+  }
+
+  // 종료 전 가입 시각만으로는 자격을 증명할 수 없다. user_metadata는 회원이
+  // 직접 바꿀 수 있으므로, 0026이 종료 시점에 고정한 서버 전용 명단을 확인한다.
+  // 조회 자체가 실패하면 진짜 대상자의 꼬리표를 지우지 않고 다음 로그인에서 재시도한다.
+  if (isRetiredSignupPromo(code)) {
+    const { data: eligible, error: eligibilityError } = await admin
+      .from("earlybird_grandfathered_users")
+      .select("user_id, redeemed_at")
+      .eq("user_id", user.id)
+      .is("redeemed_at", null)
+      .maybeSingle();
+
+    if (eligibilityError) {
+      console.warn("[promo-claim] earlybird eligibility lookup failed", {
+        user_id: user.id,
+        error: eligibilityError.message,
+      });
+      return { applied: false, credits_granted: 0, error: "rpc_failed" };
+    }
+
+    if (!eligible) {
+      const { error: cleanupError } = await admin.auth.admin.updateUserById(user.id, {
+        user_metadata: { pending_promo_code: null },
+        app_metadata: { promo_pending_error: "not_eligible" },
+      });
+      if (cleanupError) {
+        console.warn("[promo-claim] ineligible earlybird cleanup failed", {
+          user_id: user.id,
+          error: cleanupError.message,
+        });
+      }
+      return { applied: false, credits_granted: 0, error: "not_eligible" };
+    }
   }
 
   const { data, error: rpcError } = await admin.rpc("redeem_promo_code", {

@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { trackEvent } from "@/lib/analytics";
-import { SIGNUP_FREE_CREDITS } from "@/lib/plans";
+import { SIGNUP_FREE_CREDITS, SIGNUP_FREE_VALIDITY_DAYS } from "@/lib/plans";
 import { metaPixelTrack } from "@/lib/meta-pixel";
 import { naverWcsTrans } from "@/lib/naver-wcs";
 import ResendConfirmationMail, {
@@ -620,7 +620,7 @@ function SignupForm() {
         {!confirmEmailSent && (
           <div className="mt-6 text-center text-xs text-zinc-500">
             가입 시 무료 체험 크레딧 {SIGNUP_FREE_CREDITS}개가 제공됩니다
-            (유효기간 7일)
+            (유효기간 {SIGNUP_FREE_VALIDITY_DAYS}일)
           </div>
         )}
       </div>
