@@ -43,13 +43,11 @@ earlybird_cap as (
   from earlybird_eligible_users
 )
 update public.promo_codes pc
-set max_uses = earlybird_cap.cap,
-    description = '얼리버드 종료(2026-08-14) — 종료 전 가입한 지급 대기자만 기존 25크레딧 지급. 신규 적용 금지.'
+set max_uses = earlybird_cap.cap
 from earlybird_cap
 where pc.code = 'earlybird';
 
 -- 3. 만료 후 재체험 지급: 30 → 15 (기존 지급분·이력은 소급 변경하지 않음)
 update public.promo_codes
-set credits = 15,
-    description = '만료 크레딧 재체험 — 조건 충족 계정에 15크레딧, 유효 7일, 계정당 평생 1회. 서버 자동 지급 전용.'
+set credits = 15
 where code = 're_earlybird';
