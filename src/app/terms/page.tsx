@@ -1,5 +1,7 @@
 "use client";
 
+import { SIGNUP_FREE_CREDITS, SIGNUP_FREE_VALIDITY_DAYS } from "@/lib/plans";
+
 export default function TermsPage() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-20 bg-zinc-50">
@@ -14,7 +16,7 @@ export default function TermsPage() {
           </a>
           <h1 className="text-2xl font-bold mt-4">서비스 이용약관</h1>
           <p className="text-zinc-500 text-sm mt-2">
-            최종 수정일: 2026년 7월 12일
+            최종 수정일: 2026년 8월 14일
           </p>
           <p className="text-amber-700 text-sm mt-1">
             2026년 8월 21일 시행 예정 개정 안내 (아래 참조)
@@ -243,8 +245,10 @@ export function TermsContent() {
         </h2>
         <ol className="list-decimal pl-5 space-y-2">
           <li>
-            회원가입 시 무료 체험 크레딧 5회가 제공되며, 이후 추가 이용을
-            위해서는 크레딧을 충전해야 합니다.
+            회원가입 시 무료 체험 크레딧 {SIGNUP_FREE_CREDITS}개가 제공되며,
+            지급일로부터 {SIGNUP_FREE_VALIDITY_DAYS}일간 사용할 수 있습니다.
+            문제만 변환할 경우 {SIGNUP_FREE_CREDITS}문제 분량이며, 이후 추가
+            이용을 위해서는 크레딧을 충전해야 합니다.
           </li>
           <li>
             크레딧은 변환 요청 시 사전 차감되며, 변환 실패 시 자동으로

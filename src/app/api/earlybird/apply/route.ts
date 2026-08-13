@@ -8,7 +8,8 @@ import { NextResponse } from "next/server";
 // 계속 수집될 수 있고, 안내 문구도 "인증 후 지급"으로 바뀐 현행 정책과
 // 어긋나므로 완전히 닫는다 (Codex 리뷰 LA-02 후속).
 //
-// 얼리버드 혜택 자체는 가입 페이지(?promo=earlybird)에서 계속 진행 중이다.
+// 얼리버드 혜택도 2026-08-14 종료됐다. 기존 지급 대기자만 보호하고 신규
+// 가입자는 상시 무료 체험 15크레딧을 받는다.
 // 이전 구현이 필요하면 git 이력(web 2899c57 이전) 참조.
 
 // Response 객체는 요청마다 새로 만들어야 한다 (본문 스트림은 1회용)
@@ -16,8 +17,8 @@ function gone(): NextResponse {
   return NextResponse.json(
     {
       error:
-        "얼리버드 사전 신청은 종료되었습니다. 회원가입 시 얼리버드 혜택이 자동 적용됩니다.",
-      signup_url: "/auth/signup?promo=earlybird",
+        "얼리버드 프로모션은 종료되었습니다. 회원가입 시 무료 체험 15크레딧이 제공됩니다.",
+      signup_url: "/auth/signup",
     },
     { status: 410 }
   );

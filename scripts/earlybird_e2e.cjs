@@ -3,7 +3,7 @@
 // 전제: Supabase SQL Editor에서 0013_earlybird.sql 적용 완료
 // 구성:
 //   1) 실제 earlybird 코드가 validate-promo에서 열려 있는지 (25크레딧·30일)
-//   2) 일회용 클론 코드로 가입 API 풀 경로: 30크레딧(5+25)·만료 ~30일·
+//   2) 일회용 클론 코드로 가입 API 풀 경로: 40크레딧(15+25)·만료 ~7일·
 //      marketing_opt_in·동의 감사 행·redemption에 normalized_email/ip 기록
 //   3) 지메일 알리아스 변형 가입 → 보너스 차단 (promo_error=already_redeemed)
 //   4) RPC 직접 호출로 IP 가드: 같은 IP 2회째 성공 → 3회째 ip_limit
@@ -95,12 +95,12 @@ async function main() {
       marketing_opt_in: true,
     }, IP_A);
     uids.push(r1.user.id);
-    check("얼리버드 가입: 보너스 적용 (총 30크레딧 응답)", r1.promo_applied === true && r1.credits === 30,
+    check("프로모션 가입: 보너스 적용 (총 40크레딧 응답)", r1.promo_applied === true && r1.credits === 40,
       JSON.stringify({ promo_applied: r1.promo_applied, credits: r1.credits }));
 
     const { data: p1 } = await admin.from("profiles")
       .select("credits, expires_at, marketing_opt_in").eq("id", r1.user.id).maybeSingle();
-    check("profiles: 크레딧 30 + 만료 ~7일", p1?.credits === 30 && Math.abs(daysFromNow(p1.expires_at) - 7) < 0.5,
+    check("profiles: 크레딧 40 + 만료 ~7일", p1?.credits === 40 && Math.abs(daysFromNow(p1.expires_at) - 7) < 0.5,
       JSON.stringify(p1));
     check("profiles.marketing_opt_in = true", p1?.marketing_opt_in === true, JSON.stringify(p1));
 
@@ -126,7 +126,7 @@ async function main() {
     }, IP_B);
     uids.push(r2.user.id);
     check("알리아스 변형: 가입은 성공, 보너스는 차단",
-      r2.promo_applied === false && r2.promo_error === "already_redeemed" && r2.credits === 5,
+      r2.promo_applied === false && r2.promo_error === "already_redeemed" && r2.credits === 15,
       JSON.stringify({ promo_applied: r2.promo_applied, promo_error: r2.promo_error, credits: r2.credits }));
 
     // 5) IP 가드 (RPC 직접): IP_A 2회째 성공 → 3회째 ip_limit

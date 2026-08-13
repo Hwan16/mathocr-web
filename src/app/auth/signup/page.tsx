@@ -13,8 +13,6 @@ import ResendConfirmationMail, {
 import { getStoredUtm } from "@/lib/utm";
 // 동의받은 약관/방침의 버전(시행일) — lib/consent.ts 단일 출처 (서버와 자동 일치)
 import { CONSENT_VERSION } from "@/lib/consent";
-// 가입 기본 프로모션(얼리버드) — 서버(/api/auth/signup)와 같은 상수를 공유
-import { DEFAULT_SIGNUP_PROMO } from "@/lib/promo";
 
 export default function SignupPage() {
   // useSearchParams는 Suspense 경계가 필요하다 (Next.js 규칙)
@@ -72,21 +70,18 @@ function SignupForm() {
   const [confirmEmailSent, setConfirmEmailSent] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
-  // 혜택 링크(?promo=코드) 경유 — 얼리버드 팝업/배너가 이 형태로 연결된다.
+  // 혜택 링크(?promo=코드) 경유 — 상시 기본 지급과 별개인 추가 프로모션용.
   const promoFromLink = searchParams.get("promo")?.trim() ?? "";
 
-  // ── 자동 적용 프로모션 (2026-07-16) ──
-  // 링크 코드가 없어도 기본 프로모션(얼리버드)을 모든 방문자에게 적용한다.
-  // 입력칸(promoCode)과는 분리된 상태를 쓴다 — 자동 코드가 소진·비활성이어도
-  // 입력칸 검증 게이트에 걸려 가입이 막히는 일이 없게 (fail-open).
-  const autoPromoCode = (promoFromLink || DEFAULT_SIGNUP_PROMO).toLowerCase();
+  // 링크로 전달된 추가 프로모션. 가입 기본 15크레딧은 DB가 별도로 지급하므로
+  // 기본 프로모션 코드를 자동으로 붙이지 않는다.
+  const autoPromoCode = promoFromLink.toLowerCase();
   const [autoPromoStatus, setAutoPromoStatus] = useState<
     "none" | "checking" | "valid" | "closed"
   >(autoPromoCode ? "checking" : "none");
   const [autoPromoBonus, setAutoPromoBonus] = useState<number>(0);
   const [autoPromoDays, setAutoPromoDays] = useState<number | null>(null);
-  const benefitName =
-    autoPromoCode === "earlybird" ? "얼리버드 혜택" : "프로모션 혜택";
+  const benefitName = "프로모션 혜택";
 
   // 진입 시 자동 프로모션이 아직 지급 가능한지 확인해 배너에 반영한다.
   useEffect(() => {
@@ -211,8 +206,7 @@ function SignupForm() {
         body: JSON.stringify({
           email,
           password,
-          // 직접 입력한 코드가 우선, 없으면 자동 프로모션(서버도 같은 기본값을
-          // 적용하므로 빈 값이어도 얼리버드는 누락되지 않는다)
+          // 직접 입력한 코드가 우선, 없으면 링크로 전달된 추가 프로모션
           promo_code: promoCode.trim() || autoPromoCode,
           agreed_terms: agreeTerms,
           agreed_privacy: agreePrivacy,
@@ -287,9 +281,7 @@ function SignupForm() {
           <p className="text-zinc-500 text-sm mt-2">새 계정을 만드세요</p>
         </div>
 
-        {/* 자동 프로모션 배너 — 모든 방문자에게 표시 (2026-07-16 자동 적용).
-            마감 안내는 혜택 링크로 온 방문자에게만 보여준다 (조용한 fail-open —
-            혜택을 본 적 없는 방문자에게 '마감' 문구는 혼란만 준다). */}
+        {/* 링크 프로모션 배너. 마감 안내는 혜택 링크로 온 방문자에게만 보여준다. */}
         {!confirmEmailSent &&
           autoPromoStatus !== "none" &&
           (autoPromoStatus !== "closed" || !!promoFromLink) && (
@@ -311,11 +303,6 @@ function SignupForm() {
                   ? ` (인증 완료 후 ${autoPromoDays}일간 사용 가능)`
                   : ""}
                 .
-                {benefitName === "얼리버드 혜택" && (
-                  <span className="mt-1 block text-xs text-violet-600">
-                    한정 인원 · 이메일 인증 완료 후 지급 · 1인 1회
-                  </span>
-                )}
               </>
             ) : autoPromoStatus === "closed" ? (
               <>
@@ -632,7 +619,8 @@ function SignupForm() {
         {/* Benefits */}
         {!confirmEmailSent && (
           <div className="mt-6 text-center text-xs text-zinc-500">
-            가입 시 무료 체험 크레딧 5회가 제공됩니다 (유효기간 7일)
+            가입 시 무료 체험 크레딧 {SIGNUP_FREE_CREDITS}개가 제공됩니다
+            (유효기간 7일)
           </div>
         )}
       </div>

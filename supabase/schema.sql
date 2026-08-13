@@ -8,7 +8,7 @@ create table public.profiles (
   id uuid references auth.users(id) on delete cascade primary key,
   email text not null,
   role text not null default 'user' check (role in ('user', 'admin')),
-  credits integer not null default 5,  -- 가입 시 무료 5회 제공
+  credits integer not null default 15, -- 가입 시 무료 15크레딧 제공 (0025)
   expires_at timestamptz,              -- null이면 만료 없음
   utm_source text,                     -- 가입 출처 (M4, 0012) — null = 직접 유입
   utm_medium text,
@@ -21,12 +21,12 @@ create table public.profiles (
   updated_at timestamptz not null default now()
 );
 
--- 새 사용자 가입 시 profiles 자동 생성 (무료 5크레딧 = 유효기간 7일, 0009)
+-- 새 사용자 가입 시 profiles 자동 생성 (무료 15크레딧 = 유효기간 7일, 0025)
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
-  insert into public.profiles (id, email, expires_at)
-  values (new.id, new.email, now() + interval '7 days');
+  insert into public.profiles (id, email, credits, expires_at)
+  values (new.id, new.email, 15, now() + interval '7 days');
   return new;
 end;
 $$ language plpgsql security definer set search_path = public, pg_temp;

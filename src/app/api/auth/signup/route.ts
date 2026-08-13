@@ -8,7 +8,11 @@ import { isDatacenterIp } from "@/lib/datacenter-ip";
 import { claimPendingPromo } from "@/lib/promo-claim";
 import { claimPendingMarketingConsent } from "@/lib/marketing-consent";
 import { CONSENT_VERSION } from "@/lib/consent";
-import { DEFAULT_SIGNUP_PROMO } from "@/lib/promo";
+import { isRetiredSignupPromo } from "@/lib/promo";
+import {
+  LEGACY_SIGNUP_FREE_CREDITS,
+  SIGNUP_FREE_CREDITS,
+} from "@/lib/plans";
 import { NextRequest, NextResponse } from "next/server";
 
 // IP당 가입 시도 제한 (B3 — 무료 크레딧 파밍 봇 방어의 1차 저지선).
@@ -17,7 +21,6 @@ import { NextRequest, NextResponse } from "next/server";
 const SIGNUP_IP_LIMIT = 5;
 const SIGNUP_IP_WINDOW_MS = 60 * 60 * 1000; // 1시간
 
-const DEFAULT_SIGNUP_CREDITS = 5;
 const PROFILE_RETRY_DELAYS_MS = [100, 200, 400, 800, 1200];
 
 type SignupBody = {
@@ -93,6 +96,26 @@ async function waitForProfile(
   }
 
   return false;
+}
+
+// 웹 코드와 DB 마이그레이션이 배포되는 몇 분 사이에도 신규 가입자가 예전 기본값
+// 5크레딧을 받지 않도록 보정한다. DB가 이미 15로 바뀐 뒤에는 아무 것도 하지 않는다.
+async function ensureCurrentSignupCredits(
+  admin: ReturnType<typeof createAdminClient>,
+  userId: string
+): Promise<void> {
+  const { error } = await admin
+    .from("profiles")
+    .update({ credits: SIGNUP_FREE_CREDITS })
+    .eq("id", userId)
+    .eq("credits", LEGACY_SIGNUP_FREE_CREDITS);
+
+  if (error) {
+    console.warn("[signup] signup credit migration bridge failed", {
+      user_id: userId,
+      error: error.message,
+    });
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -245,12 +268,13 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  // 코드를 입력하지 않은 가입에도 기본 프로모션(얼리버드)을 무조건 적용한다
-  // (2026-07-16 사용자 결정 — 가입 경로에 따라 혜택이 누락되던 사고 재발 방지).
-  // 소진·비활성 코드는 인증 후 지급 단계(claimPendingPromo)에서 조용히
-  // 걸러지므로 가입 자체는 영향받지 않는다. 종료 방법은 lib/promo.ts 참조.
-  const normalizedPromoCode =
-    normalizePromoCode(promo_code) || DEFAULT_SIGNUP_PROMO;
+  // 프로모션 코드는 사용자가 직접 입력한 경우에만 보관한다. 얼리버드는
+  // 2026-08-14 신규 적용이 종료됐으므로 오래된 링크가 코드를 보내도 무시한다.
+  // 종료 전에 가입해 이미 pending 상태인 계정은 promo-claim에서 별도 보호한다.
+  const requestedPromoCode = normalizePromoCode(promo_code);
+  const normalizedPromoCode = isRetiredSignupPromo(requestedPromoCode)
+    ? ""
+    : requestedPromoCode;
 
   // 계정 생성과 원자적으로 동의 도장을 user_metadata 에 남긴다.
   // (별도 user_consents 기록이 실패하더라도 '동의 없는 계정'은 생기지 않는다.)
@@ -306,6 +330,8 @@ export async function POST(request: NextRequest) {
       const profileReady = await waitForProfile(admin, userId);
 
       if (profileReady) {
+        await ensureCurrentSignupCredits(admin, userId);
+
         // (1) 동의 이력 기록 (append-only 감사 로그, 서버 버전으로 기록).
         // 원자적 도장은 위 signUp user_metadata 에 이미 남았으므로 이 기록 실패가
         // 가입을 막지는 않는다(추후 백필 가능). email 은 탈퇴(user_id=null) 후에도
@@ -392,7 +418,7 @@ export async function POST(request: NextRequest) {
     message: needsConfirmation
       ? "확인 메일을 보냈습니다. 메일의 인증 링크를 눌러 가입을 완료해주세요."
       : "회원가입이 완료되었습니다.",
-    credits: DEFAULT_SIGNUP_CREDITS + promoBonusCredits,
+    credits: SIGNUP_FREE_CREDITS + promoBonusCredits,
     promo_applied: promoApplied,
     // 인증 후 지급 대기 중인 코드 존재 여부 — 가입 화면이 안내 문구에 사용.
     // Confirm email이 꺼진 환경에서 프로필 지연으로 즉시 지급을 건너뛴 경우에도

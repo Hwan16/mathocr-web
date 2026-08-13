@@ -1,5 +1,9 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizeEmailAlias } from "@/lib/email";
+import {
+  canClaimGrandfatheredEarlybird,
+  isRetiredSignupPromo,
+} from "@/lib/promo";
 
 // ── 인증 후 프로모션 지급 (LA-02, 2026-07-12) ──
 //
@@ -35,6 +39,7 @@ const PERMANENT_ERRORS = new Set([
 type ClaimUser = {
   id: string;
   email?: string | null;
+  created_at?: string | null;
   email_confirmed_at?: string | null;
   user_metadata?: Record<string, unknown> | null;
   app_metadata?: Record<string, unknown> | null;
@@ -60,6 +65,27 @@ export async function claimPendingPromo(
   }
 
   const admin = createAdminClient();
+
+  // 얼리버드는 2026-08-14 이후 신규 적용 종료. 종료 전 가입해 metadata에
+  // 이미 지급 대기가 남은 계정만 기존 약속대로 상환한다. 종료 후 계정이 오래된
+  // 링크·metadata 조작으로 코드를 들고 와도 지급하지 않고 대기를 정리한다.
+  if (
+    isRetiredSignupPromo(code) &&
+    !canClaimGrandfatheredEarlybird(code, user.created_at)
+  ) {
+    const { error: cleanupError } = await admin.auth.admin.updateUserById(user.id, {
+      user_metadata: { pending_promo_code: null },
+      app_metadata: { promo_pending_error: "inactive_code" },
+    });
+    if (cleanupError) {
+      console.warn("[promo-claim] retired promo cleanup failed", {
+        user_id: user.id,
+        error: cleanupError.message,
+      });
+    }
+    return { applied: false, credits_granted: 0, error: "inactive_code" };
+  }
+
   const { data, error: rpcError } = await admin.rpc("redeem_promo_code", {
     p_user_id: user.id,
     p_code: code,

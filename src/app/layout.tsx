@@ -5,6 +5,7 @@ import UtmTracker from "@/components/UtmTracker";
 import MetaPixel from "@/components/MetaPixel";
 import NaverWcs from "@/components/NaverWcs";
 import IconifyProvider from "@/components/IconifyProvider";
+import { SIGNUP_FREE_CREDITS } from "@/lib/plans";
 // 폰트 자체 번들 (LA-10) — jsDelivr CDN 대신 npm 패키지에서 번들.
 // 참조된 woff2 서브셋은 빌드가 /_next/static 자산으로 자동 포함한다.
 import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
@@ -17,7 +18,7 @@ const SITE_URL = "https://mathocr.ai.kr";
 const SITE_NAME = "AI MathOCR";
 const SITE_TITLE = "AI MathOCR — 수학문제 OCR, PDF·이미지를 편집 가능한 HWP로";
 const SITE_DESCRIPTION =
-  "수학문제 OCR 프로그램 AI MathOCR. 시험지·교재 PDF와 사진 속 수식을 이미지가 아닌 한글(HWP) 수식편집기 객체로 변환합니다. 프론티어 AI 이중 검증으로 정확하게, 문제 속 그림은 크레딧 차감 없이 함께.";
+  `수학문제 OCR 프로그램 AI MathOCR. 시험지·교재 PDF와 사진 속 수식을 이미지가 아닌 한글(HWP) 수식편집기 객체로 변환합니다. 프론티어 AI 이중 검증으로 정확하게, 회원가입 시 ${SIGNUP_FREE_CREDITS}문제 무료.`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

@@ -36,7 +36,7 @@ async function main() {
   if (colErr) throw new Error("0011 미적용으로 보임 (validity_days 조회 실패): " + colErr.message);
   check("promo_codes.validity_days 컬럼 존재", true);
 
-  // 1) 일회용 계정 (트리거: 5크레딧 + 만료 7일)
+  // 1) 일회용 계정 (트리거: 15크레딧 + 만료 7일)
   const { data: created, error: createErr } = await admin.auth.admin.createUser({
     email, password: `E2e!${ts}#pw`, email_confirm: true,
   });
@@ -53,7 +53,7 @@ async function main() {
       if (!profile) await new Promise((r) => setTimeout(r, 300));
     }
     if (!profile) throw new Error("profiles 트리거 생성 실패");
-    check("가입 초기 상태 (5크레딧·만료 ~7일)", profile.credits === 5 && Math.abs(daysFromNow(profile.expires_at) - 7) < 0.5,
+    check("가입 초기 상태 (15크레딧·만료 ~7일)", profile.credits === 15 && Math.abs(daysFromNow(profile.expires_at) - 7) < 0.5,
       `credits=${profile.credits}, expiry=${daysFromNow(profile.expires_at).toFixed(1)}일`);
 
     // 2) 유효기간 30일 코드 생성 → 상환

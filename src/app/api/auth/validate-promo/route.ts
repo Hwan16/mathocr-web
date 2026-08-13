@@ -1,5 +1,6 @@
 import { checkRateLimit } from "@/lib/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isRetiredSignupPromo } from "@/lib/promo";
 import { NextRequest, NextResponse } from "next/server";
 
 const VALIDATION_DELAY_MS = 200;
@@ -71,6 +72,11 @@ export async function POST(request: NextRequest) {
 
   const normalized = normalizePromoCode(body.code);
   if (!normalized) {
+    return NextResponse.json({ valid: false });
+  }
+  // 얼리버드는 신규 적용이 끝났다. DB 코드는 종료 전 가입자의 지급 대기를
+  // 지키기 위해 잠시 남아 있지만 공개 검증에서는 항상 마감으로 보인다.
+  if (isRetiredSignupPromo(normalized)) {
     return NextResponse.json({ valid: false });
   }
 

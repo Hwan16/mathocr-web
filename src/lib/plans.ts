@@ -57,8 +57,21 @@ export const PLANS = [
   },
 ] as const;
 
-// 가입 시 무료로 지급되는 크레딧(문제) 수. 큰 셀링포인트는 아니라 홈에서는 최소로만 노출.
-export const SIGNUP_FREE_CREDITS = 5;
+// 가입 시 무료로 지급되는 크레딧(문제) 수. 홈·가입·약관·구조화 데이터와
+// 가입 API 응답이 이 값을 함께 사용한다.
+export const SIGNUP_FREE_CREDITS = 15;
+// 지급 내역처럼 과거 가입 시점의 정책을 재구성해야 하는 화면에서만 사용한다.
+export const LEGACY_SIGNUP_FREE_CREDITS = 5;
+export const SIGNUP_FREE_CREDITS_EFFECTIVE_AT = "2026-08-14T00:00:00+09:00";
+
+export function signupFreeCreditsAt(createdAt: string): number {
+  const createdAtMs = Date.parse(createdAt);
+  const effectiveAtMs = Date.parse(SIGNUP_FREE_CREDITS_EFFECTIVE_AT);
+  if (!Number.isFinite(createdAtMs) || createdAtMs < effectiveAtMs) {
+    return LEGACY_SIGNUP_FREE_CREDITS;
+  }
+  return SIGNUP_FREE_CREDITS;
+}
 // 무료 크레딧 유효기간(일) — DB의 handle_new_user(0009 마이그레이션)와 반드시 일치시킬 것.
 export const SIGNUP_FREE_VALIDITY_DAYS = 7;
 

@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/supabase/auth-helper";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { PLANS, SIGNUP_FREE_CREDITS } from "@/lib/plans";
+import { PLANS, signupFreeCreditsAt } from "@/lib/plans";
 
 // 크레딧 지급 내역 — 기존 기록들을 하나의 타임라인으로 조립한다(별도 원장 테이블 없음).
 //
 // 출처:
 //  - payments: 플랜 구매(amount>0) / 프로모션(promo_*) / 운영자 지급(admin_grant_*, grant_*)
 //    ※ 프로모 상환은 redeem_promo_code가 payments에도 기록하므로(0013) payments가 지급 원장.
-//  - profiles.created_at: 가입 무료 크레딧(상수 SIGNUP_FREE_CREDITS)
+//  - profiles.created_at: 가입 당시 정책에 따른 무료 크레딧
 //  - profiles.expires_at: 유효기간 만료(현재 잔액 기준 합성 이벤트 — 과거 만료 이력은
 //    별도 기록이 없어 다음 충전으로 잔액이 재설정되면 표시되지 않는다)
 //
@@ -134,7 +134,7 @@ export async function GET(request: NextRequest) {
       type: "signup",
       label: "가입 무료 크레딧",
       detail: null,
-      delta: SIGNUP_FREE_CREDITS,
+      delta: signupFreeCreditsAt(profile.created_at),
       refunded: false,
       at: profile.created_at,
     });

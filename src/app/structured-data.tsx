@@ -2,6 +2,7 @@
 // 사이트 전역에 들어가는 "안정적인" 정보(회사·사이트·소프트웨어)는 StructuredData(전역, layout)에,
 // 홈 FAQ처럼 특정 페이지 콘텐츠 기반 데이터는 FaqStructuredData(홈 전용, page.tsx)에 둔다.
 import { FAQS } from "@/lib/faqs";
+import { SIGNUP_FREE_CREDITS } from "@/lib/plans";
 
 const SITE_URL = "https://mathocr.ai.kr";
 
@@ -41,7 +42,7 @@ const softwareApplication = {
     "@type": "Offer",
     price: "0",
     priceCurrency: "KRW",
-    description: "가입 시 5문제 무료 제공. 100문제 19,900원부터 · 월 구독 없음.",
+    description: `가입 시 ${SIGNUP_FREE_CREDITS}문제 무료 제공. 100문제 19,900원부터 · 월 구독 없음.`,
   },
 };
 

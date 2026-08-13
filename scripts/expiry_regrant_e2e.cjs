@@ -9,7 +9,7 @@
 //   4) 미인증 + 만료 + 20크레딧           → grant=false, skip=unconfirmed (fail-closed)
 //   4b) 40일 전 만료 + 15크레딧           → 후보 제외 (REGRANT_WINDOW_DAYS=30 시간창)
 //  [RPC 'system' 소스 (0022)]
-//   5) system 상환 성공 → 30크레딧, 만료일 ~7일 뒤, payments promo_ 기록
+//   5) system 상환 성공 → 15크레딧, 만료일 ~7일 뒤, payments promo_ 기록
 //   6) 같은 유저 재상환 → already_redeemed (계정당 평생 1회)
 //   7) 공개 경로(mypage)로 re_earlybird → inactive_code (비활성 코드 차단 유지)
 //   8) 엉뚱한 소스('hack') → invalid_source
@@ -94,9 +94,9 @@ async function makeUser({ tag, confirmed, credits, optIn, expiredDaysAgo = 2 }) 
       .maybeSingle();
     if (!promo) throw new Error("re_earlybird 코드 없음 — 0022 적용 필요");
     promoId = promo.id;
-    check("0. 코드 상태: 비활성 + max_uses 무제한 + 30크레딧·7일",
+    check("0. 코드 상태: 비활성 + max_uses 무제한 + 15크레딧·7일",
       promo.is_active === false && promo.max_uses === null &&
-      promo.credits === 30 && promo.validity_days === 7,
+      promo.credits === 15 && promo.validity_days === 7,
       JSON.stringify(promo));
 
     // ── 준비: 판정 매트릭스용 4계정 ──
@@ -126,17 +126,17 @@ async function makeUser({ tag, confirmed, credits, optIn, expiredDaysAgo = 2 }) 
     const { data: r5, error: e5 } = await admin.rpc("redeem_promo_code", {
       p_user_id: A.uid, p_code: "re_earlybird", p_source: "system",
     });
-    check("5. system 상환 성공", !e5 && r5?.success === true && r5?.credits_granted === 30,
+    check("5. system 상환 성공", !e5 && r5?.success === true && r5?.credits_granted === 15,
       e5?.message ?? JSON.stringify(r5));
     const { data: pA } = await admin
       .from("profiles").select("credits, expires_at").eq("id", A.uid).maybeSingle();
     const days = pA?.expires_at ? (new Date(pA.expires_at) - Date.now()) / 86400000 : -1;
-    check("5. 30크레딧 + 만료일 ~7일 뒤", pA?.credits === 30 && days > 6.9 && days < 7.1,
+    check("5. 15크레딧 + 만료일 ~7일 뒤", pA?.credits === 15 && days > 6.9 && days < 7.1,
       JSON.stringify({ ...pA, days }));
     const { data: pay } = await admin
       .from("payments").select("credits_added, pg_transaction_id").eq("user_id", A.uid)
       .like("pg_transaction_id", "promo_%");
-    check("5. payments promo_ 기록", (pay ?? []).some((x) => x.credits_added === 30),
+    check("5. payments promo_ 기록", (pay ?? []).some((x) => x.credits_added === 15),
       JSON.stringify(pay));
 
     // ── 6) 재상환 차단 ──

@@ -1,11 +1,11 @@
-// 가입 기본 프로모션(얼리버드 자동 적용, 2026-07-16) e2e
+// 상시 가입 15크레딧 + 얼리버드 종료(2026-08-14) e2e
 // 사용법: (dev 서버 실행 중에) node scripts/signup_default_promo_e2e.cjs
 // 검증:
-//   1) 코드 없이 가입 → user_metadata.pending_promo_code === DEFAULT(earlybird)
-//   2) 명시 코드로 가입 → 입력한 코드가 유지 (기본값이 덮어쓰지 않음)
-//   3) 공백 코드로 가입 → 기본값 적용 (빈 문자열도 누락되지 않음)
+//   1) 코드 없이 가입 → 15크레딧, pending 프로모션 없음
+//   2) 명시 코드로 가입 → 입력한 추가 프로모션은 유지
+//   3) 종료된 earlybird 코드를 보내도 무시
 // 주의: 확인 메일이 seize.win+edp-*@gmail.com 으로 발송됨(무시하면 됨).
-//       실제 earlybird 코드는 소모하지 않는다(pending 단계까지만 확인).
+//       실제 earlybird 코드는 소모하지 않는다.
 const fs = require("fs");
 const path = require("path");
 const WEB = path.join(__dirname, "..");
@@ -18,7 +18,6 @@ for (const line of fs.readFileSync(path.join(WEB, ".env.local"), "utf8").split(/
 }
 
 const BASE_URL = process.env.E2E_BASE_URL || "http://localhost:3000";
-const DEFAULT_PROMO = "earlybird";
 const admin = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
@@ -71,16 +70,16 @@ async function main() {
   });
 
   try {
-    // 1) 코드 없이 가입 → 기본 프로모션이 pending 으로 저장
+    // 1) 코드 없이 가입 → 상시 15크레딧만 지급
     const email1 = `seize.win+edp-none-${ts}@gmail.com`;
-    await signup({ email: email1 }, `10.99.${ts % 250}.1`);
+    const r1 = await signup({ email: email1 }, `10.99.${ts % 250}.1`);
     const u1 = await findUser(email1);
     check("코드 없이 가입 성공", !!u1);
     if (u1) uids.push(u1.id);
     check(
-      `코드 미입력 → pending_promo_code = ${DEFAULT_PROMO}`,
-      u1?.user_metadata?.pending_promo_code === DEFAULT_PROMO,
-      JSON.stringify(u1?.user_metadata?.pending_promo_code)
+      "코드 미입력 → 15크레딧, pending 프로모션 없음",
+      r1.credits === 15 && !u1?.user_metadata?.pending_promo_code,
+      JSON.stringify({ credits: r1.credits, pending: u1?.user_metadata?.pending_promo_code })
     );
 
     // 2) 명시 코드로 가입 → 입력 코드 유지 (기본값이 덮어쓰지 않음)
@@ -101,15 +100,15 @@ async function main() {
       JSON.stringify(u2?.user_metadata?.pending_promo_code)
     );
 
-    // 3) 공백 코드 → 기본 프로모션 적용
-    const email3 = `seize.win+edp-blank-${ts}@gmail.com`;
-    await signup({ email: email3, promo_code: "   " }, `10.99.${ts % 250}.3`);
+    // 3) 종료된 얼리버드 코드는 신규 가입에 보관하지 않음
+    const email3 = `seize.win+edp-retired-${ts}@gmail.com`;
+    const r3 = await signup({ email: email3, promo_code: "earlybird" }, `10.99.${ts % 250}.3`);
     const u3 = await findUser(email3);
     if (u3) uids.push(u3.id);
     check(
-      `공백 코드 → pending_promo_code = ${DEFAULT_PROMO}`,
-      u3?.user_metadata?.pending_promo_code === DEFAULT_PROMO,
-      JSON.stringify(u3?.user_metadata?.pending_promo_code)
+      "종료 코드 → 15크레딧, pending 프로모션 없음",
+      r3.credits === 15 && !u3?.user_metadata?.pending_promo_code,
+      JSON.stringify({ credits: r3.credits, pending: u3?.user_metadata?.pending_promo_code })
     );
   } finally {
     // 정리: 테스트 유저 삭제 + 클론 코드 비활성화

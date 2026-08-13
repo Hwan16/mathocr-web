@@ -6,7 +6,6 @@ import { trackEvent } from "@/lib/analytics";
 import { FAQS } from "@/lib/faqs";
 import { FaqStructuredData } from "./structured-data";
 import { PLANS, SIGNUP_FREE_CREDITS, SIGNUP_FREE_VALIDITY_DAYS, CREDIT_RULE, creditsAsProblems } from "@/lib/plans";
-import EarlyBirdPopup from "@/components/EarlyBirdPopup";
 import AutoDetectShowcase from "@/components/AutoDetectShowcase";
 import DownloadGuideModal from "@/components/DownloadGuideModal";
 // 다운로드 링크 단일 출처 — 릴리스 시 lib/download.ts만 갱신 (홈·/start·마이페이지 공유)
@@ -174,7 +173,8 @@ export default function Home() {
               </div>
 
               <p className="text-sm text-zinc-500 mt-5">
-                Windows 10/11 전용 · 문제 속 그림은 크레딧 차감 없이
+                회원가입 시 {SIGNUP_FREE_CREDITS}크레딧 무료 (문제 {SIGNUP_FREE_CREDITS}개 · {SIGNUP_FREE_VALIDITY_DAYS}일)
+                <br className="sm:hidden" /> · Windows 10/11 전용 · 문제 속 그림은 크레딧 차감 없이
               </p>
             </div>
 
@@ -559,7 +559,7 @@ export default function Home() {
               {
                 n: 1,
                 title: "회원가입 후 프로그램 설치",
-                desc: "홈페이지에서 회원가입하면 무료 크레딧 5개가 지급됩니다. Windows용 설치 파일을 다운로드해 실행하세요.",
+                desc: `홈페이지에서 회원가입하면 무료 크레딧 ${SIGNUP_FREE_CREDITS}개가 지급됩니다. Windows용 설치 파일을 다운로드해 실행하세요.`,
                 img: "step-1.webp",
                 imgW: 1600,
                 imgH: 1104,
@@ -868,7 +868,7 @@ export default function Home() {
             {/* PC 전용: 다운로드 버튼 */}
             <div className="hidden md:block">
               <p className="text-lg text-zinc-600 mb-9">
-                설치 후 로그인하면 무료 크레딧 5개가 자동 지급됩니다.
+                설치 후 로그인하면 무료 크레딧 {SIGNUP_FREE_CREDITS}개가 자동 지급됩니다.
               </p>
               <a
                 href={DOWNLOAD_URL}
@@ -981,7 +981,7 @@ export default function Home() {
               오늘 시험지 작업부터 줄여보세요
             </h2>
             <p className="text-white/85 text-lg">
-              회원가입하면 무료 크레딧 5개로 바로 시작할 수 있습니다.
+              회원가입하면 무료 크레딧 {SIGNUP_FREE_CREDITS}개로 바로 시작할 수 있습니다.
             </p>
           </div>
           <div className="flex gap-3 shrink-0">
@@ -1083,9 +1083,6 @@ export default function Home() {
           </div>
         </div>
       )}
-
-      {/* ── 얼리버드 안내 팝업 (결제 오픈 후 컴포넌트 내 POPUP_ENABLED=false) ── */}
-      <EarlyBirdPopup />
 
       {/* ── 다운로드 보안 경고 안내 모달 (다운로드 버튼 클릭 시) ── */}
       <DownloadGuideModal
