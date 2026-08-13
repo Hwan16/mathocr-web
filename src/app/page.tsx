@@ -113,8 +113,8 @@ export default function Home() {
                 >
                   로그인
                 </a>
-                <a href="/auth/signup" onClick={() => trackEvent("cta_click", { label: "sign_up", location: "header" })} className="btn-primary text-sm px-3.5 py-2 md:px-5 md:py-2.5 rounded-lg whitespace-nowrap">
-                  회원가입
+                <a href="/auth/signup" onClick={() => trackEvent("cta_click", { label: "sign_up_free_15", location: "header" })} className="btn-primary text-sm px-3.5 py-2 md:px-5 md:py-2.5 rounded-lg whitespace-nowrap">
+                  15문제 무료
                 </a>
               </>
             )}
@@ -138,7 +138,7 @@ export default function Home() {
             {/* 좌: 카피 */}
             <div>
               <div className="inline-flex items-center gap-2 text-sm font-medium text-[var(--accent)] bg-white border border-[var(--accent-border)] rounded-full px-4 py-1.5 mb-7">
-                Windows 데스크톱 프로그램
+                회원가입하면 문제 {SIGNUP_FREE_CREDITS}개 무료
               </div>
 
               <h1 className="text-4xl lg:text-[3.4rem] font-bold leading-[1.2] lg:leading-[1.18] mb-6 tracking-tight">
@@ -154,26 +154,40 @@ export default function Home() {
                 줄어듭니다.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex flex-col 2xl:flex-row gap-3">
+                {isLoggedIn ? (
+                  <a
+                    href="#download"
+                    onClick={() => trackEvent("nav_click", { label: "download_hero" })}
+                    className="btn-primary px-8 py-4 text-base rounded-lg text-center inline-flex items-center justify-center gap-2"
+                  >
+                    <iconify-icon icon="solar:download-minimalistic-linear" width="20" />
+                    Windows용 다운로드
+                  </a>
+                ) : (
+                  <a
+                    href="/auth/signup"
+                    onClick={() => trackEvent("cta_click", { label: "sign_up_free_15", location: "hero" })}
+                    className="btn-primary px-8 py-4 text-base rounded-lg text-center inline-flex items-center justify-center gap-2"
+                  >
+                    회원가입하고 {SIGNUP_FREE_CREDITS}문제 무료로 시작
+                    <span aria-hidden>→</span>
+                  </a>
+                )}
                 <a
-                  href="#download"
-                  onClick={() => trackEvent("nav_click", { label: "download_hero" })}
-                  className="btn-primary px-8 py-4 text-base rounded-lg text-center inline-flex items-center justify-center gap-2"
+                  href={isLoggedIn ? "#guide" : "#download"}
+                  onClick={() => trackEvent("nav_click", { label: isLoggedIn ? "guide_hero" : "download_hero_secondary" })}
+                  className="btn-outline px-8 py-4 text-base rounded-lg text-center inline-flex items-center justify-center gap-2"
                 >
-                  <iconify-icon icon="solar:download-minimalistic-linear" width="20" />
-                  무료로 다운로드
-                </a>
-                <a
-                  href="#guide"
-                  onClick={() => trackEvent("nav_click", { label: "guide_hero" })}
-                  className="btn-outline px-8 py-4 text-base rounded-lg text-center"
-                >
-                  사용법 보기
+                  {!isLoggedIn && <iconify-icon icon="solar:download-minimalistic-linear" width="20" />}
+                  {isLoggedIn ? "사용법 보기" : "Windows용 다운로드"}
                 </a>
               </div>
 
-              <p className="text-sm text-zinc-500 mt-5">
-                회원가입 시 {SIGNUP_FREE_CREDITS}크레딧 무료 (문제 {SIGNUP_FREE_CREDITS}개 · {SIGNUP_FREE_VALIDITY_DAYS}일)
+              <p className="text-sm text-zinc-500 mt-5 leading-relaxed">
+                <strong className="text-[var(--accent)] font-bold">
+                  회원가입 시 {SIGNUP_FREE_CREDITS}크레딧 무료지급
+                </strong>
                 <br className="sm:hidden" /> · Windows 10/11 전용 · 문제 속 그림은 크레딧 차감 없이
               </p>
             </div>
