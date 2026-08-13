@@ -43,7 +43,8 @@ earlybird_cap as (
   from earlybird_eligible_users
 )
 update public.promo_codes pc
-set max_uses = earlybird_cap.cap
+set max_uses = earlybird_cap.cap,
+    memo = '2026-08-14 얼리버드 종료. 신규·마이페이지 적용 금지. 종료 전 가입한 지급 대기자만 인증 후 자동 지급.'
 from earlybird_cap
 where pc.code = 'earlybird';
 

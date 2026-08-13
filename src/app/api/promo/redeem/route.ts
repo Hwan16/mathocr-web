@@ -2,6 +2,7 @@ import { getAuthUser } from "@/lib/supabase/auth-helper";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { normalizeEmailAlias } from "@/lib/email";
+import { isRetiredSignupPromo } from "@/lib/promo";
 import { NextRequest, NextResponse } from "next/server";
 
 // 무차별 대입 방지: 계정당 분당 시도 횟수 제한
@@ -65,6 +66,13 @@ export async function POST(request: NextRequest) {
   const code = normalizePromoCode(body?.code);
   if (!code || code.length > 50) {
     return NextResponse.json({ error: "코드를 입력해주세요." }, { status: 400 });
+  }
+
+  // 얼리버드는 신규·수동 적용이 끝났다. DB 행은 종료 전에 가입해 아직
+  // 이메일 인증을 마치지 않은 지급 대기자만 자동 상환할 수 있도록 잠시
+  // 유지하므로, 마이페이지 직접 입력 경로에서는 항상 마감으로 처리한다.
+  if (isRetiredSignupPromo(code)) {
+    return NextResponse.json({ error: "유효하지 않은 코드입니다." }, { status: 400 });
   }
 
   const admin = createAdminClient();
