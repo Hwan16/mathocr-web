@@ -65,7 +65,29 @@ export async function GET(request: NextRequest) {
       .eq("user_id", targetId),
   ]);
 
-  const profile = profileRes.data;
+  // 0027 미적용 배포 창 대비 — signup_credits_granted_at 컬럼이 아직 없으면
+  // 위 조회가 통째로 실패한다(내역 화면이 404). 컬럼 없이 다시 조회하고,
+  // 그 경우는 "가입 시점에 지급"이던 종전 규칙으로 표시한다.
+  let profile = profileRes.data as
+    | {
+        credits: number;
+        expires_at: string | null;
+        created_at: string;
+        signup_credits_granted_at?: string | null;
+      }
+    | null;
+  let hasGrantColumn = true;
+
+  if (!profile) {
+    hasGrantColumn = false;
+    const legacyRes = await admin
+      .from("profiles")
+      .select("credits, expires_at, created_at")
+      .eq("id", targetId)
+      .single();
+    profile = legacyRes.data;
+  }
+
   if (!profile) {
     return NextResponse.json({ error: "사용자를 찾을 수 없습니다." }, { status: 404 });
   }
@@ -132,7 +154,11 @@ export async function GET(request: NextRequest) {
   // 지급이 가입 시점에서 "이메일 인증 후 첫 로그인"으로 옮겨졌으므로,
   // created_at 만 보고 합성하면 아직 못 받은 계정에도 +15가 찍힌다.
   // (0027 백필로 기존 사용자는 granted_at = created_at 이라 표시가 종전과 동일)
-  const signupGrantedAt = profile.signup_credits_granted_at ?? null;
+  // hasGrantColumn=false(0027 미적용)면 전원 가입 시점에 지급받았으므로
+  // 종전대로 created_at 기준으로 표시한다.
+  const signupGrantedAt = hasGrantColumn
+    ? profile.signup_credits_granted_at ?? null
+    : profile.created_at;
   if (signupGrantedAt && profile.created_at) {
     events.push({
       type: "signup",
