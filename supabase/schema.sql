@@ -99,7 +99,8 @@ create index if not exists idx_blocked_signups_created_at
 
 alter table public.blocked_signups enable row level security;
 revoke all on table public.blocked_signups from public, anon, authenticated;
-grant select, insert on table public.blocked_signups to service_role;
+-- delete 는 90일 경과분 자동 정리(cron/signup-surge)에 필요하다
+grant select, insert, delete on table public.blocked_signups to service_role;
 
 -- updated_at 자동 갱신
 create or replace function public.update_updated_at()

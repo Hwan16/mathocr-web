@@ -17,6 +17,12 @@
 --   순서를 바꾸면(마이그레이션 먼저) 코드 배포 전까지 신규 가입자가
 --   크레딧을 못 받으므로 반드시 코드 먼저.
 
+-- ⚠️ 전체를 하나의 트랜잭션으로 실행한다. 중간에 어느 한 문장이라도 실패하면
+-- 전부 되돌아간다(반만 적용돼 "신규 가입자는 0크레딧인데 지급 함수는 없는"
+-- 상태가 되는 것을 막는다). Supabase SQL 편집기에 이 파일 전체를 붙여넣고
+-- 한 번에 실행할 것.
+begin;
+
 -- ============================================
 -- 1. 지급 이력 컬럼 + 기존 사용자 백필
 -- ============================================
@@ -139,4 +145,16 @@ create index if not exists idx_blocked_signups_created_at
 
 alter table public.blocked_signups enable row level security;
 revoke all on table public.blocked_signups from public, anon, authenticated;
-grant select, insert on table public.blocked_signups to service_role;
+grant select, insert, delete on table public.blocked_signups to service_role;
+
+commit;
+
+-- ============================================
+-- 적용 확인 (위 실행이 성공한 뒤 따로 실행해도 되는 조회)
+-- ============================================
+-- 아래 3줄이 모두 나오면 정상이다.
+--   select column_name from information_schema.columns
+--    where table_name='profiles' and column_name='signup_credits_granted_at';
+--   select proname from pg_proc where proname='grant_signup_credits';
+--   select count(*) as 미지급자 from public.profiles where signup_credits_granted_at is null;
+--     → 백필 직후에는 0명이어야 한다(기존 사용자 전원 지급 완료 처리).
