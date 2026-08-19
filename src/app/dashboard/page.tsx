@@ -72,6 +72,17 @@ export default function DashboardPage() {
     }
     setUser(user);
 
+    // 가입 무료 크레딧 지급 안전망 (0027) — 지급은 로그인 라우트에서 이뤄지지만,
+    // 인증 링크가 만든 세션으로 곧장 대시보드에 오거나 비밀번호 재설정으로
+    // 진입하면 그 경로를 건너뛴다. 이 조회는 서버에서 지급을 청구하므로
+    // (계정당 1회 멱등) 어느 경로로 들어와도 잔액이 반영된다.
+    // 프로필 조회보다 먼저 기다려야 아래 잔액이 지급 후 값이 된다.
+    try {
+      await fetch("/api/credits");
+    } catch {
+      // 실패해도 화면은 계속 그린다 — 다음 방문·앱 로그인에서 다시 청구된다
+    }
+
     // 프로필
     const { data: profileData } = await supabase
       .from("profiles")
@@ -235,7 +246,10 @@ export default function DashboardPage() {
                 <p className="text-sm text-zinc-600 leading-relaxed">
                   시험지 변환은{" "}
                   <strong className="text-zinc-900">Windows PC 프로그램</strong>
-                  에서 진행돼요. 크레딧은 이 계정에 이미 지급되어 있습니다.
+                  에서 진행돼요.{" "}
+                  {(profile?.credits ?? 0) > 0
+                    ? "크레딧은 이 계정에 이미 지급되어 있습니다."
+                    : "크레딧이 아직 반영되지 않았다면 잠시 후 새로고침해 주세요."}
                 </p>
                 <p className="text-xs text-zinc-500 mt-1">
                   Windows 10 / 11 · 정품 한글(한컴오피스) 필요

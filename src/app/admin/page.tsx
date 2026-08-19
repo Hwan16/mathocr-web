@@ -28,6 +28,8 @@ interface AdminUser {
   credits: number;
   expires_at: string | null;
   created_at: string;
+  // 가입 무료 크레딧 지급 시각 (0027). null = 아직 미지급(인증 후 첫 로그인 전).
+  signup_credits_granted_at?: string | null;
   // 가입 출처 (0012_signup_attribution, first-touch). null = 직접 유입.
   utm_source?: string | null;
   utm_medium?: string | null;
@@ -1364,9 +1366,14 @@ function UserDetailModal({
                     : "font-semibold text-zinc-900"
               }`}
             >
+              {/* 0027 이후: 가입 무료 크레딧은 인증 후 첫 로그인 때 지급된다.
+                  아직 지급 전이면 expires_at 이 null 인데, 이를 "무제한"으로
+                  보여 주면 CS 때 '지급 대기'와 '지급 실패'를 구분할 수 없다. */}
               {user.expires_at
                 ? new Date(user.expires_at).toLocaleDateString("ko-KR")
-                : "무제한"}
+                : user.signup_credits_granted_at
+                  ? "무제한"
+                  : "지급 대기(첫 로그인 전)"}
               {isExpired && (
                 <span className="ml-1.5 inline-block align-middle rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-bold text-white">
                   만료됨

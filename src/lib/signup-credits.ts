@@ -46,6 +46,26 @@ export async function claimSignupCredits(
     return none;
   }
 
+  // 이미 지급된 계정이면 여기서 끝낸다. 이 함수는 /api/credits 를 통해
+  // 변환·자동 인식 때마다 불리는 뜨거운 경로다. 이 조기 종료가 없으면
+  //  ① 이미 지급받은 기존 회원에게 아래 이메일 검사가 매번 소급 적용돼
+  //     차단 기록(blocked_signups)이 호출마다 쌓이고(집계 오염),
+  //  ② 지급할 것이 없는데도 RPC 왕복이 매번 발생한다.
+  // 검사·기록은 "실제로 지급 직전인 계정"에만 적용하는 것이 맞다.
+  try {
+    const { data: profile, error } = await createAdminClient()
+      .from("profiles")
+      .select("signup_credits_granted_at")
+      .eq("id", user.id)
+      .maybeSingle();
+    // 조회 실패(0027 미적용 등)는 통과시킨다 — RPC 가 최종 판정한다(멱등).
+    if (!error && profile?.signup_credits_granted_at) {
+      return none;
+    }
+  } catch {
+    // 조회 자체가 실패해도 지급을 막지 않는다 (RPC 가 계정당 1회를 보장)
+  }
+
   // 가입 라우트의 이메일 방어를 지급 시점에 한 번 더 적용한다 (교차 리뷰 반영).
   // 일회용 메일함도 인증 메일은 받을 수 있으므로, GoTrue 직접 가입으로 라우트를
   // 우회한 뒤 인증·로그인까지 자동화하면 인증 게이트만으로는 못 막는다.

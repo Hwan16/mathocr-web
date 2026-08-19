@@ -397,7 +397,10 @@ export async function POST(request: NextRequest) {
     message: needsConfirmation
       ? "확인 메일을 보냈습니다. 메일의 인증 링크를 눌러 가입을 완료해주세요."
       : "회원가입이 완료되었습니다.",
+    // 인증 후 지급으로 바뀌었으므로(0027), 인증 대기 상태에서는 "지급될 예정"의
+    // 의미다. 실제 잔액은 인증 후 첫 로그인 시점에 생긴다.
     credits: SIGNUP_FREE_CREDITS + promoBonusCredits,
+    credits_pending_verification: needsConfirmation,
     promo_applied: promoApplied,
     // 인증 후 지급 대기 중인 코드 존재 여부 — 가입 화면이 안내 문구에 사용.
     // Confirm email이 꺼진 환경에서 프로필 지연으로 즉시 지급을 건너뛴 경우에도

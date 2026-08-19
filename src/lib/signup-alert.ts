@@ -210,17 +210,22 @@ export async function checkBlockedSignupSurge(
       checkRateLimit("signupalert:blockedcount", limit, WINDOW_MS),
     ]);
 
-    if (!perReason.allowed && (await claimAlertSlot(`blocked:${reason}`))) {
-      const copy = BLOCKED_REASON_COPY[reason];
-      await sendAdminAlert(
-        `[MathOCR 어뷰징 차단] ${copy.name} 가입 시도가 1시간에 ${limit}건을 넘었습니다`,
-        `<p><strong>${copy.name}</strong> 사유로 가입이 최근 1시간 동안 <strong>${limit}건 넘게</strong> 차단됐습니다.</p>
+    // 사유별 임계를 넘었으면 그 사유로만 알린다. 경보를 이미 보냈든(슬롯 획득)
+    // 1시간 억제 중이든, 합산 경보로 넘어가지 않는다 — 한 사유만 터진 상황에
+    // "사유를 바꿔 가며"라는 사실과 다른 메일이 뒤따라 가는 것을 막는다.
+    if (!perReason.allowed) {
+      if (await claimAlertSlot(`blocked:${reason}`)) {
+        const copy = BLOCKED_REASON_COPY[reason];
+        await sendAdminAlert(
+          `[MathOCR 어뷰징 차단] ${copy.name} 가입 시도가 1시간에 ${limit}건을 넘었습니다`,
+          `<p><strong>${copy.name}</strong> 사유로 가입이 최근 1시간 동안 <strong>${limit}건 넘게</strong> 차단됐습니다.</p>
   <p>마지막 차단 도메인: <strong>${safeDomain}</strong></p>
   <p style="font-size:13px;color:#555;">차단은 정상 작동 중이라 계정은 생기지 않았습니다.</p>
   <p style="font-size:13px;color:#555;">${copy.guidance}</p>
   ${footer}`
-      );
-      return; // 사유별 경보가 나갔으면 합산 경보는 생략 (같은 사건 중복 방지)
+        );
+      }
+      return;
     }
 
     if (!aggregate.allowed && (await claimAlertSlot("blocked"))) {

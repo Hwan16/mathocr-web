@@ -152,7 +152,7 @@ export default function StartPage() {
             가입 완료! 이제 프로그램만 설치하면 돼요
           </h1>
           <p className="text-sm md:text-base text-zinc-600 leading-relaxed">
-            크레딧은 이 계정에 지급되어 있어요 —{" "}
+            이메일 인증을 마치고 로그인하면 크레딧이 지급돼요 —{" "}
             <a
               href="/dashboard"
               className="text-[var(--accent)] font-medium hover:underline"
