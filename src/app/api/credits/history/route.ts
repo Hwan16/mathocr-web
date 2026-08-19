@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
   const [profileRes, paymentsRes, redemptionsRes] = await Promise.all([
     admin
       .from("profiles")
-      .select("credits, expires_at, created_at")
+      .select("credits, expires_at, created_at, signup_credits_granted_at")
       .eq("id", targetId)
       .single(),
     admin
@@ -128,15 +128,20 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // 가입 무료 크레딧
-  if (profile.created_at) {
+  // 가입 무료 크레딧 — 실제 지급된 계정만, 지급 시각 기준으로 표시한다 (0027).
+  // 지급이 가입 시점에서 "이메일 인증 후 첫 로그인"으로 옮겨졌으므로,
+  // created_at 만 보고 합성하면 아직 못 받은 계정에도 +15가 찍힌다.
+  // (0027 백필로 기존 사용자는 granted_at = created_at 이라 표시가 종전과 동일)
+  const signupGrantedAt = profile.signup_credits_granted_at ?? null;
+  if (signupGrantedAt && profile.created_at) {
     events.push({
       type: "signup",
       label: "가입 무료 크레딧",
       detail: null,
+      // 지급액은 가입 시점 정책을 따른다 (5 → 15 전환 이력 보존)
       delta: signupFreeCreditsAt(profile.created_at),
       refunded: false,
-      at: profile.created_at,
+      at: signupGrantedAt,
     });
   }
 

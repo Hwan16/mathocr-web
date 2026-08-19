@@ -45,6 +45,17 @@ const kst = (iso: string) =>
     .replace("T", " ")
     .slice(0, 19);
 
+// 경보 메일에 들어가는 값 중 이메일 도메인·주소는 공격자가 정하는 문자열이다.
+// 이스케이프 없이 HTML에 끼우면 경보 본문에 공격자가 쓴 링크·안내문이
+// 신뢰된 문구처럼 렌더링될 수 있다 (교차 리뷰 반영).
+const escapeHtml = (value: string): string =>
+  value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
 /**
  * 가입 성공 직후 호출. 최근 1시간 가입 수가 임계를 넘으면 관리자에게 메일.
  * 어떤 이유로도 예외를 밖으로 내보내지 않는다 — 경보 때문에 가입이 실패하면 안 된다.
@@ -77,10 +88,10 @@ export async function checkSignupSurge(): Promise<void> {
     }
     const domainRows = [...byDomain.entries()]
       .sort((a, b) => b[1] - a[1])
-      .map(([d, c]) => `<li><strong>${c}건</strong> — ${d}</li>`)
+      .map(([d, c]) => `<li><strong>${c}건</strong> — ${escapeHtml(d)}</li>`)
       .join("");
     const listRows = recent
-      .map((r) => `<li>${kst(r.created_at)} — ${r.email}</li>`)
+      .map((r) => `<li>${kst(r.created_at)} — ${escapeHtml(r.email ?? "")}</li>`)
       .join("");
 
     await sendAdminAlert(
@@ -107,30 +118,121 @@ export async function checkSignupSurge(): Promise<void> {
   }
 }
 
+// ── 차단 사유 구분 (2026-08-19) ──
+//
+// 종전에는 4가지 차단(일회용 메일·별칭·지메일 점·데이터센터 IP)이 카운터
+// 하나를 공유하고 메일 문구가 일회용 메일용으로 고정돼 있었다. 그 결과
+// 별칭(+) 공격이 와도 경보가 "일회용 메일 공격"이라 주장하며 마지막 차단
+// 도메인(예: outlook.com — 정상 대형 메일사)을 차단 목록에 넣으라고 잘못
+// 안내했다. 사유별로 카운터·문구를 분리하고, 오탐률을 측정할 수 있도록
+// 모든 차단을 blocked_signups 테이블(0027)에 남긴다.
+export type BlockedSignupReason =
+  | "disposable_email"
+  | "plus_alias"
+  | "dotted_gmail"
+  | "datacenter_ip";
+
+const BLOCKED_REASON_COPY: Record<
+  BlockedSignupReason,
+  { name: string; guidance: string }
+> = {
+  disposable_email: {
+    name: "일회용(임시) 메일",
+    guidance: `상대가 목록에 없는 새 도메인으로 갈아타면 통과할 수 있으니, 이어서
+  <strong>가입 급증 경보</strong>가 오는지 지켜보세요. 새 도메인을 막으려면 Vercel 환경변수
+  <code>BLOCKED_EMAIL_DOMAINS</code>에 추가한 뒤 <strong>반드시 Production Redeploy</strong>까지
+  해야 반영됩니다.`,
+  },
+  plus_alias: {
+    name: "메일 별칭(+)",
+    guidance: `⚠️ 아래 도메인은 <strong>차단 대상이 아닙니다</strong> — 막힌 것은 주소의
+  별칭(+) 부분이고, 도메인 자체는 정상 메일사(예: outlook.com)일 수 있습니다.
+  이 도메인을 <code>BLOCKED_EMAIL_DOMAINS</code>에 넣으면 정상 고객까지 막히니 넣지 마세요.
+  별칭 차단을 풀어야 한다면 env <code>ALLOW_PLUS_ALIAS_SIGNUP=true</code> + Production Redeploy.`,
+  },
+  dotted_gmail: {
+    name: "지메일 점(.) 주소",
+    guidance: `⚠️ <code>gmail.com</code>은 차단 목록에 넣으면 안 됩니다 — 막힌 것은 점(.)이
+  들어간 주소 형태이고, 사용자에게는 점을 뺀 주소로 재시도하라고 안내되고 있습니다.
+  같은 메일함이 점 조합으로 여러 계정을 만드는 것을 막는 방어가 정상 동작한 것입니다.`,
+  },
+  datacenter_ip: {
+    name: "VPN·데이터센터 IP",
+    guidance: `이 차단은 이메일 도메인과 무관하게 <strong>접속 IP</strong>가 데이터센터·VPN
+  대역이라 막힌 것입니다. 정상 고객 오탐이 의심되면(예: 특정 통신사·기관) Vercel 함수
+  로그의 IP를 확인하고, 허용하려면 env <code>ALLOWED_IP_CIDRS</code>에 대역 추가 +
+  Production Redeploy가 필요합니다.`,
+  },
+};
+
 /**
- * 일회용 메일이라 가입을 막았을 때 호출. 차단이 임계를 넘으면 관리자에게 메일.
+ * 어뷰징 방어가 가입을 막았을 때 호출. (1) 차단 기록을 blocked_signups에 남기고
+ * (2) 같은 사유의 차단이 1시간 임계를 넘으면 관리자에게 사유별 문구로 메일.
  *
  * 가입 급증 감시만으로는 "차단이 잘 돼서 계정이 안 생긴" 공격을 영영 모른다.
  * 공격이 다시 왔다는 사실 자체가 정보라 별도 신호로 둔다 (도메인을 바꿔 오면
  * 결국 급증 감시 쪽이 잡는다).
  */
-export async function checkBlockedSignupSurge(domain: string | null): Promise<void> {
+export async function checkBlockedSignupSurge(
+  reason: BlockedSignupReason,
+  domain: string | null,
+  ip: string | null = null
+): Promise<void> {
+  // (1) 차단 기록 — 사유별 건수·오탐 측정용 (0027). 기록 실패가 차단 응답을
+  // 막으면 안 되고, 0027 적용 전에는 테이블이 없어 실패하는 것이 정상이다.
+  try {
+    const admin = createAdminClient();
+    const { error } = await admin
+      .from("blocked_signups")
+      .insert({ reason, email_domain: domain, ip });
+    if (error) {
+      console.warn("[signup-alert] 차단 기록 실패", { reason, error: error.message });
+    }
+  } catch (error) {
+    console.warn("[signup-alert] 차단 기록 실패", {
+      reason,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+
+  // (2) 사유별 임계 감시 + 경보 메일. 사유를 번갈아 써서 사유별 임계를 전부
+  // 피하는 공격도 놓치지 않도록, 전체 합산 카운터(종전 동작)도 함께 본다 —
+  // 중복 메일 가능성보다 경보 누락이 나쁘다는 기존 방침.
   try {
     const limit = threshold("SIGNUP_BLOCKED_ALERT_THRESHOLD", DEFAULT_BLOCKED_THRESHOLD);
-    // limit회까지는 allowed=true, 넘어서는 순간 false — 그 순간을 문턱 통과로 본다.
-    const { allowed } = await checkRateLimit("signupalert:blockedcount", limit, WINDOW_MS);
-    if (allowed) return;
-    if (!(await claimAlertSlot("blocked"))) return;
+    const safeDomain = escapeHtml(domain ?? "(알 수 없음)");
+    const footer = `<p style="font-size:12px;color:#888;">사유별 차단 내역은 Supabase의 <code>blocked_signups</code> 표에서
+  확인할 수 있습니다 (시각·도메인·IP 포함).</p>`;
 
-    await sendAdminAlert(
-      `[MathOCR 어뷰징 차단] 일회용 메일 가입 시도가 1시간에 ${limit}건을 넘었습니다`,
-      `<p>일회용(임시) 메일 주소로 가입하려는 시도가 최근 1시간 동안 <strong>${limit}건 넘게</strong> 차단됐습니다.</p>
-  <p>마지막 차단 도메인: <strong>${domain ?? "(알 수 없음)"}</strong></p>
-  <p style="font-size:13px;color:#555;">차단은 정상 작동 중이라 계정은 생기지 않았습니다. 다만 상대가
-  목록에 없는 새 도메인으로 갈아타면 통과할 수 있으니, 이어서 <strong>가입 급증 경보</strong>가
-  오는지 지켜보세요. Vercel 함수 로그에서 <code>[signup] disposable email blocked</code>를 보면
-  어떤 도메인을 시도했는지 전부 확인할 수 있습니다.</p>`
-    );
+    // limit회까지는 allowed=true, 넘어서는 순간 false — 그 순간을 문턱 통과로 본다.
+    const [perReason, aggregate] = await Promise.all([
+      checkRateLimit(`signupalert:blockedcount:${reason}`, limit, WINDOW_MS),
+      checkRateLimit("signupalert:blockedcount", limit, WINDOW_MS),
+    ]);
+
+    if (!perReason.allowed && (await claimAlertSlot(`blocked:${reason}`))) {
+      const copy = BLOCKED_REASON_COPY[reason];
+      await sendAdminAlert(
+        `[MathOCR 어뷰징 차단] ${copy.name} 가입 시도가 1시간에 ${limit}건을 넘었습니다`,
+        `<p><strong>${copy.name}</strong> 사유로 가입이 최근 1시간 동안 <strong>${limit}건 넘게</strong> 차단됐습니다.</p>
+  <p>마지막 차단 도메인: <strong>${safeDomain}</strong></p>
+  <p style="font-size:13px;color:#555;">차단은 정상 작동 중이라 계정은 생기지 않았습니다.</p>
+  <p style="font-size:13px;color:#555;">${copy.guidance}</p>
+  ${footer}`
+      );
+      return; // 사유별 경보가 나갔으면 합산 경보는 생략 (같은 사건 중복 방지)
+    }
+
+    if (!aggregate.allowed && (await claimAlertSlot("blocked"))) {
+      await sendAdminAlert(
+        `[MathOCR 어뷰징 차단] 여러 사유의 가입 차단이 1시간에 ${limit}건을 넘었습니다`,
+        `<p>사유를 바꿔 가며 가입을 시도하는 패턴이 최근 1시간 동안 합산 <strong>${limit}건 넘게</strong> 차단됐습니다.</p>
+  <p>마지막 차단: <strong>${escapeHtml(BLOCKED_REASON_COPY[reason].name)}</strong> / 도메인 <strong>${safeDomain}</strong></p>
+  <p style="font-size:13px;color:#555;">차단은 정상 작동 중이라 계정은 생기지 않았습니다.
+  <code>blocked_signups</code> 표에서 사유 분포를 확인하세요.</p>
+  ${footer}`
+      );
+    }
   } catch (error) {
     console.warn("[signup-alert] 차단 감시 실패", {
       error: error instanceof Error ? error.message : String(error),

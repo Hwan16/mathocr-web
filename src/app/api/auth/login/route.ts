@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { claimPendingPromo } from "@/lib/promo-claim";
+import { claimSignupCredits } from "@/lib/signup-credits";
 import { claimPendingMarketingConsent } from "@/lib/marketing-consent";
 import {
   checkLoginRateLimit,
@@ -62,6 +63,9 @@ export async function POST(request: NextRequest) {
     await recordLoginFailure(clientIp, email);
     return NextResponse.json({ error: "이메일 또는 비밀번호가 올바르지 않습니다." }, { status: 401 });
   }
+
+  // 가입 무료 크레딧 지급 (A-1, 0027) — 인증 완료 계정의 첫 로그인 때 1회
+  await claimSignupCredits(data.user);
 
   // 인증 후 프로모션 지급 (LA-02) — pending 코드가 있으면 여기서 지급
   try {

@@ -8,8 +8,9 @@ create table public.profiles (
   id uuid references auth.users(id) on delete cascade primary key,
   email text not null,
   role text not null default 'user' check (role in ('user', 'admin')),
-  credits integer not null default 15, -- 가입 시 무료 15크레딧 제공 (0025)
+  credits integer not null default 0,  -- 가입 시 0 — 무료 15크레딧은 이메일 인증 후 지급 (0027)
   expires_at timestamptz,              -- null이면 만료 없음
+  signup_credits_granted_at timestamptz, -- 가입 무료 크레딧 지급 시각 (0027) — null = 미지급
   utm_source text,                     -- 가입 출처 (M4, 0012) — null = 직접 유입
   utm_medium text,
   utm_campaign text,
@@ -21,12 +22,14 @@ create table public.profiles (
   updated_at timestamptz not null default now()
 );
 
--- 새 사용자 가입 시 profiles 자동 생성 (무료 15크레딧 = 유효기간 7일, 0025)
+-- 새 사용자 가입 시 profiles 자동 생성 — 크레딧은 0 (0027)
+-- 무료 15크레딧은 이메일 인증 후 첫 로그인 때 grant_signup_credits 가 지급한다.
+-- 가입 라우트의 방어를 우회한 직접 GoTrue 가입이 잔액을 들고 시작하지 못하게 함.
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
   insert into public.profiles (id, email, credits, expires_at)
-  values (new.id, new.email, 15, now() + interval '7 days');
+  values (new.id, new.email, 0, null);
   return new;
 end;
 $$ language plpgsql security definer set search_path = public, pg_temp;
@@ -34,6 +37,69 @@ $$ language plpgsql security definer set search_path = public, pg_temp;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
+
+-- 가입 무료 크레딧 지급 (0027) — 이메일 인증 후 첫 로그인 시점에 서버가 호출.
+-- 15크레딧·유효 7일은 web/src/lib/plans.ts 와 반드시 일치시킬 것.
+-- 멱등: signup_credits_granted_at is null 조건부 UPDATE 로 계정당 평생 1회.
+create or replace function public.grant_signup_credits(p_user_id uuid)
+returns jsonb as $$
+declare
+  v_credits integer;
+  v_expires timestamptz;
+begin
+  update public.profiles
+  set credits = case
+        when expires_at is not null and expires_at < now() then 15
+        else credits + 15
+      end,
+      expires_at = greatest(
+        coalesce(expires_at, now()),
+        now() + interval '7 days'
+      ),
+      signup_credits_granted_at = now()
+  where id = p_user_id
+    and signup_credits_granted_at is null
+  returning credits, expires_at into v_credits, v_expires;
+
+  if not found then
+    if exists (select 1 from public.profiles where id = p_user_id) then
+      return jsonb_build_object('success', false, 'error', 'already_granted');
+    end if;
+    return jsonb_build_object('success', false, 'error', 'user_not_found');
+  end if;
+
+  return jsonb_build_object(
+    'success', true,
+    'credits_granted', 15,
+    'new_credits', v_credits,
+    'expires_at', v_expires
+  );
+end;
+$$ language plpgsql security definer set search_path = public, pg_temp;
+
+revoke execute on function public.grant_signup_credits(uuid) from public, anon, authenticated;
+grant execute on function public.grant_signup_credits(uuid) to service_role;
+
+-- 가입 차단 기록 (0027) — 어뷰징 방어 4종의 사유별 차단 건수·오탐 측정용
+create table if not exists public.blocked_signups (
+  id bigint generated always as identity primary key,
+  reason text not null check (
+    reason in (
+      'disposable_email', 'plus_alias', 'dotted_gmail', 'datacenter_ip',
+      'grant_refused'
+    )
+  ),
+  email_domain text,
+  ip text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_blocked_signups_created_at
+  on public.blocked_signups (created_at desc);
+
+alter table public.blocked_signups enable row level security;
+revoke all on table public.blocked_signups from public, anon, authenticated;
+grant select, insert on table public.blocked_signups to service_role;
 
 -- updated_at 자동 갱신
 create or replace function public.update_updated_at()

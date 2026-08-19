@@ -1,6 +1,7 @@
 import { getAuthUser } from "@/lib/supabase/auth-helper";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { claimPendingPromo } from "@/lib/promo-claim";
+import { claimSignupCredits } from "@/lib/signup-credits";
 import { claimPendingMarketingConsent } from "@/lib/marketing-consent";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -38,6 +39,9 @@ export async function POST(request: NextRequest) {
       { status: 429, headers: { "Retry-After": String(rl.retryAfter) } }
     );
   }
+
+  // 가입 무료 크레딧 지급 (A-1, 0027) — 인증 완료 계정의 첫 로그인 때 1회
+  await claimSignupCredits(user);
 
   const result = await claimPendingPromo(user, getClientIp(request));
 

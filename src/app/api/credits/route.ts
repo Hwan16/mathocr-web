@@ -1,5 +1,6 @@
 import { getAuthUser } from "@/lib/supabase/auth-helper";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { claimSignupCredits } from "@/lib/signup-credits";
 import { NextRequest, NextResponse } from "next/server";
 
 // 크레딧 잔액 조회
@@ -9,6 +10,12 @@ export async function GET() {
   if (!user) {
     return NextResponse.json({ error: "인증되지 않았습니다." }, { status: 401 });
   }
+
+  // 가입 무료 크레딧 안전망 (0027) — 지급은 보통 로그인 라우트에서 끝나지만,
+  // 비밀번호 재설정 링크처럼 로그인 라우트를 거치지 않고 세션이 생기는 경로가
+  // 있다. 잔액을 보는 모든 화면이 이 API를 거치므로 여기서 한 번 더 청구한다.
+  // RPC가 계정당 1회를 보장하므로 중복 지급은 없다.
+  await claimSignupCredits(user);
 
   const admin = createAdminClient();
   const { data: profile } = await admin

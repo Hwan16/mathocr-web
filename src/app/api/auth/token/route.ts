@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { claimPendingPromo } from "@/lib/promo-claim";
+import { claimSignupCredits } from "@/lib/signup-credits";
 import { claimPendingMarketingConsent } from "@/lib/marketing-consent";
 import {
   checkLoginRateLimit,
@@ -78,6 +79,10 @@ export async function POST(request: NextRequest) {
       { status: 401 }
     );
   }
+
+  // 가입 무료 크레딧 지급 (A-1, 0027) — 이메일 인증을 마친 계정의 첫 로그인
+  // 시점에 지급한다. RPC가 계정당 1회를 보장하므로 재로그인해도 중복 없음.
+  await claimSignupCredits(data.user);
 
   // 인증 후 프로모션 지급 (LA-02) — 가입 때 보관한 pending 코드가 있으면
   // 여기서 지급한다. 데스크톱만 쓰는 사용자도 웹 로그인 없이 혜택을 받는다.

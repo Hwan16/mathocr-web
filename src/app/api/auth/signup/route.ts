@@ -6,6 +6,7 @@ import { checkSignupSurge, checkBlockedSignupSurge } from "@/lib/signup-alert";
 import { isDottedGmail } from "@/lib/email";
 import { isDatacenterIp } from "@/lib/datacenter-ip";
 import { claimPendingPromo } from "@/lib/promo-claim";
+import { claimSignupCredits } from "@/lib/signup-credits";
 import { claimPendingMarketingConsent } from "@/lib/marketing-consent";
 import { CONSENT_VERSION } from "@/lib/consent";
 import { isRetiredSignupPromo } from "@/lib/promo";
@@ -147,7 +148,7 @@ export async function POST(request: NextRequest) {
       ip: clientIp,
     });
     // 차단이 잦아지면 공격이 다시 온 것 — 계정이 안 생겨도 알 수 있게 경보한다.
-    await checkBlockedSignupSurge(blockedDomain);
+    await checkBlockedSignupSurge("disposable_email", blockedDomain, clientIp);
     return NextResponse.json(
       {
         error:
@@ -174,7 +175,7 @@ export async function POST(request: NextRequest) {
       domain: emailDomain(email),
       ip: clientIp,
     });
-    await checkBlockedSignupSurge(emailDomain(email));
+    await checkBlockedSignupSurge("plus_alias", emailDomain(email), clientIp);
     return NextResponse.json(
       {
         error:
@@ -191,7 +192,7 @@ export async function POST(request: NextRequest) {
   // 회사·학교 메일은 점이 의미를 가지므로 대상이 아니다(lib/email.ts 주석 참조).
   if (isDottedGmail(email)) {
     console.warn("[signup] dotted gmail blocked", { ip: clientIp });
-    await checkBlockedSignupSurge(emailDomain(email));
+    await checkBlockedSignupSurge("dotted_gmail", emailDomain(email), clientIp);
     return NextResponse.json(
       {
         error:
@@ -207,7 +208,7 @@ export async function POST(request: NextRequest) {
   // 판정 불가(IPv6·형식 오류·IP 없음)는 통과시킨다(fail-open).
   if (isDatacenterIp(clientIp)) {
     console.warn("[signup] datacenter/vpn ip blocked", { ip: clientIp });
-    await checkBlockedSignupSurge(emailDomain(email));
+    await checkBlockedSignupSurge("datacenter_ip", emailDomain(email), clientIp);
     return NextResponse.json(
       {
         error:
@@ -349,10 +350,13 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // (2) 프로모션·마케팅 동의: 이메일 인증(Confirm email)이 꺼진 환경에서는
-        // 가입 즉시 세션과 함께 인증이 완료되므로 여기서 바로 처리한다. 인증이
-        // 켜진 환경(현재 프로덕션)에서는 pending 으로 남고, 인증 후 첫 로그인 때
-        // claim-pending / token / login 라우트가 처리한다.
+        // (2) 무료 크레딧·프로모션·마케팅 동의: 이메일 인증(Confirm email)이
+        // 꺼진 환경에서는 가입 즉시 세션과 함께 인증이 완료되므로 여기서 바로
+        // 처리한다. 인증이 켜진 환경(현재 프로덕션)에서는 pending 으로 남고,
+        // 인증 후 첫 로그인 때 claim-pending / token / login 라우트가 처리한다.
+        if (data.session && data.user) {
+          await claimSignupCredits(data.user);
+        }
         if (normalizedPromoCode && data.session && data.user) {
           const claim = await claimPendingPromo(data.user, clientIp);
           if (claim.applied) {
