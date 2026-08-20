@@ -97,10 +97,16 @@ export async function PATCH(
 
   // 진짜 지급 대기자가 남아 있는 동안 earlybird를 끄면 로그인 순간
   // inactive_code가 영구 실패로 정리된다. 남은 고정 명단이 0명일 때만 허용한다.
+  //
+  // ⚠️ 정지 계정은 대기자로 세지 않는다 (2026-08-20). 고정 명단 13건 중 8건이
+  // 2026-08-08 어뷰징 사고 때 만들어져 영구 정지된 계정이라, 그대로 세면 이들이
+  // 로그인할 일이 없어 대기자 수가 영원히 0이 되지 않는다 — 얼리버드를 끝내
+  // 비활성화할 수 없는 교착이 된다. 정지 계정은 지급받을 자격이 없으므로
+  // 제외하는 것이 의미상으로도 맞다.
   if (body.is_active === false && target.code === RETIRED_EARLYBIRD_CODE) {
-    const { count, error: pendingError } = await adminClient
+    const { data: pendingRows, error: pendingError } = await adminClient
       .from("earlybird_grandfathered_users")
-      .select("user_id", { count: "exact", head: true })
+      .select("user_id")
       .is("redeemed_at", null);
 
     if (pendingError) {
@@ -110,13 +116,47 @@ export async function PATCH(
         { status: 503 }
       );
     }
-    if ((count ?? 0) > 0) {
+
+    // 정지 여부는 auth.users 에만 있어 조인이 안 되므로 건별로 확인한다
+    // (명단이 십여 건 규모라 비용이 문제되지 않는다).
+    // 조회 실패한 계정은 '살아 있는 대기자'로 간주해 비활성화를 막는다
+    // (fail-closed — 실수로 진짜 대상자의 자격을 없애는 쪽이 더 나쁘다).
+    let activePending = 0;
+    let bannedPending = 0;
+    for (const row of pendingRows ?? []) {
+      const { data: authUser, error: lookupError } =
+        await adminClient.auth.admin.getUserById(row.user_id);
+      if (lookupError || !authUser?.user) {
+        activePending += 1;
+        continue;
+      }
+      const bannedUntil = (authUser.user as { banned_until?: string | null })
+        .banned_until;
+      const isBanned =
+        !!bannedUntil && new Date(bannedUntil).getTime() > Date.now();
+      if (isBanned) bannedPending += 1;
+      else activePending += 1;
+    }
+
+    if (activePending > 0) {
       return NextResponse.json(
         {
-          error: `기존 얼리버드 지급 대기자가 ${count}명 남아 있어 아직 비활성화할 수 없습니다. 모두 처리된 뒤 다시 시도해주세요.`,
+          error:
+            `기존 얼리버드 지급 대기자가 ${activePending}명 남아 있어 아직 비활성화할 수 없습니다.` +
+            (bannedPending > 0
+              ? ` (정지 계정 ${bannedPending}건은 대기자에서 제외했습니다.)`
+              : "") +
+            " 모두 처리된 뒤 다시 시도해주세요.",
         },
         { status: 409 }
       );
+    }
+
+    if (bannedPending > 0) {
+      console.warn("[admin/promo-codes:PATCH] earlybird 비활성화 — 정지 계정만 남음", {
+        banned_pending: bannedPending,
+        admin_id: admin.id,
+      });
     }
   }
 
