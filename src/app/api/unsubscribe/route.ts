@@ -66,8 +66,8 @@ export async function GET(request: NextRequest) {
        있어야 발송할 수 있어, 수신거부 시에는 발송되지 않습니다.
      </p>
      <p style="margin:10px 0 0;font-size:12px;color:#a1a1aa;line-height:1.6;text-align:left;">
-       2026년 8월 21일 시행 예정 약관 개정에 따른 안내이며, 현재 운영도 이와 같습니다.
-       자세한 내용은 <a href="/terms" style="color:#7c3aed;">이용약관</a>의 개정 안내를 참고해 주세요.
+       2026년 8월 21일 시행된 약관(제6조 제9항)에 따른 안내입니다.
+       자세한 내용은 <a href="/terms" style="color:#7c3aed;">이용약관</a>을 참고해 주세요.
      </p>`
       : `<p style="margin:16px 0 0;font-size:12px;color:#52525b;line-height:1.6;text-align:left;">
        수신거부를 확정하시면 신청하신 얼리버드 안내 메일이 더 이상 발송되지 않습니다.

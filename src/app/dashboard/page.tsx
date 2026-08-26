@@ -383,20 +383,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* 약관 개정 사전 공지 (약관 제10조의 서비스 내 공지) — 이용자에게 불리할 수
-            있는 변경이라 눈에 띄는 위치(잔액/유효기간 카드 바로 아래)에 둔다. 상단
-            배너와 경쟁하지 않게 배너가 아닌 한 줄 텍스트로.
-            시행일(2026-08-21)이 지나면 삭제. */}
-        <p className="mb-10 text-sm text-zinc-600">
-          2026년 8월 21일부터 서비스 이용약관이 일부 개정됩니다 —{" "}
-          <a
-            href="/terms"
-            className="text-[var(--accent)] underline underline-offset-2 hover:opacity-80 transition-opacity"
-          >
-            자세히 보기
-          </a>
-        </p>
-
         {/* Promo Code */}
         <PromoRedeemCard onRedeemed={loadData} />
 
