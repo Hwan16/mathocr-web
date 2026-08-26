@@ -32,7 +32,13 @@ import { REPLY_TO } from "@/lib/mail";
 
 export const dynamic = "force-dynamic";
 
-const WELCOME_LOOKBACK_DAYS = 7; // 가입 7일 이전 계정은 환영 대상에서 제외 (롤아웃 시 과거 가입자 일괄 발송 방지)
+// 지급 7일 이전 계정은 환영 대상에서 제외 (롤아웃 시 과거 가입자 일괄 발송 방지).
+// 기준은 created_at 이 아니라 signup_credits_granted_at(0027) — 크레딧 지급이
+// "인증 후 첫 로그인"으로 이동하면서(D-030), 가입 며칠 뒤 인증한 사용자가
+// created_at 기준 창을 놓쳐 환영·D+4 메일을 못 받던 문제를 지급 시각 기준으로
+// 고친다. 0027이 기존 계정 전원을 granted_at=created_at 으로 백필했으므로
+// 과거 계정의 동작은 변하지 않는다. (CHECKLIST Phase 101 잔여, 2026-08-26)
+const WELCOME_LOOKBACK_DAYS = 7;
 const REMINDER_AFTER_DAYS = 4; // 환영 메일 후 4일 경과 시 리마인드
 const REMINDER_STALE_DAYS = 6; // 6일이 지났으면 리마인드도 보내지 않음 (만료 직전·직후의 뒷북 방지)
 const MAX_PER_KIND = 50; // 실행당 발송 상한 (Resend 일 한도 보호 — 시간당 실행이라 밀린 분은 다음 시간에)
@@ -180,12 +186,16 @@ export async function GET(req: NextRequest) {
     .eq("marketing_opt_in", true)
     .is("onboarding_welcome_sent_at", null)
     .gt("credits", 0)
-    .gte("created_at", new Date(Date.now() - WELCOME_LOOKBACK_DAYS * dayMs).toISOString())
+    // gte 는 granted_at 이 null(미지급)인 행을 자연히 제외한다 — 지급 전 환영 메일 없음
+    .gte(
+      "signup_credits_granted_at",
+      new Date(Date.now() - WELCOME_LOOKBACK_DAYS * dayMs).toISOString()
+    )
     .limit(MAX_PER_KIND);
 
   if (welcomeError) {
-    // 0018 미적용(컬럼 부재)이면 발송 없이 종료 — fail-closed
-    const migrationPending = /onboarding_/.test(welcomeError.message);
+    // 0018/0027 미적용(컬럼 부재)이면 발송 없이 종료 — fail-closed
+    const migrationPending = /onboarding_|signup_credits_granted_at/.test(welcomeError.message);
     console.warn("[onboarding-mail] welcome query failed", {
       error: welcomeError.message,
       migrationPending,

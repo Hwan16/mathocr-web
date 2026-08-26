@@ -1,8 +1,13 @@
 // 온보딩 메일 2통 e2e (2026-07-16, 마케팅 백로그 §6-2 + 0018)
-// 사용법: (0018 마이그레이션 적용 + dev 서버 실행 중에) node scripts/onboarding_mail_e2e.cjs
+// 사용법: (0018·0027 마이그레이션 적용 + dev 서버 실행 중에) node scripts/onboarding_mail_e2e.cjs
+//
+// 2026-08-26: 환영 창 기준이 created_at → signup_credits_granted_at(0027)으로
+// 바뀜에 따라 준비 단계에서 granted_at을 함께 세팅하고, 창 판정 검증(1b·1c)을
+// 추가했다 — 가입이 오래돼도 "지급이 최근"이면 환영 대상(늦은 인증 구제).
 //
 // 검증 내용 — onboarding-mail cron dry-run의 발송 판정:
-//   1) 인증 + 동의 + 크레딧 보유 신규 가입 → 환영 메일 대상 (send=true)
+//   1) 인증 + 동의 + 크레딧 보유 + 최근 지급 → 환영 메일 대상 (send=true)
+//   1b) 지급 8일 전(창 밖) → 환영 후보 제외 / 1c) 지급 전(null) → 제외
 //   2) 환영 발송 기록 후 → 환영 대상에서 제외 + 리마인드는 아직 아님 (4일 미경과)
 //   3) 환영 발송을 4.5일 전으로 소급 → 리마인드 대상 (미사용자)
 //   4) 변환 이력 삽입 → 리마인드 제외 (used=true)
@@ -66,6 +71,8 @@ async function main() {
       marketing_opt_in: true,
       credits: 30,
       expires_at: daysAhead(7),
+      // 0027 이후 환영 창 기준 — 지급 시각. 가입일(created_at)은 아예 안 본다.
+      signup_credits_granted_at: new Date().toISOString(),
     }).eq("id", uid);
 
     // ── 준비: 미인증 동의자 ──
@@ -81,16 +88,35 @@ async function main() {
       marketing_opt_in: true,
       credits: 5,
       expires_at: daysAhead(7),
+      // 실운영에선 미인증 계정에 지급이 일어나지 않지만(claimSignupCredits가
+      // email_confirmed_at 게이트), 여기서는 일부러 세팅해 쿼리 필터를 통과시키고
+      // cron의 인증 재확인(fail-closed) 레이어가 막는지를 검증한다.
+      signup_credits_granted_at: new Date().toISOString(),
     }).eq("id", uid2);
 
     // 1) 신규 동의자 → 환영 대상
     let d = await dryRun("onboarding-mail");
     let me = d.welcome.candidates.find((c) => c.email === mainEmail);
-    check("1. 인증+동의 신규 가입 → 환영 대상", me && me.send === true, me);
+    check("1. 인증+동의+최근 지급 → 환영 대상", me && me.send === true, me);
 
     // 6) 미인증 → 후보이나 send=false
     let un = d.welcome.candidates.find((c) => c.email === unconfEmail);
     check("6. 미인증 계정 → 환영 send=false (fail-closed)", un && un.send === false, un);
+
+    // 1b) 지급 8일 전 소급 → 창 밖 제외 (가입일이 아니라 지급일 기준임을 확인)
+    await admin.from("profiles").update({ signup_credits_granted_at: daysAgo(8) }).eq("id", uid);
+    d = await dryRun("onboarding-mail");
+    me = d.welcome.candidates.find((c) => c.email === mainEmail);
+    check("1b. 지급 8일 전(창 밖) → 환영 후보 제외", !me);
+
+    // 1c) 지급 전(null) → 제외 (인증만 하고 아직 첫 로그인 전인 계정)
+    await admin.from("profiles").update({ signup_credits_granted_at: null }).eq("id", uid);
+    d = await dryRun("onboarding-mail");
+    me = d.welcome.candidates.find((c) => c.email === mainEmail);
+    check("1c. 지급 전(null) → 환영 후보 제외", !me);
+
+    // 이후 테스트를 위해 최근 지급 상태로 복원
+    await admin.from("profiles").update({ signup_credits_granted_at: new Date().toISOString() }).eq("id", uid);
 
     // 2) 환영 발송 기록 → 환영 제외 + 리마인드 아직 아님
     await admin.from("profiles").update({ onboarding_welcome_sent_at: new Date().toISOString() }).eq("id", uid);
