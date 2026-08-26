@@ -15,6 +15,14 @@ type State =
 // 새로고침·재방문 시 중복 방지). 금액·통화·주문 난수 suffix만 보내며 개인 정보는
 // 포함하지 않는다. (마케팅 백로그 §6-3) localStorage 키 이름은 메타 단독 시절
 // 값을 유지한다 — 바꾸면 과거 주문이 새 키로 재발사된다.
+//
+// P1-7 (72.1 감사, 커밋 C): URL 파라미터만 믿고 쏘지 않는다. 나이스 경로는
+// 발사 전에 본인 결제 이력(RLS "본인 결제 이력 조회")에서 최근 1시간 내
+// status=completed + 금액 일치 행을 확인하고, 서버가 기록한 금액으로만 보낸다
+// — 성공 URL 직접 입력(임의 ref·amount)으로 광고 전환 데이터를 오염시키는
+// 경로 차단. 토스 경로는 /api/payments/confirm 성공 응답 뒤에만 발사하므로
+// 이미 서버 검증이 선행된다. (크레딧 지급·잔액은 이 이벤트와 무관 — 광고
+// 측정 데이터 정합성만의 문제)
 function purchaseConversionOnce(orderId: string, amount: number) {
   if (!Number.isFinite(amount) || amount <= 0) return;
   const key = `meta_purchase_fired:${orderId}`;
@@ -56,15 +64,32 @@ function SuccessInner() {
       // URL 노출 제거). Purchase 중복 방지 키로만 쓰인다.
       const niceRef = sp.get("ref") ?? sp.get("orderId");
       const niceAmount = Number(sp.get("amount"));
-      if (niceRef) purchaseConversionOnce(niceRef, niceAmount);
       (async () => {
         const supabase = createClient();
         const {
           data: { user },
         } = await supabase.auth.getUser();
         if (!user) {
+          // 세션이 없으면 결제 실재를 확인할 수 없다 — 전환 이벤트도 보내지
+          // 않는다 (P1-7 fail-closed: 위조 가능성이 있는 신호는 버린다)
           setState({ phase: "done" });
           return;
+        }
+        if (niceRef && Number.isFinite(niceAmount) && niceAmount > 0) {
+          // P1-7 서버 조회 게이팅: RLS로 본인 행만 보이는 payments에서 방금
+          // 결제(1시간 창)가 실재하는지 확인 — 있으면 서버 기록 금액으로 발사
+          const { data: recent } = await supabase
+            .from("payments")
+            .select("amount, created_at")
+            .eq("status", "completed")
+            .gte(
+              "created_at",
+              new Date(Date.now() - 60 * 60 * 1000).toISOString()
+            )
+            .order("created_at", { ascending: false })
+            .limit(5);
+          const verified = (recent ?? []).find((p) => p.amount === niceAmount);
+          if (verified) purchaseConversionOnce(niceRef, verified.amount);
         }
         const { data: profile } = await supabase
           .from("profiles")

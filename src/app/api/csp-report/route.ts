@@ -26,13 +26,15 @@ export async function POST(request: NextRequest) {
     };
     const r = body["csp-report"];
     if (r) {
-      // 관찰에 필요한 필드만 — 쿼리스트링 등 민감할 수 있는 나머지는 버린다
+      // 관찰에 필요한 필드만 — 쿼리스트링 등 민감할 수 있는 나머지는 버린다.
+      // blocked-uri도 document-uri와 동일하게 query를 제거한다 (P2-4 — 차단된
+      // 요청의 쿼리에 토큰·식별자가 실려 올 수 있다. 관찰에는 host+path면 충분)
+      const stripQuery = (v: unknown) =>
+        typeof v === "string" ? v.split("?")[0] : v;
       console.warn("[csp-report]", {
         violated: r["violated-directive"],
-        blocked: r["blocked-uri"],
-        document: typeof r["document-uri"] === "string"
-          ? (r["document-uri"] as string).split("?")[0]
-          : r["document-uri"],
+        blocked: stripQuery(r["blocked-uri"]),
+        document: stripQuery(r["document-uri"]),
       });
     }
   } catch {

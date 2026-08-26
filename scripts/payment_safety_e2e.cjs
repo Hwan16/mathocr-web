@@ -243,19 +243,40 @@ async function main() {
       console.log(restored ? "플래그 원상복구 확인 (paused=false)" : "⚠️ 플래그 복구 확인 실패 — service_flags를 직접 확인하세요!");
       if (flagTouched && !restored) process.exitCode = 4;
     }
+    // P2-3 (72.1 감사, 커밋 D): 정리를 "실행"만 하지 않고 "검증"한다 —
+    // delete 응답 error 검사 + tid·계정 0건 재조회. 남은 게 있으면 수동 삭제
+    // 대상을 전부 출력하고 exit code를 0이 아니게 둔다 (테스트 데이터가
+    // 프로덕션 DB에 조용히 남는 것 방지).
+    const leftovers = [];
     for (const tid of cancelTids) {
-      await admin.from("payment_events").delete().eq("tid", tid);
+      const { error: delErr } = await admin.from("payment_events").delete().eq("tid", tid);
+      if (delErr) leftovers.push(`payment_events tid=${tid} — 삭제 실패: ${delErr.message}`);
     }
-    if (userUid) await admin.auth.admin.deleteUser(userUid).catch(() => {});
-    if (adminUid) await admin.auth.admin.deleteUser(adminUid).catch(() => {});
-    if (adminUid) {
-      const { data: still } = await admin.auth.admin.getUserById(adminUid).catch(() => ({ data: null }));
-      console.log(still?.user ? "⚠️ 관리자 테스트 계정 삭제 실패 — 수동 삭제 필요: " + adminEmail : "정리 완료 (관리자 테스트 계정 삭제 확인)");
+    if (cancelTids.length > 0) {
+      const { data: remain, error: recheckErr } = await admin
+        .from("payment_events").select("tid").in("tid", cancelTids);
+      if (recheckErr) leftovers.push(`payment_events 재조회 실패: ${recheckErr.message} — tid 직접 확인 필요: ${cancelTids.join(", ")}`);
+      else for (const row of remain ?? []) leftovers.push(`payment_events tid=${row.tid} — 삭제 후에도 잔존`);
+    }
+    for (const [uid, email] of [[userUid, userEmail], [adminUid, adminEmail]]) {
+      if (!uid) continue;
+      await admin.auth.admin.deleteUser(uid).catch(() => {});
+      const { data: still } = await admin.auth.admin.getUserById(uid).catch(() => ({ data: null }));
+      if (still?.user) leftovers.push(`테스트 계정 ${email} (${uid}) — 삭제 실패`);
+    }
+    if (leftovers.length > 0) {
+      console.log("⚠️ 정리 실패 — 수동 삭제 필요:");
+      for (const item of leftovers) console.log("   - " + item);
+      if (!process.exitCode) process.exitCode = 5;
+    } else {
+      console.log("정리 완료 (payment_events·테스트 계정 0건 재조회 확인)");
     }
   }
 
   console.log(`\n결과: ${pass} PASS / ${fail} FAIL`);
-  process.exit(fail > 0 ? 1 : 0);
+  // 검사 실패(1) > 정리·복구 실패(4·5) > 정상(0). exit(0)으로 finally에서 설정한
+  // exitCode(플래그 복구 실패 4, 정리 실패 5)를 덮어쓰지 않는다.
+  process.exit(fail > 0 ? 1 : process.exitCode || 0);
 }
 
 main().catch((e) => { console.error("스크립트 오류:", e); process.exit(2); });
