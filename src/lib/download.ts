@@ -4,3 +4,9 @@
 export const DOWNLOAD_URL =
   "https://github.com/Hwan16/mathocr-web/releases/download/v2.2.8/MathOCR-Setup-v2.2.8.exe";
 export const DOWNLOAD_LABEL = "v2.2.8 (114MB)";
+
+// 위 URL에서 자동으로 뽑는 현재 버전 태그 (예: "v2.2.8").
+// 릴리스 때 따로 갱신할 필요 없이 DOWNLOAD_URL만 바꾸면 따라온다.
+// 사용처: 홈 FAQ 옆 업데이트 내역 패널의 "현재 버전" 배지.
+export const DOWNLOAD_VERSION =
+  DOWNLOAD_URL.match(/\/download\/(v[\d.]+)\//)?.[1] ?? "";

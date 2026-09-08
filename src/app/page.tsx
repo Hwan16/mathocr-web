@@ -7,6 +7,7 @@ import { FAQS } from "@/lib/faqs";
 import { FaqStructuredData } from "./structured-data";
 import { PLANS, SIGNUP_FREE_CREDITS, SIGNUP_FREE_VALIDITY_DAYS, CREDIT_RULE, creditsAsProblems } from "@/lib/plans";
 import AutoDetectShowcase from "@/components/AutoDetectShowcase";
+import Changelog from "@/components/Changelog";
 import DownloadGuideModal from "@/components/DownloadGuideModal";
 // 다운로드 링크 단일 출처 — 릴리스 시 lib/download.ts만 갱신 (홈·/start·마이페이지 공유)
 import { DOWNLOAD_URL, DOWNLOAD_LABEL } from "@/lib/download";
@@ -86,7 +87,8 @@ export default function Home() {
             {/* md·lg(768~1279px)에서는 전체 표기가 헤더를 넘치게 해(실측 36~47px) 짧은 표기로 전환 */}
             <a href="#faq" onClick={() => trackEvent("nav_click", { label: "faq" })} className="hover:text-zinc-900 transition-colors">
               <span className="xl:hidden">FAQ</span>
-              <span className="hidden xl:inline">자주 묻는 질문</span>
+              <span className="hidden xl:inline 2xl:hidden">FAQ · 업데이트</span>
+              <span className="hidden 2xl:inline">자주 묻는 질문 &amp; 업데이트</span>
             </a>
           </nav>
 
@@ -943,13 +945,15 @@ export default function Home() {
         {/* 홈 전용 FAQPage 구조화 데이터 (질문/답은 아래 화면과 동일한 @/lib/faqs 출처) */}
         <FaqStructuredData />
         <div className="max-w-screen-2xl mx-auto px-6 lg:px-12">
-          <div className="grid lg:grid-cols-[1fr_2fr] gap-10 lg:gap-20">
-            <div>
-              <div className="text-sm font-semibold text-[var(--accent)] mb-3">FAQ</div>
-              <h2 className="text-3xl font-bold tracking-tight">
-                자주 묻는 질문
-              </h2>
-            </div>
+          <div className="max-w-3xl mb-12">
+            <div className="text-sm font-semibold text-[var(--accent)] mb-3">FAQ</div>
+            <h2 className="text-3xl lg:text-4xl font-bold tracking-tight">
+              자주 묻는 질문 &amp; 업데이트 내역
+            </h2>
+          </div>
+          {/* 좌: FAQ 목록 · 우: 업데이트 내역 패널.
+              items-start 필수 — 열이 늘어나면 사이드바의 sticky가 움직일 여지가 없어진다. */}
+          <div className="grid lg:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_360px] gap-12 lg:gap-14 xl:gap-20 items-start">
             {/* group(faqs.ts) 단위로 소제목을 붙여 유저 여정 순으로 묶어 보여준다 */}
             <div className="space-y-10">
               {Array.from(new Set(FAQS.map((f) => f.group))).map((group) => (
@@ -983,6 +987,8 @@ export default function Home() {
                 </div>
               ))}
             </div>
+
+            <Changelog />
           </div>
         </div>
       </section>
