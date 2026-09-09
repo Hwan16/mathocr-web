@@ -7,7 +7,7 @@ import { FAQS } from "@/lib/faqs";
 import { FaqStructuredData } from "./structured-data";
 import { PLANS, SIGNUP_FREE_CREDITS, SIGNUP_FREE_VALIDITY_DAYS, CREDIT_RULE, creditsAsProblems } from "@/lib/plans";
 import AutoDetectShowcase from "@/components/AutoDetectShowcase";
-import AnswerToolsShowcase, { AnswerPanelPreview } from "@/components/AnswerToolsShowcase";
+import AnswerToolsShowcase, { AnswerPanelPreview, RootTwo } from "@/components/AnswerToolsShowcase";
 import Changelog from "@/components/Changelog";
 import DownloadGuideModal from "@/components/DownloadGuideModal";
 // 다운로드 링크 단일 출처 — 릴리스 시 lib/download.ts만 갱신 (홈·/start·마이페이지 공유)
@@ -356,7 +356,9 @@ export default function Home() {
                   NEW · v2.3.0
                 </span>
                 <h3 className="text-2xl lg:text-3xl font-bold mb-4">
-                  정답이 √2여도,<br />바로 입력하세요
+                  <span className="inline-flex items-center">
+                    정답이&nbsp;<span className="inline-flex items-center" role="img" aria-label="루트 2"><RootTwo className="h-[1.05em] w-[1.4em]" /></span>여도,
+                  </span><br />바로 입력하세요
                 </h3>
                 <p className="text-zinc-600 leading-relaxed mb-4">
                   주관식 정답도 미리 넣어두세요. <strong className="text-zinc-900 font-semibold">[fx] 버튼</strong>에서

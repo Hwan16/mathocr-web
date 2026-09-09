@@ -1,9 +1,9 @@
 // 실제 v2.3.0 입력 흐름을 보여주는 정적 예시. 목업의 컨트롤은 클릭 대상이 아니다.
-function RootTwo() {
+export function RootTwo({ className = "h-8 w-11" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 48 38" className="inline-block h-[1.3em] w-[1.65em] align-middle" aria-hidden="true">
-      <path d="M2 22 L7 19 L13 32 L21 5 H46" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
-      <text x="25" y="31" fill="currentColor" fontFamily="Cambria, Georgia, serif" fontSize="29">2</text>
+    <svg viewBox="0 0 54 44" className={`block overflow-visible ${className}`} preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+      <path d="M2 25 L8 22 L14 36 L23 6 H52" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <text x="28" y="36" fill="currentColor" fontFamily="Cambria Math, Cambria, Georgia, serif" fontSize="31">2</text>
     </svg>
   );
 }
@@ -12,7 +12,7 @@ export function AnswerPanelPreview() {
   return (
     <div className="min-w-0 flex flex-col gap-2.5" role="img" aria-label="답안 입력 예시: 1번은 객관식 3, 2번은 주관식 sqrt(2). fx 버튼으로 수식 입력">
       <div className="flex flex-wrap items-center justify-between gap-1 text-[9px] text-zinc-500">
-        <span>문제 2 · 해설 2</span>
+        <span>문제 2 · 해설 1</span>
         <span className="rounded border border-zinc-200 px-1.5 py-1">유형 일괄 설정</span>
       </div>
       <div className="text-[9px] text-zinc-500">예) 객관식 <span className="text-sky-600">③</span> · 주관식 <span className="text-violet-600">3</span></div>
@@ -31,14 +31,14 @@ export function AnswerPanelPreview() {
             <span className={"min-w-0 flex-1 rounded border px-1 py-1 text-left " + (formula ? "border-violet-300 text-violet-600" : "border-zinc-200 text-zinc-700")}>{formula ? "sqrt(2)" : "3"}</span>
             <span className={"shrink-0 rounded px-1 py-1 font-bold " + (formula ? "bg-violet-600 text-white" : "bg-violet-50 text-violet-600")}>fx</span>
           </div>
-          <span className="text-violet-600">해{i + 1}</span>
+          <span className="text-violet-600">{formula ? "" : "해1"}</span>
         </div>
       ))}
       <div className="rounded-lg border border-violet-100 bg-violet-50/50 p-3 text-zinc-600">
         <div className="mb-2 text-[9px] text-violet-600">한글에 들어가는 정답 예시</div>
-        <div className="flex items-center gap-4 text-[11px]">
-          <span>1. <span className="text-sky-600">③</span></span>
-          <span>2. <span className="text-violet-700" aria-label="루트 2"><RootTwo /></span></span>
+        <div className="flex items-center gap-5 text-[11px]">
+          <span className="inline-flex h-6 items-center gap-1"><span>1.</span><span className="text-sky-600">③</span></span>
+          <span className="inline-flex h-6 items-center gap-1"><span>2.</span><span className="inline-flex h-6 items-center text-violet-700" role="img" aria-label="루트 2"><RootTwo className="h-[18px] w-6" /></span></span>
         </div>
       </div>
     </div>
@@ -67,7 +67,7 @@ export default function AnswerToolsShowcase() {
             ))}
           </div>
           <div className="mb-2 text-xs font-semibold text-zinc-700">미리보기</div>
-          <div className="flex h-24 items-center justify-center rounded-lg border border-zinc-200 text-4xl text-zinc-900"><RootTwo /></div>
+          <div className="flex h-24 items-center justify-center rounded-lg border border-zinc-200 text-zinc-900"><span role="img" aria-label="루트 2"><RootTwo className="h-14 w-[76px]" /></span></div>
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
             <span className="text-[11px] text-zinc-500">한글에서 다시 편집할 수 있어요.</span>
             <span className="rounded-lg bg-[var(--accent)] px-4 py-2 text-xs font-semibold text-white">수식 적용</span>
