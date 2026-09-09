@@ -7,6 +7,7 @@ import { FAQS } from "@/lib/faqs";
 import { FaqStructuredData } from "./structured-data";
 import { PLANS, SIGNUP_FREE_CREDITS, SIGNUP_FREE_VALIDITY_DAYS, CREDIT_RULE, creditsAsProblems } from "@/lib/plans";
 import AutoDetectShowcase from "@/components/AutoDetectShowcase";
+import AnswerToolsShowcase, { AnswerPanelPreview } from "@/components/AnswerToolsShowcase";
 import Changelog from "@/components/Changelog";
 import DownloadGuideModal from "@/components/DownloadGuideModal";
 // 다운로드 링크 단일 출처 — 릴리스 시 lib/download.ts만 갱신 (홈·/start·마이페이지 공유)
@@ -197,7 +198,7 @@ export default function Home() {
             {/* 우: 데스크톱 앱 화면 목업 — placeholder 아님, 의도된 디자인(사용자 결정 2026-07-11).
                 실제 스크린샷은 하단 가이드·쇼케이스 섹션에 충분해서 히어로는 깔끔한 목업으로 유지.
                 실사진으로 교체하지 말 것 — 앱 UI가 크게 바뀌면 목업 디테일만 동기화. */}
-            <div className="hidden sm:block">
+            <div className="hidden sm:block min-w-0">
               <div className="rounded-xl border border-zinc-300 bg-white shadow-[0_24px_64px_-16px_rgba(24,24,27,0.18)] overflow-hidden">
                 {/* 타이틀바 */}
                 <div className="flex items-center gap-2 px-4 h-9 bg-zinc-100 border-b border-zinc-200">
@@ -210,7 +211,7 @@ export default function Home() {
                   </div>
                 </div>
                 {/* 툴바: 파일 · 모드 토글(문제/그림/해설) · 설정 · 계정 칩 */}
-                <div className="flex items-center gap-1.5 px-3 h-11 border-b border-zinc-200 bg-white overflow-hidden whitespace-nowrap">
+                <div className="flex flex-wrap items-center gap-1.5 px-3 py-2 min-h-11 border-b border-zinc-200 bg-white">
                   <span className="px-2 py-1 border border-zinc-200 rounded-md text-[10px] text-zinc-600">파일 열기</span>
                   <span className="ml-1.5 px-2.5 py-1 rounded-lg bg-sky-500 text-white text-[10px] font-semibold">문제</span>
                   <span className="px-2.5 py-1 rounded-lg border border-zinc-200 bg-white text-zinc-500 text-[10px]">그림</span>
@@ -222,32 +223,32 @@ export default function Home() {
                   <div className="ml-auto flex items-center gap-1.5 bg-zinc-100 rounded-full pl-2.5 pr-1.5 py-[3px]">
                     <span className="text-[10px] font-medium text-zinc-700">teacher@naver.com</span>
                     <span className="text-[10px] bg-[var(--accent)] text-white font-semibold rounded-full px-2 py-[1px]">크레딧 105</span>
-                    <span className="hidden min-[700px]:max-lg:inline min-[1200px]:inline text-[10px] text-zinc-500 pr-1">유효기간: 2026. 08. 05 (D-28)</span>
+                    <span className="hidden 2xl:inline text-[10px] text-zinc-500 pr-1">유효기간: 2026. 11. 30</span>
                   </div>
                 </div>
                 {/* 본문: PDF 뷰 + 우측 패널 */}
-                <div className="grid grid-cols-[7fr_3fr] min-h-[380px]">
-                  <div className="relative p-5 pb-14 bg-zinc-100/70 border-r border-zinc-200">
-                    <div className="bg-white border border-zinc-200 p-5 h-full shadow-sm">
+                <div className="grid grid-cols-[minmax(0,1fr)_230px] xl:grid-cols-[minmax(0,1fr)_260px] min-h-[380px]">
+                  <div className="relative min-w-0 p-3 xl:p-5 pb-14 xl:pb-14 bg-zinc-100/70 border-r border-zinc-200">
+                    <div className="bg-white border border-zinc-200 p-3 xl:p-5 h-full shadow-sm">
                       {/* 문제 영역 박스 (파랑·직각) */}
                       <div className="border-2 border-sky-500 p-3 mb-4 relative">
                         <span className="absolute -top-2.5 left-2 bg-sky-500 text-white text-[10px] px-1.5">1</span>
                         <p className="text-[12px] text-zinc-700 leading-relaxed">
-                          1. 양의 실수 <em>x</em>에 대하여 √x = ½(1−a) 일 때,
-                          √(x+a) − √(x−a+2) 의 값을 구하시오.
+                          1. 방정식 <em>x</em>² − 5<em>x</em> + 6 = 0의 두 근의 합은?
                         </p>
+                        <p className="mt-2 text-[10px] text-zinc-500">① 3 &nbsp; ② 4 &nbsp; ③ 5 &nbsp; ④ 6 &nbsp; ⑤ 7</p>
                       </div>
                       {/* 문제+그림 영역 */}
                       <div className="border-2 border-sky-500 p-3 relative">
                         <span className="absolute -top-2.5 left-2 bg-sky-500 text-white text-[10px] px-1.5">2</span>
                         <p className="text-[12px] text-zinc-700 leading-relaxed mb-2">
-                          2. 함수 y = f(x)의 그래프가 그림과 같을 때,
+                          2. 함수 y = <em>x</em>²의 그래프에서 y = 2일 때, 양수 <em>x</em>의 값을 구하시오.
                         </p>
                         <div className="border-2 border-emerald-500 h-16 flex items-center justify-center relative">
                           <span className="absolute -top-2.5 left-2 bg-emerald-500 text-white text-[10px] px-1.5">그림</span>
                           <svg width="72" height="44" viewBox="0 0 72 44" className="text-zinc-400">
                             <path d="M4 40 L4 4 M4 40 L68 40" stroke="currentColor" strokeWidth="1.5" fill="none" />
-                            <path d="M8 36 Q28 4 48 22 T68 10" stroke="#7c3aed" strokeWidth="1.5" fill="none" />
+                            <path d="M5 39 Q42 39 65 5" stroke="#7c3aed" strokeWidth="1.5" fill="none" />
                           </svg>
                         </div>
                       </div>
@@ -266,29 +267,12 @@ export default function Home() {
                       <span className="px-1.5 py-0.5 border border-zinc-200 rounded-md text-zinc-600">맞춤</span>
                     </div>
                   </div>
-                  {/* 우측 패널: 시험지명 · 요약 · 문항/그림/답안/해설 표 */}
-                  <div className="p-3.5 bg-white flex flex-col">
+                  {/* v2.3.0: 객/주 선택 · 수식 답안 · 한글 출력 예시 */}
+                  <div className="min-w-0 p-2.5 xl:p-3.5 bg-white flex flex-col">
                     <div className="border border-zinc-200 rounded-md px-3 py-2 text-[11px] text-zinc-400">
                       시험지 명 입력 (선택)
                     </div>
-                    <div className="text-[10px] text-zinc-500 px-1 mt-2.5 mb-1">문제 2 · 해설 2</div>
-                    <div className="grid grid-cols-[30px_30px_1fr_34px] text-[10px] text-zinc-400 text-center px-1 pb-1.5">
-                      <span>문항</span><span>그림</span><span>답안</span><span>해설</span>
-                    </div>
-                    {[
-                      ["1", "", "12", "해1"],
-                      ["2", "✓", "③", "해2"],
-                    ].map(([n, fig, a, sol], i) => (
-                      <div
-                        key={n}
-                        className={`grid grid-cols-[30px_30px_1fr_34px] text-[11px] text-center border-t border-zinc-100 px-1 py-1.5 ${i % 2 ? "bg-zinc-50" : ""}`}
-                      >
-                        <span className="text-sky-600 font-medium">{n}</span>
-                        <span className="text-emerald-600">{fig}</span>
-                        <span className="text-zinc-700">{a}</span>
-                        <span className="text-[var(--accent)]">{sol}</span>
-                      </div>
-                    ))}
+                    <div className="mt-2.5"><AnswerPanelPreview /></div>
                     <div className="flex items-center gap-1.5 mt-auto pt-2.5 text-[10px] text-zinc-500">
                       <span className="px-2 py-1 border border-zinc-200 rounded-md">▲</span>
                       <span className="px-2 py-1 border border-zinc-200 rounded-md">▼</span>
@@ -362,6 +346,32 @@ export default function Home() {
                 </p>
               </div>
               <AutoDetectShowcase />
+            </div>
+          </div>
+
+          <div id="answer-tools" className="card rounded-xl p-6 sm:p-8 lg:p-10 mb-5 !border-[var(--accent-border)]">
+            <div className="grid md:grid-cols-2 gap-8 lg:gap-12 items-center">
+              <div className="min-w-0">
+                <span className="inline-block text-[11px] font-bold tracking-widest text-violet-700 bg-violet-100 rounded-full px-3 py-1 mb-4">
+                  NEW · v2.3.0
+                </span>
+                <h3 className="text-2xl lg:text-3xl font-bold mb-4">
+                  정답이 √2여도,<br />바로 입력하세요
+                </h3>
+                <p className="text-zinc-600 leading-relaxed mb-4">
+                  주관식 정답도 미리 넣어두세요. <strong className="text-zinc-900 font-semibold">[fx] 버튼</strong>에서
+                  루트·분수·지수 같은 수식을 입력하면, 문제와 함께{" "}
+                  <strong className="text-zinc-900 font-semibold">편집 가능한 한글 수식</strong>으로 들어갑니다.
+                  완성된 한글 문서에서도 더블클릭해 수정할 수 있습니다.
+                </p>
+                <p className="text-zinc-600 leading-relaxed">
+                  객관식은 숫자만 넣으면 됩니다. 기본은 객관식, 필요한 문항만{" "}
+                  <strong className="text-zinc-900 font-semibold">[주]</strong>로 바꾸세요.
+                  입력한 3이 객관식에서는 ③, 주관식에서는 3으로 알맞게 표시됩니다.
+                  여러 문항의 유형도 한 번에 바꿀 수 있습니다.
+                </p>
+              </div>
+              <AnswerToolsShowcase />
             </div>
           </div>
 
