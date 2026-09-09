@@ -367,7 +367,7 @@ export default function Home() {
                   완성된 한글 문서에서도 더블클릭해 수정할 수 있습니다.
                 </p>
                 <p className="text-zinc-600 leading-relaxed">
-                  객관식은 숫자만 넣으면 됩니다. 기본은 객관식, 필요한 문항만{" "}
+                  객관식은 숫자만 넣으면 됩니다. 기본은 객관식, 주관식 적용이 필요한 문항만{" "}
                   <strong className="text-zinc-900 font-semibold">[주]</strong>로 바꾸세요.
                   입력한 3이 객관식에서는 ③, 주관식에서는 3으로 알맞게 표시됩니다.
                   여러 문항의 유형도 한 번에 바꿀 수 있습니다.
