@@ -1046,7 +1046,10 @@ export default function Home() {
                 AI Math<span className="text-[var(--accent)]">OCR</span>
               </span>
             </div>
-            <div className="flex items-center gap-6 text-sm text-zinc-500">
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-zinc-500">
+              <a href="/help/hwp-equation" className="hover:text-zinc-900 transition-colors">
+                한글 수식 입력 방법
+              </a>
               <a href="/terms" className="hover:text-zinc-900 transition-colors">
                 이용약관
               </a>
