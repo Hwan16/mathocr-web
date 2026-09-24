@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { trackEvent } from "@/lib/analytics";
 import { FAQS } from "@/lib/faqs";
-import { FaqStructuredData } from "./structured-data";
+import { FaqStructuredData, UsageVideoStructuredData } from "./structured-data";
 import { PLANS, SIGNUP_FREE_CREDITS, SIGNUP_FREE_VALIDITY_DAYS, CREDIT_RULE, creditsAsProblems } from "@/lib/plans";
 import AutoDetectShowcase from "@/components/AutoDetectShowcase";
 import AnswerToolsShowcase, { AnswerPanelPreview, RootTwo } from "@/components/AnswerToolsShowcase";
@@ -357,7 +357,7 @@ export default function Home() {
                 </span>
                 <h3 className="text-2xl lg:text-3xl font-bold mb-4">
                   <span className="inline-flex items-center">
-                    정답이&nbsp;<span className="inline-flex items-center" role="img" aria-label="루트 2"><RootTwo className="h-[1.05em] w-[1.4em]" /></span>여도,
+                    정답이&nbsp;<span className="inline-flex items-center" role="img" aria-label="루트 2">{/* 검색엔진용: SVG 안의 "2"와 합쳐 텍스트 "√2"가 되도록 √만 숨김 텍스트로 */}<span className="sr-only">√</span><RootTwo className="h-[1.05em] w-[1.4em]" /></span>여도,
                   </span><br />바로 입력하세요
                 </h3>
                 <p className="text-zinc-600 leading-relaxed mb-4">
@@ -560,6 +560,7 @@ export default function Home() {
           </div>
 
           {/* 동영상 가이드 — 영상 교체 시 H.264+AAC 코덱 유지(브라우저 호환), 비율 781:540 */}
+          <UsageVideoStructuredData />
           <figure className="card rounded-xl overflow-hidden max-w-4xl mx-auto mb-20">
             <figcaption className="flex items-center gap-2 px-5 py-3 border-b border-zinc-200 bg-zinc-50 text-sm font-semibold text-zinc-500">
               <iconify-icon

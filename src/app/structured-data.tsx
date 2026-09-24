@@ -81,6 +81,31 @@ const faqPage = {
   })),
 };
 
+// VideoObject — 홈 #guide 섹션의 자체 호스팅 사용법 영상(public/guide/usage-guide.mp4).
+// 영상 교체 시 uploadDate·duration(ISO 8601)·thumbnailUrl을 함께 갱신할 것.
+const usageVideo = {
+  "@context": "https://schema.org",
+  "@type": "VideoObject",
+  name: "AI MathOCR 사용법 — 수학문제 PDF를 편집 가능한 HWP로 변환하기",
+  description:
+    "회원가입과 설치부터 PDF 열기, 문제 영역 지정, 변환, 완성된 한글(HWP) 파일 확인까지 AI MathOCR 전체 사용 과정을 보여주는 동영상 가이드입니다.",
+  thumbnailUrl: `${SITE_URL}/guide/usage-guide-poster.jpg`,
+  uploadDate: "2026-07-09",
+  duration: "PT1M37S",
+  contentUrl: `${SITE_URL}/guide/usage-guide.mp4`,
+  inLanguage: "ko-KR",
+};
+
+export function UsageVideoStructuredData() {
+  return (
+    <script
+      type="application/ld+json"
+      // JSON-LD는 신뢰된 내부 정적 데이터라 안전
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(usageVideo) }}
+    />
+  );
+}
+
 export function FaqStructuredData() {
   return (
     <script
