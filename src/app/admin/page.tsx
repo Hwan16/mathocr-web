@@ -160,12 +160,18 @@ function LogMetadata({ metadata }: { metadata: Record<string, unknown> }) {
     rows.push({ label: "복구 안내", value: "인식 결과 보관 → 다시 만들기 안내함" });
   if (typeof metadata.rebuild_attempt === "number")
     rows.push({ label: "다시 만들기", value: `${metadata.rebuild_attempt}회째 시도` });
+  // v2.3.1은 [한글 정리하기] 버튼(cleanup_runs), v2.3.2~는 다시 만들기 때 자동 정리(cleanup_killed만)
   if (typeof metadata.cleanup_runs === "number" && metadata.cleanup_runs > 0)
     rows.push({
       label: "한글 정리하기",
       value: `${metadata.cleanup_runs}회 사용 · 숨은 한글 ${
         typeof metadata.cleanup_killed === "number" ? metadata.cleanup_killed : 0
       }개 종료`,
+    });
+  else if (typeof metadata.cleanup_killed === "number")
+    rows.push({
+      label: "숨은 한글 정리",
+      value: `다시 만들기 때 자동으로 ${metadata.cleanup_killed}개 종료`,
     });
 
   // 알려지지 않은 키는 원본 JSON으로 보조 표시

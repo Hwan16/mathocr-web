@@ -33,7 +33,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     {
       url: `${SITE_URL}/help/hwp-launch`,
-      lastModified: "2026-09-29",
+      lastModified: "2026-09-30",
       changeFrequency: "monthly",
       priority: 0.4,
     },

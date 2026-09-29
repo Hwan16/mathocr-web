@@ -7,54 +7,64 @@ export const metadata: Metadata = {
   alternates: { canonical: "/help/hwp-launch" },
 };
 
-// 앱(v2.3.1~)의 복구 창에서 [그림으로 보는 해결 방법]으로 연결되는 페이지.
-// 복구 창 스크린샷은 앱 화면을 그대로 렌더링한 것(2배율).
+// 앱의 복구 창에서 [그림으로 보는 해결 방법]으로 연결되는 페이지.
+// 복구 창 스크린샷은 앱 화면을 그대로 렌더링한 것(2배율, v2.3.2 기준).
+// v2.3.2: 버튼이 [다시 만들기] 하나로 합쳐지고(숨은 한글 정리는 자동),
+// 확인할 것은 다시 만들기도 실패했을 때만 창이 알려 준다 — 이 페이지도 그 흐름을 따른다.
 const STEPS: {
   title: string;
   body: React.ReactNode;
   image?: string;
   imageAlt?: string;
   imageWidth?: string;
+  example?: { text: React.ReactNode; image: string; imageAlt: string };
   warning?: React.ReactNode;
 }[] = [
   {
-    title: "[한글 정리하기] 누르기",
+    title: "오류 창에서 [다시 만들기] 누르기",
     body: (
       <>
-        오류 창의 <strong className="text-zinc-900">[한글 정리하기]</strong>를 누르면, 화면에
-        보이지 않은 채 뒤에 멈춰 있는 한글을 찾아 종료할지 물어봅니다.{" "}
-        <strong className="text-zinc-900">[예]</strong>를 누르면 정리됩니다.{" "}
-        <strong className="text-zinc-900">화면에 열려 있는 한글 문서는 건드리지 않으니</strong>{" "}
-        안심하고 누르셔도 됩니다.
+        <strong className="text-zinc-900">[다시 만들기]</strong>를 누르면 뒤에 멈춰 있는 한글을
+        자동으로 정리한 뒤, 보관해 둔 인식 결과로 한글 문서만 다시 만듭니다. AI 인식을 기다릴
+        필요가 없고 <strong className="text-zinc-900">크레딧도 추가로 차감되지 않습니다.</strong>{" "}
+        화면에 열려 있는 한글 문서는 건드리지 않으니 안심하세요.{" "}
+        <strong className="text-zinc-900">대부분 여기서 해결됩니다.</strong>
       </>
     ),
-    image: "/guide/hwp-launch/cleanup-done.png",
-    imageAlt: "한글 정리하기를 누른 뒤 '뒤에 멈춰 있던 한글 1개를 종료했어요' 안내가 뜬 복구 창",
+    image: "/guide/hwp-launch/recovery-dialog.png",
+    imageAlt:
+      "한글 문서를 만들지 못했어요 창 — '보관해 둔 인식 결과로 한글 문서를 다시 만들까요?' 질문과 닫기·다시 만들기 버튼",
     imageWidth: "max-w-md",
   },
   {
-    title: "그래도 안 되면: 한글을 직접 한 번 실행해서 안내 창 닫기",
+    title: "그래도 안 되면: 창이 알려 주는 것 하나만 확인하고 다시 누르기",
     body: (
       <>
-        정리할 한글이 없다고 나오거나 다시 만들기가 또 실패하면, 바탕화면이나 시작 메뉴에서{" "}
-        <strong className="text-zinc-900">한글을 직접 실행</strong>해 보세요. 업데이트 안내·초기
-        설정 같은 창이 뜨면 <strong className="text-zinc-900">모두 완료하거나 닫은 뒤, 한글을
-        닫아</strong> 주세요. 특히 한컴오피스를 새로 설치·업데이트·복구한 직후에는 처음 실행할 때
-        아래와 같은 창이 떠서 변환을 막는 경우가 있습니다.
+        다시 만들기도 실패하면 창이{" "}
+        <strong className="text-zinc-900">&lsquo;이번에도 한글 문서를 만들지
+        못했어요&rsquo;</strong>로 바뀌고 확인할 것을 하나 알려 줍니다. 열려 있는 한글 창이 있으면
+        그 창의 이름을 짚어 주니, 안내 창이면 완료하거나 닫고 작업 중인 문서는 저장한 뒤 한글을
+        모두 닫아 주세요. 열린 창이 없다면 바탕화면이나 시작 메뉴에서{" "}
+        <strong className="text-zinc-900">한글을 직접 한 번 실행</strong>해서 뜨는 안내 창을 모두
+        닫은 뒤 한글을 닫아 주세요. 그다음 <strong className="text-zinc-900">[다시
+        만들기]</strong>를 다시 누르면 됩니다.
       </>
     ),
-    image: "/guide/hwp-repair/step-5.png",
-    imageAlt: "한컴오피스 설치 후 처음 실행하면 뜨는 '한컴 기본 설정' 창 예시",
-  },
-  {
-    title: "[인식 결과로 다시 만들기] 누르기",
-    body: (
-      <>
-        오류 창으로 돌아와 <strong className="text-zinc-900">[인식 결과로 다시 만들기]</strong>를
-        누르세요. 보관해 둔 인식 결과로 한글 문서만 다시 만들기 때문에 AI 인식을 기다릴 필요가
-        없고, <strong className="text-zinc-900">크레딧도 추가로 차감되지 않습니다.</strong>
-      </>
-    ),
+    image: "/guide/hwp-launch/retry-dialog.png",
+    imageAlt:
+      "이번에도 한글 문서를 만들지 못했어요 창 — '다시 만들기 전에 이것만 확인해 주세요' 안내와 다시 만들기 버튼",
+    imageWidth: "max-w-md",
+    example: {
+      text: (
+        <>
+          <strong className="text-zinc-900">안내 창 예시</strong> — 한컴오피스를 새로
+          설치·업데이트·복구한 직후에는 처음 실행할 때 아래와 같은 창이 떠서 변환을 막는 경우가
+          있습니다. 끝까지 완료하거나 닫아 주세요.
+        </>
+      ),
+      image: "/guide/hwp-repair/step-5.png",
+      imageAlt: "한컴오피스 설치 후 처음 실행하면 뜨는 '한컴 기본 설정' 창 예시",
+    },
   },
   {
     title: "그래도 안 되면: [닫기] 누른 뒤 컴퓨터 재시작",
@@ -90,7 +100,7 @@ export default function HwpLaunchGuidePage() {
             한글 실행·응답 오류 해결 가이드
           </h1>
           <p className="text-zinc-500 text-sm mt-3">
-            대부분 1~2분이면 해결됩니다 · AI 인식 결과는 그대로 보관됩니다
+            대부분 버튼 한 번이면 해결됩니다 · AI 인식 결과는 그대로 보관됩니다
           </p>
         </div>
 
@@ -109,21 +119,16 @@ export default function HwpLaunchGuidePage() {
             <strong className="text-zinc-900">화면에 보이지 않게 실행</strong>해서 HWP 문서를
             만듭니다. 이때 한글에 업데이트·초기 설정 같은 안내 창이 떠 있거나, 이전에 실패한
             한글이 화면에 보이지 않는 채 뒤에 멈춰 있으면 한글이 응답하지 않아 변환이 실패할 수
-            있습니다. 아래 순서대로 한글을 정리하면 대부분 해결됩니다.
+            있습니다.
           </p>
           <div className="mt-4 rounded-lg bg-[var(--accent-soft)] border border-[var(--accent-border)] px-4 py-3 text-sm text-violet-900 leading-relaxed">
-            <strong>AI 인식 결과는 사라지지 않아요.</strong> 오류 창을 닫지 말고 아래 순서대로 따라
-            한 뒤 <strong>[인식 결과로 다시 만들기]</strong>를 누르세요. AI 인식을 다시 하지 않고
-            한글 문서만 바로 만들며, 크레딧도 추가로 차감되지 않습니다.
+            <strong>AI 인식 결과는 사라지지 않아요.</strong> 오류 창을 닫지 말고{" "}
+            <strong>[다시 만들기]</strong>를 누르세요. 멈춰 있는 한글을 자동으로 정리한 뒤 AI
+            인식 없이 한글 문서만 바로 만들며, 크레딧도 추가로 차감되지 않습니다.
           </div>
-          <img
-            src="/guide/hwp-launch/recovery-dialog.png"
-            alt="한글 문서를 만들지 못했어요 창 — 인식 결과 보관 안내와 한글 정리하기·인식 결과로 다시 만들기 버튼"
-            className="mt-5 w-full max-w-md mx-auto rounded-lg border border-zinc-200"
-          />
-          <p className="mt-3 text-xs text-zinc-500 text-center">
-            이 창은 v2.3.1부터 나타납니다. 오류 창에 [인식 결과로 다시 만들기] 버튼이 없다면 앱을
-            최신 버전으로 업데이트해 주세요.
+          <p className="mt-3 text-xs text-zinc-500">
+            그림은 최신 버전(v2.3.2) 기준입니다. 오류 창에 [다시 만들기] 버튼이 없다면 앱을 최신
+            버전으로 업데이트해 주세요.
           </p>
         </div>
 
@@ -155,6 +160,16 @@ export default function HwpLaunchGuidePage() {
                     step.imageWidth ? `${step.imageWidth} mx-auto` : ""
                   }`}
                 />
+              )}
+              {step.example && (
+                <div className="mt-6">
+                  <p className="text-sm text-zinc-600 leading-relaxed">{step.example.text}</p>
+                  <img
+                    src={step.example.image}
+                    alt={step.example.imageAlt}
+                    className="mt-3 w-full rounded-lg border border-zinc-200"
+                  />
+                </div>
               )}
             </div>
           ))}
