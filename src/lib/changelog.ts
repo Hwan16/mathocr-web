@@ -45,6 +45,15 @@ export type ChangelogEntry = {
 /** 최신순. 접힌 상태에서 보이는 개수는 CHANGELOG_PREVIEW_COUNT */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "v2.3.1",
+    tag: "improve",
+    title: "한글 오류 복구 강화",
+    items: [
+      "한글 문제로 변환이 멈춰도 AI 인식 결과를 보관해, 한글을 정리한 뒤 한글 문서만 바로 다시 만들 수 있습니다.",
+      "화면에 안 보이게 멈춰 있는 한글을 버튼 한 번으로 정리할 수 있습니다.",
+    ],
+  },
+  {
     version: "v2.3.0",
     tag: "new",
     title: "✨ 수식 답안 입력",

@@ -90,7 +90,7 @@ const LOG_FEATURE_LABELS: Record<string, string> = {
   table: "표",
 };
 // 오류가 아니라 기록용인 로그 유형 (재시도로 복구된 변환 등) — 배지 색을 구분
-const INFO_LOG_TYPES = new Set(["hwp_retry_recovered"]);
+const INFO_LOG_TYPES = new Set(["hwp_retry_recovered", "hwp_rebuild_recovered"]);
 
 function LogMetaRow({ label, value }: { label: string; value: ReactNode }) {
   return (
@@ -145,6 +145,28 @@ function LogMetadata({ metadata }: { metadata: Record<string, unknown> }) {
     });
   if (metadata.first_error)
     rows.push({ label: "첫 실패 내용", value: String(metadata.first_error) });
+  if (typeof metadata.first_elapsed_sec === "number")
+    rows.push({ label: "첫 시도 소요", value: `${metadata.first_elapsed_sec}초` });
+  if (metadata.auto_retried === true)
+    rows.push({ label: "자동 재시도", value: "자동 재시도 후 성공" });
+  if (typeof metadata.hwp_elapsed_sec === "number")
+    rows.push({
+      label: "한글 단계 소요",
+      // 2분 안팎이면 한글 실행이 멈춰 COM 시간 초과로 실패한 경우일 가능성
+      value: `${metadata.hwp_elapsed_sec}초`,
+    });
+  // 인식 결과로 다시 만들기(v2.3.1~) — 복구 창 안내 여부·시도 횟수·한글 정리하기 사용
+  if (metadata.rebuildable === true)
+    rows.push({ label: "복구 안내", value: "인식 결과 보관 → 다시 만들기 안내함" });
+  if (typeof metadata.rebuild_attempt === "number")
+    rows.push({ label: "다시 만들기", value: `${metadata.rebuild_attempt}회째 시도` });
+  if (typeof metadata.cleanup_runs === "number" && metadata.cleanup_runs > 0)
+    rows.push({
+      label: "한글 정리하기",
+      value: `${metadata.cleanup_runs}회 사용 · 숨은 한글 ${
+        typeof metadata.cleanup_killed === "number" ? metadata.cleanup_killed : 0
+      }개 종료`,
+    });
 
   // 알려지지 않은 키는 원본 JSON으로 보조 표시
   const known = new Set([
@@ -160,6 +182,13 @@ function LogMetadata({ metadata }: { metadata: Record<string, unknown> }) {
     "first_category",
     "first_error",
     "first_error_code",
+    "first_elapsed_sec",
+    "auto_retried",
+    "hwp_elapsed_sec",
+    "rebuildable",
+    "rebuild_attempt",
+    "cleanup_runs",
+    "cleanup_killed",
   ]);
   const extra = Object.fromEntries(
     Object.entries(metadata).filter(([k]) => !known.has(k))
