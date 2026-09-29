@@ -79,10 +79,18 @@ const LOG_CATEGORY_LABELS: Record<string, string> = {
   hwp_not_installed: "한글 미설치 / 뷰어",
   hwp_typelib_not_registered: "한글 설치 손상 (복구 설치 필요)",
   hwp_launch_failed: "한글 실행 실패",
+  hwp_not_responding: "한글 응답 없음 (안내 창·기동 지연 추정)",
   hwp_com_error: "한글 연동 오류",
   hwp_api_missing: "한글 구버전 (기능 없음 — 업데이트 필요)",
   other: "기타 (한글 무관)",
 };
+
+const LOG_FEATURE_LABELS: Record<string, string> = {
+  bogi_box: "<보기> 박스",
+  table: "표",
+};
+// 오류가 아니라 기록용인 로그 유형 (재시도로 복구된 변환 등) — 배지 색을 구분
+const INFO_LOG_TYPES = new Set(["hwp_retry_recovered"]);
 
 function LogMetaRow({ label, value }: { label: string; value: ReactNode }) {
   return (
@@ -122,6 +130,21 @@ function LogMetadata({ metadata }: { metadata: Record<string, unknown> }) {
     rows.push({ label: "파일", value: String(metadata.pdf_name) });
   if (typeof metadata.region_count === "number")
     rows.push({ label: "영역 수", value: String(metadata.region_count) });
+  if (typeof metadata.failed_feature === "string")
+    rows.push({
+      label: "실패 기능",
+      value: LOG_FEATURE_LABELS[metadata.failed_feature] ?? metadata.failed_feature,
+    });
+  // 한글 자동 재시도 — 재시도 후에도 실패(retried) 또는 재시도로 복구(hwp_retry_recovered)
+  if (metadata.retried === true)
+    rows.push({ label: "자동 재시도", value: "재시도했지만 다시 실패" });
+  if (typeof metadata.first_category === "string")
+    rows.push({
+      label: "첫 실패 원인",
+      value: LOG_CATEGORY_LABELS[metadata.first_category] ?? metadata.first_category,
+    });
+  if (metadata.first_error)
+    rows.push({ label: "첫 실패 내용", value: String(metadata.first_error) });
 
   // 알려지지 않은 키는 원본 JSON으로 보조 표시
   const known = new Set([
@@ -132,6 +155,11 @@ function LogMetadata({ metadata }: { metadata: Record<string, unknown> }) {
     "hwp_version",
     "pdf_name",
     "region_count",
+    "failed_feature",
+    "retried",
+    "first_category",
+    "first_error",
+    "first_error_code",
   ]);
   const extra = Object.fromEntries(
     Object.entries(metadata).filter(([k]) => !known.has(k))
@@ -1682,7 +1710,13 @@ function LogsTab() {
           {logs.map((log) => (
             <div key={log.id} className="px-6 py-4 hover:bg-zinc-50">
               <div className="flex items-center gap-4">
-                <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/10 text-red-600 border border-red-500/20 shrink-0">
+                <span
+                  className={`text-xs px-2 py-0.5 rounded-full border shrink-0 ${
+                    INFO_LOG_TYPES.has(log.error_type)
+                      ? "bg-emerald-500/10 text-emerald-700 border-emerald-500/20"
+                      : "bg-red-500/10 text-red-600 border-red-500/20"
+                  }`}
+                >
                   {log.error_type}
                 </span>
                 <span

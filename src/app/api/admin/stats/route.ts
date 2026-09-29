@@ -37,6 +37,8 @@ export async function GET() {
       adminClient
         .from("error_logs")
         .select("*", { count: "exact", head: true })
+        // 재시도로 복구된 변환 기록은 오류가 아니므로 오류 건수에서 뺀다
+        .neq("error_type", "hwp_retry_recovered")
         .gte(
           "created_at",
           new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
