@@ -127,7 +127,7 @@ export default function HwpLaunchGuidePage() {
             인식 없이 한글 문서만 바로 만들며, 크레딧도 추가로 차감되지 않습니다.
           </div>
           <p className="mt-3 text-xs text-zinc-500">
-            그림은 최신 버전(v2.3.2) 기준입니다. 오류 창에 [다시 만들기] 버튼이 없다면 앱을 최신
+            그림은 v2.3.2 이후 버전 기준입니다. 오류 창에 [다시 만들기] 버튼이 없다면 앱을 최신
             버전으로 업데이트해 주세요.
           </p>
         </div>
