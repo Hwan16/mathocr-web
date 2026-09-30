@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import UpdateCard from "./UpdateCard";
 
 export const metadata: Metadata = {
   title: "한글 실행·응답 오류 해결 가이드",
@@ -8,9 +9,12 @@ export const metadata: Metadata = {
 };
 
 // 앱의 복구 창에서 [그림으로 보는 해결 방법]으로 연결되는 페이지.
-// 복구 창 스크린샷은 앱 화면을 그대로 렌더링한 것(2배율, v2.3.2 기준).
+// 복구 창 스크린샷은 앱 화면을 그대로 렌더링한 것(2배율, v2.3.2에서 촬영 — v2.3.3도 같은 모양).
 // v2.3.2: 버튼이 [다시 만들기] 하나로 합쳐지고(숨은 한글 정리는 자동),
 // 확인할 것은 다시 만들기도 실패했을 때만 창이 알려 준다 — 이 페이지도 그 흐름을 따른다.
+// 페이지는 "그림은 최신 버전 기준"이라고 안내한다(UpdateCard, 2026-10-01 사용자 결정 —
+// 버전 번호를 박지 않아 최신 버전 업데이트를 계속 유도). ⚠️ 복구 창 모양이 바뀌는
+// 릴리스에서는 이 그림들도 새로 찍어 교체할 것.
 const STEPS: {
   title: string;
   body: React.ReactNode;
@@ -126,11 +130,10 @@ export default function HwpLaunchGuidePage() {
             <strong>[다시 만들기]</strong>를 누르세요. 멈춰 있는 한글을 자동으로 정리한 뒤 AI
             인식 없이 한글 문서만 바로 만들며, 크레딧도 추가로 차감되지 않습니다.
           </div>
-          <p className="mt-3 text-xs text-zinc-500">
-            그림은 v2.3.2 이후 버전 기준입니다. 오류 창에 [다시 만들기] 버튼이 없다면 앱을 최신
-            버전으로 업데이트해 주세요.
-          </p>
         </div>
+
+        {/* 먼저 최신 버전으로 — 그림·단계는 최신 버전 기준 */}
+        <UpdateCard />
 
         {/* 단계별 절차 */}
         <div className="space-y-6">
