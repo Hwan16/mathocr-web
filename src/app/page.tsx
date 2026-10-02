@@ -8,6 +8,7 @@ import { FaqStructuredData, UsageVideoStructuredData } from "./structured-data";
 import { PLANS, SIGNUP_FREE_CREDITS, SIGNUP_FREE_VALIDITY_DAYS, CREDIT_RULE, creditsAsProblems } from "@/lib/plans";
 import AutoDetectShowcase from "@/components/AutoDetectShowcase";
 import AnswerToolsShowcase, { AnswerPanelPreview, RootTwo } from "@/components/AnswerToolsShowcase";
+import RomanTypeShowcase from "@/components/RomanTypeShowcase";
 import Changelog from "@/components/Changelog";
 import DownloadGuideModal from "@/components/DownloadGuideModal";
 // 다운로드 링크 단일 출처 — 릴리스 시 lib/download.ts만 갱신 (홈·/start·마이페이지 공유)
@@ -374,6 +375,33 @@ export default function Home() {
                 </p>
               </div>
               <AnswerToolsShowcase />
+            </div>
+          </div>
+
+          {/* 로만체 수식 표기 (2026-10 변환 엔진 업데이트 — 앱 새 버전 없이 서버에서 적용돼 버전 배지 대신 이름) */}
+          <div id="roman-type" className="card rounded-xl p-6 sm:p-8 lg:p-10 mb-5 !border-[var(--accent-border)]">
+            <div className="grid md:grid-cols-2 gap-8 lg:gap-12 items-center">
+              <div className="min-w-0">
+                <span className="inline-block text-[11px] font-bold tracking-widest text-violet-700 bg-violet-100 rounded-full px-3 py-1 mb-4">
+                  NEW · 변환 엔진 업데이트
+                </span>
+                <h3 className="text-2xl lg:text-3xl font-bold mb-4">
+                  점 <span className="font-normal" style={{ fontFamily: '"Times New Roman", Times, serif', fontSize: "1.12em" }}>P</span>,
+                  선분 <span className="font-normal" style={{ fontFamily: '"Times New Roman", Times, serif', fontSize: "1.12em" }}>AB</span>는
+                  <br />로만체 수식으로
+                </h3>
+                <p className="text-zinc-600 leading-relaxed mb-4">
+                  점·선분·도형의 이름이나 단위처럼{" "}
+                  <strong className="text-zinc-900 font-semibold">이름으로 쓰는 알파벳은 로만체(정자체)</strong>로,
+                  변수·함수는 이탤릭체로 구분해 한글 수식에 넣습니다. 수식마다{" "}
+                  <strong className="text-zinc-900 font-semibold">rm을 직접 입력할 필요가 없습니다.</strong>
+                </p>
+                <p className="text-zinc-600 leading-relaxed">
+                  편집 가능한 한글 수식으로 들어가므로 더블클릭해 바로 수정할 수 있습니다.
+                  최신 버전 앱이라면 새로 설치할 필요 없이 바로 적용됩니다.
+                </p>
+              </div>
+              <RomanTypeShowcase />
             </div>
           </div>
 
