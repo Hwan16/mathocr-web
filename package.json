@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test:promo": "node --experimental-strip-types --test src/lib/promo.test.ts"
+    "test:promo": "node --experimental-strip-types --test src/lib/promo.test.ts",
+    "test:ocr": "node --experimental-strip-types --test src/lib/ocr-claude.test.ts"
   },
   "keywords": [],
   "author": "",

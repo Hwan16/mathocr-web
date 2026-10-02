@@ -2,18 +2,26 @@ import { getAuthUser } from "@/lib/supabase/auth-helper";
 import { ensureUsableCredits } from "@/lib/supabase/credit-guard";
 import { checkRateLimit } from "@/lib/rate-limit";
 import {
-  isAllowedSystemPrompt,
+  systemPromptInfo,
   checkAndCountUserCall,
   isDailyCostBlocked,
   recordCost,
-  estimateClaudeCostUsd,
   logOcrUsage,
 } from "@/lib/ocr-guard";
+import {
+  ALLOWED_MODELS,
+  DEFAULT_MODEL,
+  type ClaudeAttempt,
+  type ClaudeCallPlan,
+  type ClaudeModel,
+  estimateClaudeCostUsd,
+  parseAppVersion,
+  responsePayload,
+  runClaudeCall,
+} from "@/lib/ocr-claude";
 import { NextRequest, NextResponse } from "next/server";
 
 const CLAUDE_API_URL = "https://api.anthropic.com/v1/messages";
-const ALLOWED_MODELS = ["claude-sonnet-4-6"] as const;
-const DEFAULT_MODEL = "claude-sonnet-4-6";
 const RATE_LIMIT = 60;
 const RATE_LIMIT_WINDOW_MS = 60_000;
 // 데스크톱의 해설 분석 단계(structure_analyzer.analyze_solution)가 8192를 요청한다.
@@ -34,28 +42,53 @@ const ALLOWED_IMAGE_MEDIA_TYPES = new Set([
 ]);
 const ALLOWED_BODY_KEYS = new Set(["system", "messages", "max_tokens", "model"]);
 
-function resolveClaudeModel(): string {
+// 모델은 서버가 고른다(기본값은 ocr-claude.ts). CLAUDE_MODEL env 로 되돌릴 수 있다 —
+// claude-sonnet-4-6 으로 두면 전환 전 동작(앱 프롬프트 그대로 4.6 호출)으로 돌아간다.
+function resolveClaudeModel(): ClaudeModel {
   const configuredModel = process.env.CLAUDE_MODEL?.trim() || DEFAULT_MODEL;
-  if (!ALLOWED_MODELS.includes(configuredModel as (typeof ALLOWED_MODELS)[number])) {
+  if (!(ALLOWED_MODELS as readonly string[]).includes(configuredModel)) {
     throw new Error(`Invalid CLAUDE_MODEL: ${configuredModel}`);
   }
-  return configuredModel;
+  return configuredModel as ClaudeModel;
 }
 
-// 클라이언트는 system을 string으로 보내고, 서버에서 prompt cache가 가능한 content block 배열로 변환한다.
-// SYSTEM_PROMPT가 ~2000 토큰으로 호출마다 동일해서 5분 ephemeral cache hit 시 input 토큰 약 90% 절감.
-function applySystemPromptCache(systemValue: string): Array<{
-  type: "text";
-  text: string;
-  cache_control: { type: "ephemeral" };
-}> {
-  return [
-    {
-      type: "text",
-      text: systemValue,
-      cache_control: { type: "ephemeral" },
-    },
-  ];
+// 데스크톱 앱은 60초를 기다린다(api_client._ocr_timeout). 5.5 시도가 그 시간을 다 쓰면
+// 4.6 폴백이 앱에 도달하지 못하므로 5.5 시도에만 상한을 둔다(실측 최장 약 17초).
+// 4.6 호출에는 전환 전처럼 상한을 두지 않는다.
+const SERVER_PROMPT_TIMEOUT_MS = 40_000;
+
+async function callAnthropic(apiKey: string, plan: ClaudeCallPlan): Promise<ClaudeAttempt> {
+  const startedAt = Date.now();
+  try {
+    const response = await fetch(CLAUDE_API_URL, {
+      method: "POST",
+      headers: {
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(plan.body),
+      signal: plan.serverPrompt ? AbortSignal.timeout(SERVER_PROMPT_TIMEOUT_MS) : undefined,
+    });
+    const data = (await response.json()) as Record<string, unknown>;
+    return { ok: response.ok, status: response.status, data, durationMs: Date.now() - startedAt };
+  } catch (error) {
+    // 연결 실패·시간 초과·JSON 이 아닌 본문 — 전환 전과 같은 500 "프록시 오류" 로 나가되,
+    // "실패한 시도"로 돌려줘 5.5 → 4.6 폴백 판단을 한곳(runClaudeCall)에서 하게 한다.
+    const message = error instanceof Error ? error.message : "알 수 없는 오류";
+    return {
+      ok: false,
+      status: 500,
+      data: { error: { type: "proxy_error", message: `프록시 오류: ${message}` } },
+      durationMs: Date.now() - startedAt,
+    };
+  }
+}
+
+type ClaudeUsage = Parameters<typeof estimateClaudeCostUsd>[0];
+
+function usageOf(data: Record<string, unknown>): ClaudeUsage {
+  return (typeof data.usage === "object" && data.usage !== null ? data.usage : {}) as ClaudeUsage;
 }
 
 function errorResponse(message: string, status: number, headers?: HeadersInit) {
@@ -203,7 +236,7 @@ export async function POST(request: NextRequest) {
     return errorResponse("Anthropic API 키가 설정되지 않았습니다.", 500);
   }
 
-  let model: string;
+  let model: ClaudeModel;
   try {
     model = resolveClaudeModel();
   } catch (error) {
@@ -224,7 +257,8 @@ export async function POST(request: NextRequest) {
 
     // 서버가 아는 프롬프트만 통과 — 임의 지시문으로 프록시를 범용 LLM처럼
     // 쓰는 것을 차단한다 (LA-04)
-    if (!isAllowedSystemPrompt(validated.value.system)) {
+    const promptInfo = systemPromptInfo(validated.value.system);
+    if (!promptInfo) {
       logOcrUsage({
         provider: "claude", user_id: user.id, ok: false, status: 403,
         duration_ms: 0, blocked_reason: "system_prompt_not_allowed",
@@ -256,54 +290,73 @@ export async function POST(request: NextRequest) {
     }
 
     // body.model is intentionally ignored; the server owns model selection.
-    // validated.value.system(문자열)을 5분 ephemeral cache 가능한 array 블록으로 변환.
-    const anthropicBody = {
-      ...validated.value,
-      model,
-      system: applySystemPromptCache(validated.value.system),
-    };
-    const responseHeaders: HeadersInit = validated.capped
-      ? { "X-Max-Tokens-Capped": "true" }
-      : {};
-
-    const startedAt = Date.now();
-    const response = await fetch(CLAUDE_API_URL, {
-      method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "Content-Type": "application/json",
+    // 현행 세대 앱의 요청은 서버 완성본 지시문으로 바꿔 5.5에 보내고, 구세대 앱은
+    // 앱 프롬프트 그대로 4.6에 보낸다 (정책: ocr-claude.ts).
+    // 5.5가 실패(과부하·오류·시간 초과)하거나 쓸 수 있는 답을 못 주면(거절·빈 응답·잘림)
+    // 앱 프롬프트 + 4.6으로 한 번 더 — 사용자는 전환 전과 같은 결과를 받는다.
+    const appVersion = parseAppVersion(request.headers.get("x-app-version"));
+    const run = await runClaudeCall(
+      {
+        configuredModel: model,
+        prompt: promptInfo,
+        system: validated.value.system,
+        messages: validated.value.messages,
+        maxTokens: validated.value.max_tokens,
       },
-      body: JSON.stringify(anthropicBody),
-    });
+      (plan) => callAnthropic(apiKey, plan)
+    );
+    const { plan, attempt } = run;
 
-    const data = await response.json();
-    const durationMs = Date.now() - startedAt;
+    if (run.failed) {
+      // 실패한 5.5 시도도 응답을 받았으면(거절·잘림) 과금되므로 그 모델 단가로 적립한다.
+      // 원인(상태·오류 종류)을 로그에 남겨 "조용히 4.6으로만 처리되는" 상태를 알아챌 수 있게 한다.
+      const failedCostUsd = run.failed.attempt.ok
+        ? estimateClaudeCostUsd(usageOf(run.failed.attempt.data), run.failed.plan.model)
+        : 0;
+      if (failedCostUsd > 0) await recordCost("claude", failedCostUsd);
+      logOcrUsage({
+        provider: "claude", user_id: user.id, ok: false, status: run.failed.attempt.status,
+        duration_ms: run.failed.attempt.durationMs, model: run.failed.plan.model,
+        est_cost_usd: Number(failedCostUsd.toFixed(6)),
+        blocked_reason: `fallback:${run.failed.reason}`,
+        app_version: appVersion,
+      });
+    }
 
-    if (!response.ok) {
+    const responseHeaders: Record<string, string> = { "X-Claude-Model": plan.model };
+    if (validated.capped) responseHeaders["X-Max-Tokens-Capped"] = "true";
+
+    if (!attempt.ok) {
       logOcrUsage({
         provider: "claude", user_id: user.id, ok: false,
-        status: response.status, duration_ms: durationMs,
+        status: attempt.status, duration_ms: attempt.durationMs, model: plan.model,
+        app_version: appVersion,
       });
+      const upstreamError = attempt.data.error as { message?: string } | undefined;
       return NextResponse.json(
-        { error: data.error?.message ?? `Claude API 오류 (HTTP ${response.status})` },
-        { status: response.status, headers: responseHeaders }
+        { error: upstreamError?.message ?? `Claude API 오류 (HTTP ${attempt.status})` },
+        { status: attempt.status, headers: responseHeaders }
       );
     }
 
     // 사용량 구조화 기록 + 일일 비용 적립 (50/80/100% 경보 포함, LA-04)
-    const usage = data.usage ?? {};
-    const estCostUsd = estimateClaudeCostUsd(usage);
+    const usage = usageOf(attempt.data);
+    const estCostUsd = estimateClaudeCostUsd(usage, plan.model);
     await recordCost("claude", estCostUsd);
     logOcrUsage({
       provider: "claude", user_id: user.id, ok: true, status: 200,
-      duration_ms: durationMs, est_cost_usd: Number(estCostUsd.toFixed(6)),
+      duration_ms: attempt.durationMs, est_cost_usd: Number(estCostUsd.toFixed(6)),
       input_tokens: usage.input_tokens ?? 0,
       output_tokens: usage.output_tokens ?? 0,
       cache_read_tokens: usage.cache_read_input_tokens ?? 0,
+      model: plan.model,
+      fallback_from: run.failed?.plan.model,
+      app_version: appVersion,
     });
 
-    return NextResponse.json(data, { headers: responseHeaders });
+    // 5.5 응답은 thinking 블록을 걸러 text만 남기고(배포된 앱은 content[0]["text"]만 읽는다)
+    // 로만체 이름을 보호해 돌려준다. 구세대 앱의 4.6 응답은 전환 전처럼 그대로 전달한다.
+    return NextResponse.json(responsePayload(run), { headers: responseHeaders });
   } catch (error) {
     return errorResponse(`프록시 오류: ${error instanceof Error ? error.message : "알 수 없는 오류"}`, 500);
   }

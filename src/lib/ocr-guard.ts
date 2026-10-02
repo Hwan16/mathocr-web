@@ -1,4 +1,4 @@
-import { createHash } from "crypto";
+import { classifySystemPrompt, type PromptInfo } from "./ocr-claude.ts";
 
 // OCR 프록시 방어 (LA-04 임시 방어).
 //
@@ -19,21 +19,7 @@ export type OcrProvider = "claude" | "mathpix" | "gemini";
 
 // ── 1. 시스템 프롬프트 허용 목록 ─────────────────────────────
 // 데스크톱 structure_analyzer.py의 SYSTEM_PROMPT / SOLUTION_SYSTEM_PROMPT.
-// 프롬프트 본문은 수정 금지(CLAUDE.md)라 해시가 사실상 고정이다.
-// 구버전 앱 호환을 위해 v1.4.0·v1.6.0 시절 해시도 포함 (v1.7.0부터 현행).
-// 프롬프트를 부득이 바꾸는 릴리스에서는 여기에 새 해시를 먼저 추가·배포할 것.
-const ALLOWED_SYSTEM_PROMPT_HASHES = new Set<string>([
-  // SYSTEM_PROMPT (v2.0.7~현행) — 테두리 박스 정의 확장(일반 박스 포함)
-  "f3fabf2e91e747aec4fef74df9bf366c7b0613c5d25cb5ba4b06969e4c094549",
-  // SYSTEM_PROMPT (v1.7.0~v2.0.6)
-  "1d5489828e6424494da64a44a2e2c5df339fde16374df0b72f33d976d0f82ceb",
-  // SOLUTION_SYSTEM_PROMPT (v1.4.0~현행, 변경 이력 없음)
-  "a53e24e2b599c75cb107d476ce1887cefc4ab34895c719b472e5927ea6572980",
-  // SYSTEM_PROMPT (v1.6.0)
-  "0d54844bfffcb95a75f76e494a81c0c8c4264d86c780d4a43bf5d714655454df",
-  // SYSTEM_PROMPT (v1.4.0~v1.5.x)
-  "3ff95bd73896dbdd1d39719a4d0626cd189d451adb7009d2b1306ec8d1ab449c",
-]);
+// 해시 목록과 종류·세대 분류는 ocr-claude.ts(모델 ↔ 지시문 정책)가 소유한다.
 
 // 긴급 탈출구: 코드 수정 없이 env로 해시 추가 (쉼표 구분 64자 hex)
 // ⚠️ env 저장 후 Vercel Deployments 탭에서 Redeploy 를 해야 반영된다(빌드 없이는 안 됨).
@@ -44,11 +30,9 @@ function extraPromptHashes(): string[] {
     .filter((s) => /^[0-9a-f]{64}$/.test(s));
 }
 
-export function isAllowedSystemPrompt(system: string): boolean {
-  const hash = createHash("sha256").update(system, "utf8").digest("hex");
-  return (
-    ALLOWED_SYSTEM_PROMPT_HASHES.has(hash) || extraPromptHashes().includes(hash)
-  );
+// 허용된 프롬프트면 종류(문제/해설)·세대(현행/구세대)를, 아니면 null.
+export function systemPromptInfo(system: string): PromptInfo | null {
+  return classifySystemPrompt(system, extraPromptHashes());
 }
 
 // ── 상한 설정 ────────────────────────────────────────────────
@@ -104,30 +88,7 @@ function userDailyCallLimit(provider: OcrProvider): number {
 }
 
 // ── 비용 추정 ────────────────────────────────────────────────
-// claude-sonnet-4-6 단가 (USD/1M tokens, 2026-07 기준):
-// 입력 $3 · 출력 $15 · 캐시 쓰기(5분 TTL) $3.75 · 캐시 읽기 $0.30
-const CLAUDE_USD_PER_MTOK = {
-  input: 3,
-  output: 15,
-  cacheWrite: 3.75,
-  cacheRead: 0.3,
-};
-
-export function estimateClaudeCostUsd(usage: {
-  input_tokens?: number;
-  output_tokens?: number;
-  cache_creation_input_tokens?: number;
-  cache_read_input_tokens?: number;
-}): number {
-  const n = (v: unknown) => (typeof v === "number" && v > 0 ? v : 0);
-  return (
-    (n(usage.input_tokens) * CLAUDE_USD_PER_MTOK.input +
-      n(usage.output_tokens) * CLAUDE_USD_PER_MTOK.output +
-      n(usage.cache_creation_input_tokens) * CLAUDE_USD_PER_MTOK.cacheWrite +
-      n(usage.cache_read_input_tokens) * CLAUDE_USD_PER_MTOK.cacheRead) /
-    1_000_000
-  );
-}
+// Claude 단가·추정은 모델별이라 ocr-claude.ts 의 estimateClaudeCostUsd(usage, model) 를 쓴다.
 
 // Mathpix 단가 (USD/건) — 우리가 쓰는 엔드포인트는 v3/text = **이미지 서비스**라
 // 공식 요금표(mathpix.com/pricing/api, 2026-08-12 확인) 기준 0~100만 건 $0.002/이미지.
@@ -379,6 +340,11 @@ export function logOcrUsage(entry: {
   output_tokens?: number;
   cache_read_tokens?: number;
   blocked_reason?: string;
+  // Claude 전용: 실제로 응답한 모델, 5.5 실패로 4.6이 대신 응답했으면 원래 모델
+  model?: string;
+  fallback_from?: string;
+  // 앱이 X-App-Version 헤더로 보낸 버전(보내지 않는 구버전은 없음)
+  app_version?: string;
 }): void {
   console.log(
     JSON.stringify({ tag: "ocr_usage", at: new Date().toISOString(), ...entry })
