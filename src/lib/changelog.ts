@@ -45,6 +45,17 @@ export type ChangelogEntry = {
 /** 최신순. 접힌 상태에서 보이는 개수는 CHANGELOG_PREVIEW_COUNT */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    // 앱 새 버전 없이 서버에서 바뀐 변화라 버전 번호 대신 이름 라벨을 쓴다.
+    version: "변환 엔진 업데이트",
+    tag: "improve",
+    title: "최신 AI 모델 적용 · 로만체 표기",
+    items: [
+      "변환에 쓰는 AI를 최신 모델로 교체해 변환 품질을 높였습니다.",
+      "점 P, 선분 AB, 단위 mg처럼 이름·단위로 쓰는 알파벳은 로만체(정자체)로, 변수는 이탤릭체로 구분해 넣습니다.",
+      "최신 버전 앱이라면 새로 설치할 필요 없이 바로 적용됩니다.",
+    ],
+  },
+  {
     version: "v2.3.1 ~ v2.3.3",
     tag: "improve",
     title: "한글 오류 복구 강화",
