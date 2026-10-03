@@ -587,7 +587,7 @@ export default function Home() {
             </p>
           </div>
 
-          {/* 동영상 가이드 — 영상 교체 시 H.264+AAC 코덱 유지(브라우저 호환), 비율 781:540 */}
+          {/* 동영상 가이드 — 영상 교체 시 H.264+AAC 코덱 유지(브라우저 호환), 비율 16:9(1920x1080). 원본: tools/reels_motion/projects/261003_usage_guide */}
           <UsageVideoStructuredData />
           <figure className="card rounded-xl overflow-hidden max-w-4xl mx-auto mb-20">
             <figcaption className="flex items-center gap-2 px-5 py-3 border-b border-zinc-200 bg-zinc-50 text-sm font-semibold text-zinc-500">
@@ -599,7 +599,7 @@ export default function Home() {
               전체 과정 동영상 가이드
             </figcaption>
             <video
-              className="w-full aspect-[781/540] bg-zinc-100"
+              className="w-full aspect-video bg-zinc-100"
               src="/guide/usage-guide.mp4"
               poster="/guide/usage-guide-poster.jpg"
               controls
