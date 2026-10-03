@@ -45,6 +45,14 @@ export type ChangelogEntry = {
 /** 최신순. 접힌 상태에서 보이는 개수는 CHANGELOG_PREVIEW_COUNT */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "v2.3.4",
+    tag: "stable",
+    title: "앱 안정성 보완",
+    items: [
+      "창이 좁을 때 [충전] 버튼이 찌그러져 보이던 문제와, 충전 후 크레딧 표시가 바로 바뀌지 않던 문제를 고쳤습니다.",
+    ],
+  },
+  {
     // 앱 새 버전 없이 서버에서 바뀐 변화라 버전 번호 대신 이름 라벨을 쓴다.
     version: "변환 엔진 업데이트",
     tag: "improve",
