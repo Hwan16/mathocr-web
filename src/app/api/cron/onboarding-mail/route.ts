@@ -103,7 +103,7 @@ ${headerHtml()}
     <p style="margin:0 0 8px;font-weight:700;">첫 변환, 이렇게 하면 됩니다</p>
     <p style="margin:0;font-size:14px;color:#3f3f46;">
       1️⃣ 아래 버튼으로 프로그램을 설치하고 로그인<br />
-      2️⃣ 시험지 PDF나 사진을 올리고, 문제 영역을 드래그로 지정<br />
+      2️⃣ 시험지 PDF나 사진을 올리고, [✨ 자동 인식]으로 문제 영역 지정<br />
       3️⃣ [변환하기] — 수식까지 편집 가능한 한글(HWP) 파일 완성
     </p>
   </div>
