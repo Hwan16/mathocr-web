@@ -610,7 +610,7 @@ export default function Home() {
             </video>
           </figure>
 
-          {/* 스텝 1~5 */}
+          {/* 스텝 1~5 — 1~4는 실제 앱 창 캡처(영상용 재구성 화면 금지). 다시 만들 때: 부모 저장소 tools/guide_steps/compose_step_images.py */}
           <div className="space-y-16 lg:space-y-20">
             {[
               {
@@ -628,8 +628,8 @@ export default function Home() {
                 desc: "프로그램을 실행해 가입한 계정으로 로그인합니다. 시험지 PDF나 핸드폰으로 찍은 문제 이미지(JPG/PNG, 최대 10장)를 드래그해서 놓거나, [파일 열기]로 업로드하세요. PDF와 이미지 모두 여러 개를 함께 첨부할 수 있고, 회전된 이미지도 프로그램 안에서 바로 회전시킬 수 있으니 방향 걱정 없이 자유롭게 올리면 됩니다.",
                 img: "step-2.webp",
                 imgW: 1600,
-                imgH: 1105,
-                imgLabel: "시험지 이미지 2장을 연 화면 — 왼쪽 목록에서 순서 변경·회전·삭제 가능",
+                imgH: 1104,
+                imgLabel: "시험지 사진 1장을 연 화면 — 왼쪽 목록에서 회전·삭제 가능",
               },
               {
                 n: 3,
@@ -638,7 +638,7 @@ export default function Home() {
                 img: "step-3.webp",
                 imgW: 1600,
                 imgH: 1104,
-                imgLabel: "문제 6개가 파란 박스로, 그림 영역이 초록 박스로 지정된 화면과 우측 답안 입력 목록",
+                imgLabel: "자동 인식으로 문제 6개가 파란 박스로, 그림 영역이 초록 박스로 지정된 화면과 우측 답안 입력 목록",
               },
               {
                 n: 4,
@@ -646,7 +646,7 @@ export default function Home() {
                 desc: "시험지 명을 입력하고 [변환하기]를 누르면 AI가 문제별로 수식을 인식합니다. 진행률이 실시간으로 표시되고, 문제 수에 따라 수십 초 안에 완료됩니다.",
                 img: "step-4.webp",
                 imgW: 1600,
-                imgH: 1103,
+                imgH: 1104,
                 imgLabel: "변환 진행 중 화면 — 진행률 50%와 문제별 OCR 완료 표시, 변환 취소 버튼",
               },
               {
