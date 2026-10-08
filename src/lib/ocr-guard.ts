@@ -1,4 +1,5 @@
 import { classifySystemPrompt, type PromptInfo } from "./ocr-claude.ts";
+import { createAdminClient } from "./supabase/admin.ts";
 
 // OCR 프록시 방어 (LA-04 임시 방어).
 //
@@ -351,4 +352,32 @@ export function logOcrUsage(entry: {
   console.log(
     JSON.stringify({ tag: "ocr_usage", at: new Date().toISOString(), ...entry })
   );
+}
+
+// ── 5. 요청별 사용량을 DB에 남긴다 (대시보드용, 0029_ai_usage_log) ─────
+// AI 해설(kind=explain)의 "1건당 원가"를 나중에 볼 수 있게 호출 1건 = 1행으로 적는다.
+// 실패해도 변환 흐름에 영향을 주지 않는다(조용히 무시). 라우트는 응답 직전에 await 한다 —
+// 서버리스는 응답 뒤 남은 작업을 보장하지 않으므로 fire-and-forget 으로 두지 않는다.
+export async function recordAiUsage(entry: Parameters<typeof logOcrUsage>[0]): Promise<void> {
+  try {
+    const admin = createAdminClient();
+    const { error } = await admin.from("ai_usage_log").insert({
+      user_id: entry.user_id || null,
+      provider: entry.provider,
+      kind: entry.kind ?? "ocr",
+      ok: entry.ok,
+      status: entry.status,
+      model: entry.model ?? null,
+      input_tokens: entry.input_tokens ?? 0,
+      output_tokens: entry.output_tokens ?? 0,
+      cache_read_tokens: entry.cache_read_tokens ?? 0,
+      est_cost_usd: entry.est_cost_usd ?? 0,
+      duration_ms: entry.duration_ms,
+      blocked_reason: entry.blocked_reason ?? null,
+      app_version: entry.app_version ?? null,
+    });
+    if (error) console.warn("[ocr-guard] ai_usage_log insert failed", error.message);
+  } catch (error) {
+    console.warn("[ocr-guard] ai_usage_log insert threw", error instanceof Error ? error.message : String(error));
+  }
 }

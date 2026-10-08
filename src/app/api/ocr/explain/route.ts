@@ -6,6 +6,7 @@ import {
   isDailyCostBlocked,
   recordCost,
   logOcrUsage,
+  recordAiUsage,
 } from "@/lib/ocr-guard";
 import { MODEL_SONNET_5_5, estimateClaudeCostUsd, protectRomanNames, separateLtMinus } from "@/lib/ocr-claude";
 import {
@@ -226,14 +227,17 @@ export async function POST(request: NextRequest) {
     if (estCostUsd > 0) await recordCost("claude", estCostUsd);
     const outcome = interpretAttempt(res, input.kind);
     const ok = "result" in outcome;
-    logOcrUsage({
-      provider: "claude", kind: "explain", user_id: user.id, ok, status: ok ? 200 : res.status,
+    const usageEntry = {
+      provider: "claude" as const, kind: "explain" as const, user_id: user.id, ok, status: ok ? 200 : res.status,
       duration_ms: res.durationMs, est_cost_usd: Number(estCostUsd.toFixed(6)),
       input_tokens: usage.input_tokens ?? 0, output_tokens: usage.output_tokens ?? 0,
       cache_read_tokens: usage.cache_read_input_tokens ?? 0, model: MODEL_SONNET_5_5,
       blocked_reason: ok ? undefined : `explain_${outcome.reason}:attempt${attempt}`,
       app_version: appVersion,
-    });
+    };
+    logOcrUsage(usageEntry);
+    // 1건당 원가 기록(대시보드) — 응답 전에 끝낸다. 실패해도 변환에는 영향 없음.
+    await recordAiUsage(usageEntry);
     if (ok) {
       return NextResponse.json(
         { ...outcome.result, model: MODEL_SONNET_5_5, spec_version: EXPLAIN_SPEC_VERSION, attempts: attempt },
