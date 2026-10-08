@@ -1,14 +1,18 @@
 // AI 해설 생성(D-036·D-037) — 단가·입력 지시문·응답 해석의 단일 출처.
 //
-// 단가는 서버가 소유한다: 앱은 GET /api/credits 가 돌려주는 값을 표시·계산에만 쓰고,
-// 출시 기념가 종료는 Vercel 환경변수 NEXT_PUBLIC_AI_SOLUTION_PROMO=off 로 끝낸다
-// (앱 릴리스 없음. 홈페이지는 같은 변수를 빌드에 쓰므로 재배포가 필요하다).
+// 단가는 서버가 소유한다: 앱은 GET /api/credits 가 돌려주는 값을 표시·계산에만 쓴다.
+//
+// D-038(2026-10-09): 정가 = 문제당 2크레딧으로 확정. 출시 때 "정가 3 · 기념가 2"로 내놨지만
+// 원가 실측(쉬운 문제 23원 ~ 어려운 문제 100원)으로 2가 적정하다고 보았고, 받은 적 없는 3을
+// 취소선 '정가'로 계속 두면 허위 종전가격(표시광고법)이 되므로 기념가 표시 자체를 걷었다.
+// 이벤트가 필요하면 NEXT_PUBLIC_AI_SOLUTION_PROMO=on 으로 켠다(기본 꺼짐, 앱 릴리스 없음,
+// 홈페이지는 같은 변수를 빌드에 쓰므로 재배포 필요). 켜기 전에 PROMO 가격을 정가보다 낮게 둘 것.
 
-export const AI_SOLUTION_REGULAR_PRICE = 3; // 정가 — 기념 기간 종료 후 적용 (사용자 결정 2026-10-08)
-export const AI_SOLUTION_PROMO_PRICE = 2; // 출시 기념가 — "별도 공지 시까지"
+export const AI_SOLUTION_REGULAR_PRICE = 2; // 정가 (D-038, 2026-10-09)
+export const AI_SOLUTION_PROMO_PRICE = 2; // 이벤트가(현재 이벤트 없음 — 정가와 같음)
 
 export function isAiSolutionPromoActive(): boolean {
-  return (process.env.NEXT_PUBLIC_AI_SOLUTION_PROMO ?? "").trim().toLowerCase() !== "off";
+  return (process.env.NEXT_PUBLIC_AI_SOLUTION_PROMO ?? "").trim().toLowerCase() === "on";
 }
 
 export function aiSolutionUnitPrice(): number {

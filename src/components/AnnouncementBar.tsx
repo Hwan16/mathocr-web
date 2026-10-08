@@ -60,7 +60,7 @@ export default function AnnouncementBar() {
           <span className="font-semibold whitespace-nowrap">AI 해설 생성 기능 출시</span>
           {/* 폰에서는 한 줄로: 긴 설명 대신 가격만 */}
           <span className="hidden md:inline text-white/85">
-            해설 PDF가 없어도 프론티어 AI가 문제별 해설을 만들어 드려요 · 출시 기념 문제당 2크레딧
+            해설 PDF가 없어도 프론티어 AI가 문제별 해설을 만들어 드려요 · 문제당 2크레딧
           </span>
           <span className="md:hidden text-white/85 whitespace-nowrap">문제당 2크레딧</span>
           <span className="hidden lg:inline-flex items-center gap-1 font-semibold underline-offset-4 group-hover:underline whitespace-nowrap">

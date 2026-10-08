@@ -16,20 +16,20 @@ import {
 } from "./ai-solution.ts";
 import { EXPLAIN_PROMPT_SONNET_5_5, EXPLAIN_SPEC_VERSION } from "./explain-prompt.ts";
 
-test("단가: 기념가가 기본, NEXT_PUBLIC_AI_SOLUTION_PROMO=off 면 정가", () => {
+test("단가: 정가 2가 기본(이벤트 꺼짐), NEXT_PUBLIC_AI_SOLUTION_PROMO=on 일 때만 이벤트가", () => {
   const saved = process.env.NEXT_PUBLIC_AI_SOLUTION_PROMO;
   delete process.env.NEXT_PUBLIC_AI_SOLUTION_PROMO;
-  assert.equal(isAiSolutionPromoActive(), true);
-  assert.equal(aiSolutionUnitPrice(), AI_SOLUTION_PROMO_PRICE);
-  process.env.NEXT_PUBLIC_AI_SOLUTION_PROMO = "off";
   assert.equal(isAiSolutionPromoActive(), false);
   assert.equal(aiSolutionUnitPrice(), AI_SOLUTION_REGULAR_PRICE);
+  process.env.NEXT_PUBLIC_AI_SOLUTION_PROMO = "off";
+  assert.equal(isAiSolutionPromoActive(), false);
   process.env.NEXT_PUBLIC_AI_SOLUTION_PROMO = "ON";
+  assert.equal(isAiSolutionPromoActive(), true);
   assert.equal(aiSolutionUnitPrice(), AI_SOLUTION_PROMO_PRICE);
   if (saved === undefined) delete process.env.NEXT_PUBLIC_AI_SOLUTION_PROMO;
   else process.env.NEXT_PUBLIC_AI_SOLUTION_PROMO = saved;
-  assert.equal(AI_SOLUTION_REGULAR_PRICE, 3);
-  assert.equal(AI_SOLUTION_PROMO_PRICE, 2);
+  assert.equal(AI_SOLUTION_REGULAR_PRICE, 2);
+  assert.ok(AI_SOLUTION_PROMO_PRICE <= AI_SOLUTION_REGULAR_PRICE);
   assert.equal(aiSolutionCredits(7, 2), 14);
   assert.equal(aiSolutionCredits(-1, 2), 0);
   assert.equal(aiSolutionCredits(2.9, 3), 6);

@@ -104,16 +104,16 @@ export const CREDIT_RULE = [
   { label: "변환 실패", value: "차감 없음", free: true },
 ] as const;
 
-// AI 해설 생성(D-037) — 문제당 정가 3크레딧, 출시 기념가 2크레딧(별도 공지 시까지).
-// 단가의 단일 출처는 lib/ai-solution.ts(서버 차감과 같은 값). launched 는 앱 v2.4.0 배포와
-// 함께 true 로 — 미출시 기능을 홈페이지에 먼저 올리지 않는다(CLAUDE.md 원칙).
-// ⚠️ 표시 원칙(2026-07-12 감사 LA-01): 취소선 비교가는 '장래 판매가'라 표시해 두고, 기념 기간이
-//   끝나면 실제로 3크레딧을 적용해야 한다 — 적용하지 않으면 거짓 할인 표시가 된다.
+// AI 해설 생성(D-037·D-038) — 문제당 2크레딧(정가). 단가의 단일 출처는 lib/ai-solution.ts
+// (서버 차감과 같은 값). launched 는 앱 v2.4.0 배포와 함께 true 로.
+// ⚠️ 표시 원칙(2026-07-12 감사 LA-01): 취소선 비교가는 실제로 받은(받을) 가격일 때만 —
+//   2026-10-09 "정가 3 · 기념가 2" 표시를 걷고 2를 정가로 확정했다(D-038). promoActive 는
+//   이벤트를 실제로 할 때만 켠다(NEXT_PUBLIC_AI_SOLUTION_PROMO=on, 종료일을 함께 공지할 것).
 export const AI_SOLUTION_RULE = {
   launched: true,
   label: "AI 해설 생성 (문제당)",
   regular: AI_SOLUTION_REGULAR_PRICE,
   promo: AI_SOLUTION_PROMO_PRICE,
   promoActive: isAiSolutionPromoActive(),
-  promoNote: "출시 기념 · 별도 공지 시까지",
+  promoNote: "이벤트",
 } as const;

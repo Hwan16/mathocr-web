@@ -350,8 +350,7 @@ export default function Home() {
                   문제별로 켜고 끄거나 한 번에 적용할 수 있고, 학년을 고르면 그 학년까지 배운 방법으로만 풉니다.
                 </p>
                 <p className="text-zinc-600 leading-relaxed">
-                  출시 기념으로 별도 공지 시까지{" "}
-                  <strong className="text-zinc-900 font-semibold">문제당 2크레딧</strong>(정가 3크레딧).
+                  AI 해설은 <strong className="text-zinc-900 font-semibold">문제당 2크레딧</strong>이 추가로 들어갑니다.
                   변환 전에 추가 차감 크레딧을 미리 보여 드리고, 만들지 못한 해설은 크레딧을 돌려드립니다.
                 </p>
               </div>
@@ -975,7 +974,7 @@ export default function Home() {
                   해설 PDF가 없는 문제는 <strong className="text-zinc-700">AI 해설 생성</strong>을 켜면 프론티어 AI가
                   풀이를 만들어 함께 담습니다. 문제당{" "}
                   {AI_SOLUTION_RULE.promoActive
-                    ? `${AI_SOLUTION_RULE.promo}크레딧이 추가로 들어갑니다 (출시 기념가 · 기념 기간이 끝나면 ${AI_SOLUTION_RULE.regular}크레딧)`
+                    ? `${AI_SOLUTION_RULE.promo}크레딧이 추가로 들어갑니다 (이벤트가 · 이벤트가 끝나면 ${AI_SOLUTION_RULE.regular}크레딧)`
                     : `${AI_SOLUTION_RULE.regular}크레딧이 추가로 들어갑니다`}
                   .
                 </li>

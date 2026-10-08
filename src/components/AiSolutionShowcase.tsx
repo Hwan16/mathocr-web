@@ -111,7 +111,7 @@ export default function AiSolutionShowcase() {
         </span>
         <span className="leading-tight">
           <span className="block text-[11px] font-semibold text-zinc-800">💡 AI 해설 생성 중</span>
-          <span className="block text-[9px] text-zinc-500">문제당 2크레딧 · 출시 기념</span>
+          <span className="block text-[9px] text-zinc-500">문제당 2크레딧</span>
         </span>
       </div>
     </div>
