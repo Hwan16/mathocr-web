@@ -45,6 +45,16 @@ export type ChangelogEntry = {
 /** 최신순. 접힌 상태에서 보이는 개수는 CHANGELOG_PREVIEW_COUNT */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "v2.4.0",
+    tag: "new",
+    title: "💡 AI 해설 생성",
+    items: [
+      "해설 PDF가 없는 문제도 AI가 모의고사 해설처럼 풀이를 만들어 정답·해설에 함께 넣습니다.",
+      "문제별로 켜고 끌 수 있고, 변환 전에 추가 차감 크레딧을 미리 보여 드립니다.",
+      "출시 기념으로 별도 공지 시까지 문제당 2크레딧에 제공합니다.",
+    ],
+  },
+  {
     version: "v2.3.4 ~ v2.3.5",
     tag: "stable",
     title: "앱 안정성 보완",

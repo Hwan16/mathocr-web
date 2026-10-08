@@ -110,7 +110,7 @@ export const CREDIT_RULE = [
 // ⚠️ 표시 원칙(2026-07-12 감사 LA-01): 취소선 비교가는 '장래 판매가'라 표시해 두고, 기념 기간이
 //   끝나면 실제로 3크레딧을 적용해야 한다 — 적용하지 않으면 거짓 할인 표시가 된다.
 export const AI_SOLUTION_RULE = {
-  launched: false,
+  launched: true,
   label: "AI 해설 생성 (문제당)",
   regular: AI_SOLUTION_REGULAR_PRICE,
   promo: AI_SOLUTION_PROMO_PRICE,
