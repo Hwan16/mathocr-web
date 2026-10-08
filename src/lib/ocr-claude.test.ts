@@ -16,6 +16,7 @@ import {
   protectRomanNames,
   responsePayload,
   runClaudeCall,
+  separateLtMinus,
   sha256Hex,
   usableResponse,
 } from "./ocr-claude.ts";
@@ -192,6 +193,29 @@ test("로만체 보호는 JSON 을 깨뜨리지 않는다 (유니코드 이스�
   assert.ok(performance.now() - startedAt < 1000);
 });
 
+test("붙어 있는 '<-' 는 한 칸 띄워 한글 수식이 화살표(←)로 읽지 않게 한다", () => {
+  const bs = String.fromCharCode(92);
+  assert.equal(separateLtMinus(`{"value": "a<-2"}`), `{"value": "a< -2"}`);
+  assert.equal(separateLtMinus(`{"value": "-1<x<-0.5"}`), `{"value": "-1<x< -0.5"}`);
+  assert.equal(separateLtMinus(`x<-${bs}${bs}frac{1}{2}`), `x< -${bs}${bs}frac{1}{2}`);
+  assert.equal(separateLtMinus("r<-1 이고 s<-2"), "r< -1 이고 s< -2");
+  // 이미 띄운 것·다른 부등호·화살표 명령은 그대로 (`>-`·`<=-` 는 한글에서 원래 정상)
+  for (const keep of ["a < -2", "a>-2", "a<=-2", "a<b", `x ${bs}${bs}to -1`, `a ${bs}${bs}leq -2`]) {
+    assert.equal(separateLtMinus(keep), keep);
+  }
+  // JSON 은 그대로 읽힌다
+  assert.deepEqual(JSON.parse(separateLtMinus(`{"value": "f(x)<-x^{2}"}`)), { value: "f(x)< -x^{2}" });
+});
+
+test("5.5 응답 마무리는 '<-' 띄우기와 로만체 보호를 함께 적용한다", () => {
+  const bs = String.fromCharCode(92);
+  const out = finalizeServerPromptResponse({
+    stop_reason: "end_turn",
+    content: [{ type: "text", text: `{"value": "${bs}${bs}mathrm{AB}<-3"}` }],
+  });
+  assert.deepEqual(out?.content, [{ type: "text", text: `{"value": "${bs}${bs}mathrm{A B}< -3"}` }]);
+});
+
 // ── 호출 + 폴백 ──
 const RUN_INPUT = {
   configuredModel: MODEL_SONNET_5_5,
@@ -267,8 +291,8 @@ test("구세대 앱·CLAUDE_MODEL=4.6 은 실패해도 다시 호출하지 않�
 
 test("앱에 돌려주는 본문: 5.5 는 걸러서 보호, 폴백 4.6 은 보호만, 구세대는 그대로", async () => {
   const bs = String.fromCharCode(92);
-  const raw = `{"value": "${bs}${bs}mathrm{GE}"}`;
-  const spaced = `{"value": "${bs}${bs}mathrm{G E}"}`;
+  const raw = `{"value": "x<-1, ${bs}${bs}mathrm{GE}"}`;
+  const spaced = `{"value": "x< -1, ${bs}${bs}mathrm{G E}"}`;
   // 5.5: thinking 제거 + 보호
   const served = await runClaudeCall(RUN_INPUT, async () => ({
     ok: true, status: 200, durationMs: 1,

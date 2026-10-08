@@ -185,18 +185,31 @@ export function protectRomanNames(text: string): string {
   );
 }
 
-// 응답의 text 블록에 로만체 이름 보호를 적용한다(블록 구성은 그대로).
+// 부등호 뒤 음수 보호 — `a<-2` 를 `a< -2` 로 (2026-10-08).
+//
+// 한글 수식은 붙어 있는 `<-` 를 왼쪽 화살표(←)로 읽어 a<−2 가 "a←2"로 찍힌다(실제 렌더 확인).
+// 모델은 `x<-1` 처럼 공백 없이 자주 쓴다. LaTeX 에는 `<-` 화살표 표기가 없으므로(화살표는
+// `\leftarrow`) 언제나 '작다 + 음수'이고, 한 칸 띄우면 부등호와 음수로 렌더된다. 한글 수식은
+// 공백을 무시하므로 화면은 똑같다. `<=`·`>-` 는 한글에서 원래 정상이라 건드리지 않는다.
+// 앱 v2.3.5 변환기도 같은 처리를 하지만, 이미 설치된 앱(v2.3.4 이하)을 위해 서버에서도 한다.
+const LT_MINUS = /<(?=-)/g;
+
+export function separateLtMinus(text: string): string {
+  return text.replace(LT_MINUS, "< ");
+}
+
+// 응답의 text 블록에 부등호 뒤 음수 보호와 로만체 이름 보호를 적용한다(블록 구성은 그대로).
 export function protectResponseText<T extends Record<string, unknown>>(data: T): T {
   if (!Array.isArray(data.content)) return data;
   const content = (data.content as ContentBlock[]).map((block) =>
     block !== null && typeof block === "object" && block.type === "text" && typeof block.text === "string"
-      ? { ...block, text: protectRomanNames(block.text) }
+      ? { ...block, text: protectRomanNames(separateLtMinus(block.text)) }
       : block
   );
   return { ...data, content };
 }
 
-// 5.5 응답 마무리: text 블록만 남기고(usableResponse) 로만체 이름을 보호한다.
+// 5.5 응답 마무리: text 블록만 남기고(usableResponse) 부등호 뒤 음수·로만체 이름을 보호한다.
 export function finalizeServerPromptResponse<T extends Record<string, unknown>>(data: T): T | null {
   const usable = usableResponse(data);
   return usable ? protectResponseText(usable) : null;
