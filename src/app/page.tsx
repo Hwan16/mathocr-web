@@ -9,6 +9,8 @@ import { PLANS, SIGNUP_FREE_CREDITS, SIGNUP_FREE_VALIDITY_DAYS, CREDIT_RULE, AI_
 import AutoDetectShowcase from "@/components/AutoDetectShowcase";
 import AnswerToolsShowcase, { AnswerPanelPreview, RootTwo } from "@/components/AnswerToolsShowcase";
 import RomanTypeShowcase from "@/components/RomanTypeShowcase";
+import AiSolutionShowcase from "@/components/AiSolutionShowcase";
+import AnnouncementBar from "@/components/AnnouncementBar";
 import Changelog from "@/components/Changelog";
 import DownloadGuideModal from "@/components/DownloadGuideModal";
 // 다운로드 링크 단일 출처 — 릴리스 시 lib/download.ts만 갱신 (홈·/start·마이페이지 공유)
@@ -64,6 +66,9 @@ export default function Home() {
 
   return (
     <>
+      {/* ── 새 기능 띠 배너 (본문을 가리지 않는 한 줄, 닫기 기억) ── */}
+      <AnnouncementBar />
+
       {/* ── 상단 네비게이션 (풀폭 sticky) ── */}
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-zinc-200">
         <div className="max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-12 h-16 flex items-center gap-4 md:gap-10">
@@ -325,28 +330,32 @@ export default function Home() {
             </p>
           </div>
 
-          {/* 대표 기능: AI 자동 인식 (v2.2.0 신규) — 텍스트 + 목업 2단 카드 */}
-          <div className="card rounded-xl p-8 lg:p-10 mb-5 !border-[var(--accent-border)]">
+          {/* 대표 기능: AI 해설 생성 (v2.4.0 신규, D-037) — 텍스트 + 목업 2단 카드 */}
+          <div id="ai-solution" className="card rounded-xl p-6 sm:p-8 lg:p-10 mb-5 !border-[var(--accent-border)] scroll-mt-28">
             <div className="grid md:grid-cols-2 gap-8 lg:gap-12 items-center">
-              <div>
+              <div className="min-w-0">
                 <span className="inline-block text-[11px] font-bold tracking-widest text-violet-700 bg-violet-100 rounded-full px-3 py-1 mb-4">
-                  NEW · v2.2.0
+                  NEW · v2.4.0
                 </span>
                 <h3 className="text-2xl lg:text-3xl font-bold mb-4">
-                  박스는 AI가 먼저 그려드립니다
+                  해설 PDF가 없어도,
+                  <br />프론티어 AI가 해설을 써 드립니다
                 </h3>
                 <p className="text-zinc-600 leading-relaxed mb-4">
-                  파일을 열고 <strong className="text-zinc-900 font-semibold">[✨ 자동 인식] 버튼
-                  하나</strong>면 문제·그림 영역 초안이 페이지마다 자동으로
-                  그려집니다. 초안을 확인하며 다듬기만 하면 되고,{" "}
-                  <strong className="text-zinc-900 font-semibold">크레딧 차감 없이 무료</strong>입니다.
+                  우측 목록의 <strong className="text-zinc-900 font-semibold">[💡AI] 칸을 체크</strong>하면 변환할 때
+                  프론티어 AI가 그 문제의 풀이를 모의고사 해설처럼 써서{" "}
+                  <strong className="text-zinc-900 font-semibold">정답·해설에 함께</strong> 넣습니다.
+                  문제별로 켜고 끄거나 한 번에 적용할 수 있고, 학년을 고르면 그 학년까지 배운 방법으로만 풉니다.
                 </p>
                 <p className="text-zinc-600 leading-relaxed">
-                  손글씨 풀이가 가득한 시험지 사진에서도 인쇄된 문제와 그림만
-                  골라 잡아냅니다.
+                  출시 기념으로 별도 공지 시까지{" "}
+                  <strong className="text-zinc-900 font-semibold">문제당 2크레딧</strong>(정가 3크레딧).
+                  변환 전에 추가 차감 크레딧을 미리 보여 드리고, 만들지 못한 해설은 크레딧을 돌려드립니다.
                 </p>
               </div>
-              <AutoDetectShowcase />
+              <div className="md:pt-6 md:pb-8">
+                <AiSolutionShowcase />
+              </div>
             </div>
           </div>
 
@@ -375,6 +384,31 @@ export default function Home() {
                 </p>
               </div>
               <AnswerToolsShowcase />
+            </div>
+          </div>
+
+          {/* 대표 기능: AI 자동 인식 (v2.2.0 신규) — 텍스트 + 목업 2단 카드 */}
+          <div className="card rounded-xl p-8 lg:p-10 mb-5 !border-[var(--accent-border)]">
+            <div className="grid md:grid-cols-2 gap-8 lg:gap-12 items-center">
+              <div>
+                <span className="inline-block text-[11px] font-bold tracking-widest text-violet-700 bg-violet-100 rounded-full px-3 py-1 mb-4">
+                  NEW · v2.2.0
+                </span>
+                <h3 className="text-2xl lg:text-3xl font-bold mb-4">
+                  박스는 AI가 먼저 그려드립니다
+                </h3>
+                <p className="text-zinc-600 leading-relaxed mb-4">
+                  파일을 열고 <strong className="text-zinc-900 font-semibold">[✨ 자동 인식] 버튼
+                  하나</strong>면 문제·그림 영역 초안이 페이지마다 자동으로
+                  그려집니다. 초안을 확인하며 다듬기만 하면 되고,{" "}
+                  <strong className="text-zinc-900 font-semibold">크레딧 차감 없이 무료</strong>입니다.
+                </p>
+                <p className="text-zinc-600 leading-relaxed">
+                  손글씨 풀이가 가득한 시험지 사진에서도 인쇄된 문제와 그림만
+                  골라 잡아냅니다.
+                </p>
+              </div>
+              <AutoDetectShowcase />
             </div>
           </div>
 
@@ -935,7 +969,7 @@ export default function Home() {
                 <>
                   {" "}
                   해설 PDF가 없는 문제는 <strong className="text-zinc-700">AI 해설 생성</strong>을 켜면
-                  AI가 모의고사 해설처럼 풀이를 만들어 함께 담습니다 — 문제당{" "}
+                  프론티어 AI가 모의고사 해설처럼 풀이를 만들어 함께 담습니다 — 문제당{" "}
                   {AI_SOLUTION_RULE.promoActive
                     ? `${AI_SOLUTION_RULE.promo}크레딧(출시 기념가, 기념 기간이 끝나면 ${AI_SOLUTION_RULE.regular}크레딧)`
                     : `${AI_SOLUTION_RULE.regular}크레딧`}
