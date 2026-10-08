@@ -45,7 +45,7 @@ export type ChangelogEntry = {
 /** 최신순. 접힌 상태에서 보이는 개수는 CHANGELOG_PREVIEW_COUNT */
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    version: "v2.3.4",
+    version: "v2.3.4 ~ v2.3.5",
     tag: "stable",
     title: "앱 안정성 보완",
     items: ["자잘한 오류를 정리했습니다."],
