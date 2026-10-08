@@ -1,3 +1,4 @@
+import { AI_SOLUTION_PROMO_PRICE, AI_SOLUTION_REGULAR_PRICE, isAiSolutionPromoActive } from "./ai-solution";
 // 요금제 3종 — 가격/유효기간의 단일 출처(Single Source of Truth).
 // 가격 페이지가 이 상수를 사용하고, 결제(나이스) 연동 충전 로직도 같은 값을 재사용한다.
 //
@@ -102,3 +103,17 @@ export const CREDIT_RULE = [
   { label: "문제 속 그림", value: "무료", free: true },
   { label: "변환 실패", value: "차감 없음", free: true },
 ] as const;
+
+// AI 해설 생성(D-037) — 문제당 정가 3크레딧, 출시 기념가 2크레딧(별도 공지 시까지).
+// 단가의 단일 출처는 lib/ai-solution.ts(서버 차감과 같은 값). launched 는 앱 v2.4.0 배포와
+// 함께 true 로 — 미출시 기능을 홈페이지에 먼저 올리지 않는다(CLAUDE.md 원칙).
+// ⚠️ 표시 원칙(2026-07-12 감사 LA-01): 취소선 비교가는 '장래 판매가'라 표시해 두고, 기념 기간이
+//   끝나면 실제로 3크레딧을 적용해야 한다 — 적용하지 않으면 거짓 할인 표시가 된다.
+export const AI_SOLUTION_RULE = {
+  launched: false,
+  label: "AI 해설 생성 (문제당)",
+  regular: AI_SOLUTION_REGULAR_PRICE,
+  promo: AI_SOLUTION_PROMO_PRICE,
+  promoActive: isAiSolutionPromoActive(),
+  promoNote: "출시 기념 · 별도 공지 시까지",
+} as const;

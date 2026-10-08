@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "next lint",
     "test:promo": "node --experimental-strip-types --test src/lib/promo.test.ts",
-    "test:ocr": "node --experimental-strip-types --test src/lib/ocr-claude.test.ts"
+    "test:ocr": "node --experimental-strip-types --test src/lib/ocr-claude.test.ts",
+    "test:ai": "node --experimental-strip-types --test src/lib/ai-solution.test.ts"
   },
   "keywords": [],
   "author": "",

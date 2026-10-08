@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { trackEvent } from "@/lib/analytics";
 import { FAQS } from "@/lib/faqs";
 import { FaqStructuredData, UsageVideoStructuredData } from "./structured-data";
-import { PLANS, SIGNUP_FREE_CREDITS, SIGNUP_FREE_VALIDITY_DAYS, CREDIT_RULE, creditsAsProblems } from "@/lib/plans";
+import { PLANS, SIGNUP_FREE_CREDITS, SIGNUP_FREE_VALIDITY_DAYS, CREDIT_RULE, AI_SOLUTION_RULE, creditsAsProblems } from "@/lib/plans";
 import AutoDetectShowcase from "@/components/AutoDetectShowcase";
 import AnswerToolsShowcase, { AnswerPanelPreview, RootTwo } from "@/components/AnswerToolsShowcase";
 import RomanTypeShowcase from "@/components/RomanTypeShowcase";
@@ -901,6 +901,29 @@ export default function Home() {
                   </dd>
                 </div>
               ))}
+              {AI_SOLUTION_RULE.launched && (
+                <div className="flex items-center justify-between border-b border-zinc-200 py-2.5">
+                  <dt className="text-sm text-zinc-600">
+                    <span className="mr-1.5 inline-block rounded-md bg-violet-100 px-1.5 py-0.5 text-[11px] font-bold text-violet-700">
+                      NEW
+                    </span>
+                    ✨ {AI_SOLUTION_RULE.label}
+                  </dt>
+                  <dd className="text-sm font-semibold text-zinc-900 text-right">
+                    {AI_SOLUTION_RULE.promoActive ? (
+                      <>
+                        <s className="mr-1.5 font-normal text-zinc-400">{AI_SOLUTION_RULE.regular} 크레딧</s>
+                        {AI_SOLUTION_RULE.promo} 크레딧
+                        <span className="ml-1.5 inline-block rounded-md bg-violet-50 px-1.5 py-0.5 text-[11px] font-semibold text-violet-700">
+                          {AI_SOLUTION_RULE.promoNote}
+                        </span>
+                      </>
+                    ) : (
+                      <>{AI_SOLUTION_RULE.regular} 크레딧</>
+                    )}
+                  </dd>
+                </div>
+              )}
             </dl>
             {/* 카드의 "≈ 문제 N개 분량"이 왜 '분량'인지 — 해설을 함께 담으면 달라진다 */}
             <p className="mt-4 text-sm text-zinc-500 leading-relaxed">
@@ -908,6 +931,17 @@ export default function Home() {
               변환할 수 있습니다. 해설까지 함께 담으면 해설 1개당 1크레딧이 더
               들어, 같은 100 크레딧으로 문제 50개 + 해설 50개가 됩니다.{" "}
               <strong className="text-zinc-700">문제 속 그래프·도형은 몇 개가 있든 무료</strong>입니다.
+              {AI_SOLUTION_RULE.launched && (
+                <>
+                  {" "}
+                  해설 PDF가 없는 문제는 <strong className="text-zinc-700">AI 해설 생성</strong>을 켜면
+                  AI가 모의고사 해설처럼 풀이를 만들어 함께 담습니다 — 문제당{" "}
+                  {AI_SOLUTION_RULE.promoActive
+                    ? `${AI_SOLUTION_RULE.promo}크레딧(출시 기념가, 기념 기간이 끝나면 ${AI_SOLUTION_RULE.regular}크레딧)`
+                    : `${AI_SOLUTION_RULE.regular}크레딧`}
+                  이 추가로 들어갑니다.
+                </>
+              )}
             </p>
           </div>
         </div>

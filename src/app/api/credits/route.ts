@@ -1,6 +1,7 @@
 import { getAuthUser } from "@/lib/supabase/auth-helper";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { claimSignupCredits } from "@/lib/signup-credits";
+import { AI_SOLUTION_REGULAR_PRICE, aiSolutionCredits, aiSolutionUnitPrice, isAiSolutionPromoActive } from "@/lib/ai-solution";
 import { NextRequest, NextResponse } from "next/server";
 
 // 크레딧 잔액 조회
@@ -36,6 +37,10 @@ export async function GET() {
     credits: profile.credits,
     expires_at: profile.expires_at,
     is_expired: !!isExpired,
+    // AI 해설 단가(D-037) — 앱은 이 값으로 표시·계산한다. 기념가 종료는 서버 환경변수로.
+    ai_solution_unit_price: aiSolutionUnitPrice(),
+    ai_solution_regular_price: AI_SOLUTION_REGULAR_PRICE,
+    ai_solution_promo: isAiSolutionPromoActive(),
   });
 }
 
@@ -49,10 +54,11 @@ export async function POST(request: NextRequest) {
 
   let problem_count: unknown;
   let solution_count: unknown;
+  let ai_solution_count: unknown;
   let pdf_name: unknown;
   let request_id: unknown;
   try {
-    ({ problem_count, solution_count, pdf_name, request_id } = await request.json());
+    ({ problem_count, solution_count, ai_solution_count, pdf_name, request_id } = await request.json());
   } catch {
     return NextResponse.json({ error: "요청 JSON을 읽을 수 없습니다." }, { status: 400 });
   }
@@ -107,10 +113,29 @@ export async function POST(request: NextRequest) {
     solution = solution_count;
   }
 
-  // 총 차감분 = 문제 + 해설.
-  //  - 신버전 앱: problem_count=문제 수, solution=해설 수
+  // AI 해설 수(D-037, v2.4.0+ 앱만 보냄) — 문제당 단가는 서버가 소유(기념가 2 / 정가 3).
+  let aiSolution = 0;
+  if (ai_solution_count !== undefined && ai_solution_count !== null) {
+    if (
+      typeof ai_solution_count !== "number" ||
+      !Number.isInteger(ai_solution_count) ||
+      ai_solution_count < 0 ||
+      ai_solution_count > 1000
+    ) {
+      return NextResponse.json(
+        { error: "AI 해설 수가 올바르지 않습니다." },
+        { status: 400 }
+      );
+    }
+    aiSolution = ai_solution_count;
+  }
+  const aiUnitPrice = aiSolutionUnitPrice();
+  const aiCredits = aiSolutionCredits(aiSolution, aiUnitPrice);
+
+  // 총 차감분 = 문제 + 해설 + AI 해설 크레딧.
+  //  - 신버전 앱: problem_count=문제 수, solution=해설 수, aiSolution=AI 해설 문제 수
   //  - 구버전 앱: problem_count 에 이미 합계가 담겨 오고 solution=0 → total=합계(기존과 동일)
-  const total = problem_count + solution;
+  const total = problem_count + solution + aiCredits;
 
   // DB 함수로 원자적 크레딧 차감 (총액 차감, 해설 수는 표시용으로 분리 저장).
   // p_request_id 는 값이 있을 때만 전달 — 0016 마이그레이션 적용 전 함수(4-인수)
@@ -124,6 +149,12 @@ export async function POST(request: NextRequest) {
   };
   if (requestId) {
     rpcParams.p_request_id = requestId;
+  }
+  // 0028 마이그레이션의 7인수 함수에만 있는 인수 — AI 해설이 있을 때만 전달해
+  // 마이그레이션 전 서버에서도 기존 변환은 계속 동작하게 한다.
+  if (aiSolution > 0) {
+    rpcParams.p_ai_solution_count = aiSolution;
+    rpcParams.p_ai_solution_credits = aiCredits;
   }
   const { data, error } = await admin.rpc("deduct_credits", rpcParams);
 
@@ -161,5 +192,7 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({
     conversion_id: data.conversion_id,
     remaining_credits: data.remaining_credits,
+    ai_solution_unit_price: aiUnitPrice,
+    ai_solution_credits: aiCredits,
   });
 }

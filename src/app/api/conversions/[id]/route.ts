@@ -16,8 +16,9 @@ export async function PATCH(
 
   let status: unknown;
   let failedCount: unknown;
+  let failedAiCount: unknown;
   try {
-    ({ status, failed_count: failedCount } = await request.json());
+    ({ status, failed_count: failedCount, failed_ai_solution_count: failedAiCount } = await request.json());
   } catch {
     return NextResponse.json({ error: "요청 JSON을 읽을 수 없습니다." }, { status: 400 });
   }
@@ -31,19 +32,42 @@ export async function PATCH(
 
   const adminClient = createAdminClient();
 
-  // 완료 + 실패 개수가 있으면 부분 환불 경로로 처리한다.
-  // (started 행 1건만 전환되므로 동시 요청에 의한 이중 환불이 불가능하다.)
-  const isPartialRefund =
+  // 환불 크레딧 = 실패한 문제·해설 수(1크레딧씩) + 실패한 AI 해설 수 × 그 변환의 AI 해설 단가.
+  // 단가는 차감 때 기록된 값(ai_solution_credits / ai_solution_count)을 쓴다 — 기념가가
+  // 변환 도중 끝나도 차감한 만큼만 돌려준다 (D-037).
+  let refundCredits =
+    typeof failedCount === "number" && Number.isFinite(failedCount) && failedCount > 0
+      ? Math.floor(failedCount)
+      : 0;
+  if (
     status === "completed" &&
-    typeof failedCount === "number" &&
-    Number.isFinite(failedCount) &&
-    failedCount > 0;
+    typeof failedAiCount === "number" &&
+    Number.isFinite(failedAiCount) &&
+    failedAiCount > 0
+  ) {
+    const { data: row } = await adminClient
+      .from("conversions")
+      .select("ai_solution_count, ai_solution_credits")
+      .eq("id", id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    const aiCount = Number(row?.ai_solution_count ?? 0);
+    const aiCredits = Number(row?.ai_solution_credits ?? 0);
+    if (aiCount > 0 && aiCredits > 0) {
+      const perItem = Math.floor(aiCredits / aiCount);
+      refundCredits += Math.min(Math.floor(failedAiCount), aiCount) * perItem;
+    }
+  }
+
+  // 완료 + 환불할 크레딧이 있으면 부분 환불 경로로 처리한다.
+  // (started 행 1건만 전환되므로 동시 요청에 의한 이중 환불이 불가능하다.)
+  const isPartialRefund = status === "completed" && refundCredits > 0;
 
   const { data, error } = isPartialRefund
     ? await adminClient.rpc("complete_conversion_with_refund", {
         p_conversion_id: id,
         p_user_id: user.id,
-        p_failed_count: Math.floor(failedCount as number),
+        p_failed_count: refundCredits,
       })
     : await adminClient.rpc("finalize_conversion", {
         p_conversion_id: id,
