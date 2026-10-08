@@ -45,7 +45,7 @@ export type ChangelogEntry = {
 /** 최신순. 접힌 상태에서 보이는 개수는 CHANGELOG_PREVIEW_COUNT */
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    version: "v2.4.0",
+    version: "v2.4.0 ~ v2.4.1",
     tag: "new",
     title: "💡 AI 해설 생성",
     items: [
