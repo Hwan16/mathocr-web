@@ -66,11 +66,12 @@ export default function Home() {
 
   return (
     <>
-      {/* ── 새 기능 띠 배너 (본문을 가리지 않는 한 줄, 닫기 기억) ── */}
+      {/* ── 띠 배너 + 상단 네비게이션을 한 덩어리로 sticky: 배너는 X를 누르기 전까지 항상 위에(사용자 요청 10-09) ── */}
+      <div className="sticky top-0 z-50">
       <AnnouncementBar />
 
-      {/* ── 상단 네비게이션 (풀폭 sticky) ── */}
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-zinc-200">
+      {/* ── 상단 네비게이션 (풀폭) ── */}
+      <header className="relative bg-white/95 backdrop-blur border-b border-zinc-200">
         <div className="max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-12 h-16 flex items-center gap-4 md:gap-10">
           <a href="/" className="flex items-center gap-2 md:gap-2.5 shrink-0">
             <img
@@ -130,6 +131,7 @@ export default function Home() {
           </div>
         </div>
       </header>
+      </div>
 
       {/* ── 변환 실패 신고: 우하단 플로팅 버튼 (스크롤 따라다님, PC 전용이라 모바일 숨김) ── */}
       <a
@@ -331,7 +333,7 @@ export default function Home() {
           </div>
 
           {/* 대표 기능: AI 해설 생성 (v2.4.0 신규, D-037) — 텍스트 + 목업 2단 카드 */}
-          <div id="ai-solution" className="card rounded-xl p-6 sm:p-8 lg:p-10 mb-5 !border-[var(--accent-border)] scroll-mt-28">
+          <div id="ai-solution" className="card rounded-xl p-6 sm:p-8 lg:p-10 mb-5 !border-[var(--accent-border)]">
             <div className="grid md:grid-cols-2 gap-8 lg:gap-12 items-center">
               <div className="min-w-0">
                 <span className="inline-block text-[11px] font-bold tracking-widest text-violet-700 bg-violet-100 rounded-full px-3 py-1 mb-4">
@@ -941,7 +943,7 @@ export default function Home() {
                     <span className="mr-1.5 inline-block rounded-md bg-violet-100 px-1.5 py-0.5 text-[11px] font-bold text-violet-700">
                       NEW
                     </span>
-                    ✨ {AI_SOLUTION_RULE.label}
+                    💡 {AI_SOLUTION_RULE.label}
                   </dt>
                   <dd className="text-sm font-semibold text-zinc-900 text-right">
                     {AI_SOLUTION_RULE.promoActive ? (
@@ -960,23 +962,25 @@ export default function Home() {
               )}
             </dl>
             {/* 카드의 "≈ 문제 N개 분량"이 왜 '분량'인지 — 해설을 함께 담으면 달라진다 */}
-            <p className="mt-4 text-sm text-zinc-500 leading-relaxed">
-              그래서 <strong className="text-zinc-700">100 크레딧이면 문제 100개</strong>를
-              변환할 수 있습니다. 해설까지 함께 담으면 해설 1개당 1크레딧이 더
-              들어, 같은 100 크레딧으로 문제 50개 + 해설 50개가 됩니다.{" "}
-              <strong className="text-zinc-700">문제 속 그래프·도형은 몇 개가 있든 무료</strong>입니다.
+            <ul className="mt-4 space-y-1.5 text-sm text-zinc-500 leading-relaxed list-disc pl-5 marker:text-zinc-300">
+              <li>
+                그래서 <strong className="text-zinc-700">100 크레딧이면 문제 100개</strong>를 변환할 수 있습니다.
+                해설까지 담으면 해설 1개당 1크레딧이 더 들어 문제 50개 + 해설 50개가 됩니다.
+              </li>
+              <li>
+                <strong className="text-zinc-700">문제 속 그래프·도형은 몇 개가 있든 무료</strong>입니다.
+              </li>
               {AI_SOLUTION_RULE.launched && (
-                <>
-                  {" "}
-                  해설 PDF가 없는 문제는 <strong className="text-zinc-700">AI 해설 생성</strong>을 켜면
-                  프론티어 AI가 모의고사 해설처럼 풀이를 만들어 함께 담습니다 — 문제당{" "}
+                <li>
+                  해설 PDF가 없는 문제는 <strong className="text-zinc-700">AI 해설 생성</strong>을 켜면 프론티어 AI가
+                  풀이를 만들어 함께 담습니다. 문제당{" "}
                   {AI_SOLUTION_RULE.promoActive
-                    ? `${AI_SOLUTION_RULE.promo}크레딧(출시 기념가, 기념 기간이 끝나면 ${AI_SOLUTION_RULE.regular}크레딧)`
-                    : `${AI_SOLUTION_RULE.regular}크레딧`}
-                  이 추가로 들어갑니다.
-                </>
+                    ? `${AI_SOLUTION_RULE.promo}크레딧이 추가로 들어갑니다 (출시 기념가 · 기념 기간이 끝나면 ${AI_SOLUTION_RULE.regular}크레딧)`
+                    : `${AI_SOLUTION_RULE.regular}크레딧이 추가로 들어갑니다`}
+                  .
+                </li>
               )}
-            </p>
+            </ul>
           </div>
         </div>
       </section>

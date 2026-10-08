@@ -22,6 +22,8 @@
 }
 
 html {
+  /* sticky 헤더(4rem) + 띠 배너 높이(AnnouncementBar가 갱신) 만큼 앵커 착지를 내린다 */
+  scroll-padding-top: calc(4rem + var(--announcement-h, 48px));
   scroll-behavior: smooth;
 }
 

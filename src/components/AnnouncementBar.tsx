@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // 상단 띠 배너 — 새 기능 홍보용. 본문을 가리지 않는 한 줄이라 검색엔진의 '방해 요소' 판정을
 // 피한다(전체 화면 팝업 금지, 2026-10-09 사용자 결정). 닫으면 같은 캠페인 키로는 다시 띄우지
@@ -20,6 +20,17 @@ export default function AnnouncementBar() {
     }
   }, []);
 
+  // 앵커 착지 보정: 배너가 보이는 동안 그 높이를 html의 --announcement-h 로 알린다(globals.css scroll-padding-top).
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const root = document.documentElement;
+    const apply = () =>
+      root.style.setProperty("--announcement-h", `${visible && ref.current ? ref.current.offsetHeight : 0}px`);
+    apply();
+    window.addEventListener("resize", apply);
+    return () => window.removeEventListener("resize", apply);
+  }, [visible]);
+
   if (!visible) return null;
 
   const dismiss = () => {
@@ -33,6 +44,7 @@ export default function AnnouncementBar() {
 
   return (
     <div
+      ref={ref}
       role="region"
       aria-label="새 기능 안내"
       className="relative z-[60] bg-gradient-to-r from-[#6D28D9] via-[#7C3AED] to-[#8B5CF6] text-white"
