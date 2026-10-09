@@ -158,11 +158,17 @@ export default function Home() {
                 PDF와 이미지를 편집 가능한 <span className="text-[var(--accent)]">HWP</span>로
               </h1>
 
+              {/* 둘째 줄 — 카테고리(H1) 위에 얹는 차별점. 전 채널 공통 문장 (2026-10-09 사용자 결정) */}
+              <p className="text-xl lg:text-2xl font-semibold text-[var(--accent)] tracking-tight mb-5">
+                해설까지, AI로 한 번에.
+              </p>
+
               <p className="text-lg lg:text-xl text-zinc-600 leading-relaxed mb-9">
                 수식이 이미지가 아닌 <strong className="text-zinc-900 font-semibold">한글 수식편집기 객체</strong>로
                 변환됩니다. PDF는 물론 핸드폰으로 찍은 사진도 그대로 올릴 수
                 있어, 시험지·교재 제작에 쓰는 수식 입력 시간이 문제당 몇 초로
-                줄어듭니다.
+                줄어듭니다. 해설 PDF가 없어도{" "}
+                <strong className="text-zinc-900 font-semibold">프론티어 AI가 문제별 해설을 만들어</strong> 함께 넣습니다.
               </p>
 
               <div className="flex flex-col 2xl:flex-row gap-3">
@@ -301,15 +307,23 @@ export default function Home() {
       <section className="border-b border-zinc-200">
         <div className="max-w-screen-2xl mx-auto px-6 lg:px-12 py-10">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+            {/* "왜 써야 하나" 4가지. 결제 방식("필요한 만큼 충전")은 가격 섹션 몫이라 뺐다 (2026-10-09) */}
             {[
-              ["수식편집기 객체", "이미지가 아닌 편집 가능한 한글 수식"],
-              ["AI 교차 검증", "프론티어 AI가 인식부터 구조까지 검증"],
-              ["그림은 무료", "문제 속 그래프·도형은 크레딧 차감 없이"],
-              ["필요한 만큼 충전", "월 구독 없이 · 크레딧당 최저 140원"],
-            ].map(([title, desc]) => (
-              <div key={title}>
-                <div className="font-semibold text-zinc-900 mb-1">{title}</div>
-                <div className="text-sm text-zinc-500 leading-relaxed">{desc}</div>
+              ["수식편집기 객체", "이미지가 아닌 편집 가능한 한글 수식", false],
+              ["💡 AI 해설 생성", "해설 PDF가 없어도 문제별 해설까지 함께", true],
+              ["그림은 무료", "문제 속 그래프·도형은 크레딧 차감 없이", false],
+              ["AI 교차 검증", "프론티어 AI가 인식부터 구조까지 검증", false],
+            ].map(([title, desc, isNew]) => (
+              <div key={title as string}>
+                <div className="font-semibold text-zinc-900 mb-1 flex items-center gap-2">
+                  {title as string}
+                  {isNew && (
+                    <span className="inline-block rounded-md bg-violet-100 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-violet-700">
+                      NEW
+                    </span>
+                  )}
+                </div>
+                <div className="text-sm text-zinc-500 leading-relaxed">{desc as string}</div>
               </div>
             ))}
           </div>
