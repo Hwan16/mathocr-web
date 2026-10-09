@@ -17,7 +17,10 @@ const DELETE_RATE_LIMIT_WINDOW_MS = 10 * 60_000;
  *      진행하지 않는다 → 보존 의무 기록이 유실되는 일이 없다.
  *   3) 오변환 신고 이미지(Storage 'reports' 버킷) 삭제 — DB cascade 로는
  *      Storage 객체가 지워지지 않으므로 명시적으로 제거
- *   4) auth 계정 삭제 → profiles cascade → conversions/error_logs/
+ *   4) AI 해설 사용 기록(ai_usage_log)의 user_id 비우기 — 이 표는 외래키가 없어
+ *      cascade 가 걸리지 않는다. 행은 원가 통계용으로 남기고 회원과의 연결만 끊는다
+ *      (개인정보처리방침 제3조 — 2026-10-10 개정)
+ *   5) auth 계정 삭제 → profiles cascade → conversions/error_logs/
  *      conversion_reports 함께 삭제, user_consents/promo_redemptions/payments 는
  *      링크만 해제(SET NULL)되고 이메일 스냅샷으로 보존
  */
@@ -118,7 +121,23 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // 3) auth 계정 삭제 (profiles 이하 cascade)
+  // 3) AI 해설 사용 기록과 회원 연결 끊기 (FK 없음 → cascade 대상 아님)
+  const { error: aiLogError } = await admin
+    .from("ai_usage_log")
+    .update({ user_id: null })
+    .eq("user_id", user.id);
+  if (aiLogError) {
+    console.error("[account/delete] ai_usage_log unlink failed", {
+      user_id: user.id,
+      error: aiLogError.message,
+    });
+    return NextResponse.json(
+      { error: "탈퇴 처리에 실패했습니다. 잠시 후 다시 시도해주세요." },
+      { status: 500 }
+    );
+  }
+
+  // 4) auth 계정 삭제 (profiles 이하 cascade)
   const { error: deleteError } = await admin.auth.admin.deleteUser(user.id);
   if (deleteError) {
     console.error("[account/delete] auth user deletion failed", {

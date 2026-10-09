@@ -18,10 +18,14 @@ export default function TermsPage() {
           <p className="text-zinc-500 text-sm mt-2">
             최종 수정일: 2026년 8월 21일
           </p>
+          <p className="text-amber-700 text-sm mt-1">
+            2026년 10월 17일 시행 예정 개정 안내 (아래 참조)
+          </p>
         </div>
 
         {/* Terms Content */}
         <div className="card rounded-xl p-8 md:p-10 shadow-sm">
+          <AmendmentNotice />
           <TermsContent />
         </div>
 
@@ -34,6 +38,124 @@ export default function TermsPage() {
           </a>
         </div>
       </div>
+    </div>
+  );
+}
+
+// 약관 개정 사전 공지 (공지 2026-10-10 / 시행 2026-10-17).
+// AI 해설 생성(v2.4.0, 2026-10-09 출시 — 문제당 2크레딧, D-038)과 자동 영역 인식(2026-07-26)을
+// 약관에 반영한다. 새 부가 서비스의 이용 조건을 정하는 변경으로 기존 서비스의 조건은 그대로라
+// 이용자에게 불리한 변경이 아니므로 제10조 제1항 본문의 7일 예고로 시행한다(개별 이메일 고지
+// 대상 아님). 시행일에 아래 개정안 전문을 본문 제2조·제6조 제2항·제7조 제1항·제8조 제1항에
+// 반영하고, 이 박스·헤더의 예고 줄·마이페이지 공지를 삭제하고, lib/consent.ts 의
+// CONSENT_VERSION 을 "2026-10-17"로 올린다(CHECKLIST Phase 122).
+function AmendmentNotice() {
+  return (
+    <div className="mb-10 rounded-xl border border-amber-200 bg-amber-50 p-5 md:p-6 text-sm text-amber-900 leading-relaxed">
+      <h2 className="text-base font-semibold text-amber-900 mb-1">
+        2026년 10월 17일 시행 예정 약관 개정 안내
+      </h2>
+      <p className="text-amber-800/80 text-xs mb-4">
+        공지일: 2026년 10월 10일 · 시행일: 2026년 10월 17일
+      </p>
+
+      <p className="mb-2">
+        새로 추가된 부가 서비스(AI 해설 생성, 문제·그림 영역 자동 인식)의 이용
+        조건을 약관에 반영합니다. 기존 변환 서비스의 이용 조건은 바뀌지 않습니다.
+      </p>
+      <ul className="list-disc pl-5 space-y-2 mb-4">
+        <li>
+          <strong className="font-semibold">AI 해설 생성의 정의와 크레딧 기준</strong>{" "}
+          — 해설을 지정하지 않은 문제에 이용자가 선택한 경우 인공지능이 해설을
+          작성해 넣어 드리며, 선택한 문제 1건당 2크레딧이 추가로 차감됩니다.
+          생성에 실패한 해설의 크레딧은 자동으로 환불됩니다.
+        </li>
+        <li>
+          <strong className="font-semibold">문제·그림 영역 자동 인식</strong> — 크레딧이
+          차감되지 않으며, 사용할 수 있는 크레딧을 보유한 경우에 이용할 수
+          있습니다.
+        </li>
+        <li>
+          <strong className="font-semibold">결과물의 정확성 안내 범위 확대</strong> —
+          OCR 변환 결과와 마찬가지로 자동 인식 결과와 AI가 작성한 해설도 정확성을
+          보증하지 않으며, 사용 전 검토가 필요합니다.
+        </li>
+        <li>
+          <strong className="font-semibold">처리시설 예시에 Google 추가</strong> —
+          자동 영역 인식에 Google의 인공지능 서비스가 사용됩니다.
+        </li>
+      </ul>
+
+      <p className="font-semibold mb-2">개정될 조문 전문</p>
+      <div className="space-y-3">
+        <div className="rounded-lg border border-amber-200 bg-white/70 px-4 py-3">
+          <p className="text-xs font-medium text-amber-800/80 mb-1.5">
+            제2조 (용어의 정의) (개정안)
+          </p>
+          <p className="mb-2">
+            (서비스) 이용자가 업로드한 PDF 또는 이미지 파일 내의 수학 문제를
+            OCR(광학 문자 인식) 기술을 통해 추출하고, 이를 HWP(아래아한글) 형식으로
+            변환하여 제공하는 소프트웨어 및 문제·그림 영역 자동 인식, AI 해설 생성
+            등 관련 부가 서비스를 의미합니다.
+          </p>
+          <p className="mb-2">
+            (콘텐츠) 이용자가 서비스 이용을 위해 업로드하는 PDF, 이미지 파일 및
+            이를 통해 생성된 결과물을 의미합니다.
+          </p>
+          <p className="mb-2">
+            (AI 해설 생성 — 신설) 이용자가 해설(답안·풀이) 영역을 지정하지 않은 문제에
+            대하여, 이용자의 선택에 따라 인공지능이 해설을 작성하여 변환 결과물에
+            포함하는 부가 서비스를 의미합니다.
+          </p>
+          <p>
+            (크레딧) 서비스 이용을 위해 사전에 충전하는 유료 이용권으로, 문제
+            영역 1건 또는 해설(답안·풀이) 영역 1건 변환 시 각 1크레딧이 차감됩니다.
+            그림 영역의 변환과 문제·그림 영역 자동 인식에는 크레딧이 차감되지
+            않으며(다만 자동 인식은 사용할 수 있는 크레딧을 보유한 경우에 한하여
+            이용할 수 있습니다), AI 해설 생성을 선택한 경우 그 문제 1건당 2크레딧이
+            추가로 차감됩니다.
+          </p>
+        </div>
+        <div className="rounded-lg border border-amber-200 bg-white/70 px-4 py-3">
+          <p className="text-xs font-medium text-amber-800/80 mb-1.5">
+            제6조 제2항 (개정안)
+          </p>
+          <p>
+            크레딧은 변환 요청 시 사전 차감되며, 변환에 실패한 영역과 생성에 실패한
+            AI 해설에 해당하는 크레딧은 자동으로 환불됩니다.
+          </p>
+        </div>
+        <div className="rounded-lg border border-amber-200 bg-white/70 px-4 py-3">
+          <p className="text-xs font-medium text-amber-800/80 mb-1.5">
+            제7조 제1항 (개정안)
+          </p>
+          <p>
+            서비스 제공을 위하여 이용자가 업로드한 이미지는 제공자의 서버를 거쳐,
+            OCR·AI 변환, 영역 자동 인식 및 AI 해설 생성을 수행하는 제3자
+            처리시설(예: Mathpix, Anthropic, Google 등 국외에 소재한 클라우드
+            서비스)로 전송되어 처리됩니다.
+          </p>
+        </div>
+        <div className="rounded-lg border border-amber-200 bg-white/70 px-4 py-3">
+          <p className="text-xs font-medium text-amber-800/80 mb-1.5">
+            제8조 제1항 (개정안)
+          </p>
+          <p>
+            OCR 인식 오류 및 AI 생성 결과 면책: 제공자는 OCR 변환 결과, 자동 인식된
+            영역 및 AI가 작성한 해설의 정확성, 완전성, 특정 목적에의 적합성에 대하여
+            어떠한 보증도 하지 않습니다. 수식, 기호, 도표 등의 오인식이나 AI가 작성한
+            해설의 풀이·정답 오류로 인해 발생하는 모든 손해에 대하여 제공자는 책임을
+            지지 않습니다. 이용자는 결과물을 사용하기 전 반드시 원본과 대조하여
+            검토해야 합니다.
+          </p>
+        </div>
+      </div>
+
+      <p className="mt-4 text-amber-800">
+        아래 본문은 현행 약관이며, 개정 내용은 2026년 10월 17일부터 적용됩니다.
+        개정에 동의하지 않으시는 경우 시행일 전까지 서비스 이용을 중단하고
+        탈퇴하실 수 있습니다.
+      </p>
     </div>
   );
 }
