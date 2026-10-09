@@ -15,6 +15,7 @@ import Changelog from "@/components/Changelog";
 import DownloadGuideModal from "@/components/DownloadGuideModal";
 // 다운로드 링크 단일 출처 — 릴리스 시 lib/download.ts만 갱신 (홈·/start·마이페이지 공유)
 import { DOWNLOAD_URL, DOWNLOAD_LABEL } from "@/lib/download";
+import { SOCIAL_LINKS } from "@/lib/social";
 
 // 결제 오픈 게이트 — Vercel 환경변수에 NEXT_PUBLIC_PAYMENTS_ENABLED=true 를
 // 넣기 전까지 구매 버튼은 기존 "곧 오픈" 안내를 유지한다.
@@ -637,7 +638,7 @@ export default function Home() {
             </p>
           </div>
 
-          {/* 동영상 가이드 — 영상 교체 시 H.264+AAC 코덱 유지(브라우저 호환), 비율 16:9(1920x1080). 원본: tools/reels_motion/projects/261003_usage_guide */}
+          {/* 동영상 가이드 — 영상 교체 시 H.264+AAC 코덱 유지(브라우저 호환), 비율 16:9(1920x1080). 원본: tools/reels_motion/projects/261009_usage_guide_ai (유튜브판은 261003_usage_guide) */}
           <UsageVideoStructuredData />
           <figure className="card rounded-xl overflow-hidden max-w-4xl mx-auto mb-20">
             <figcaption className="flex items-center gap-2 px-5 py-3 border-b border-zinc-200 bg-zinc-50 text-sm font-semibold text-zinc-500">
@@ -1179,6 +1180,36 @@ export default function Home() {
               >
                 문의하기
               </a>
+              {/* 공식 SNS — 로고 아이콘, 새 탭으로 이동 */}
+              <div className="flex items-center gap-2">
+                <a
+                  href={SOCIAL_LINKS.instagram}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="AI MathOCR 인스타그램 (새 탭)"
+                  title="인스타그램"
+                  className="flex h-9 w-9 items-center justify-center rounded-full border border-zinc-200 text-zinc-500 transition-colors hover:border-[#E1306C] hover:text-[#E1306C]"
+                >
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                    <rect x="3" y="3" width="18" height="18" rx="5" />
+                    <circle cx="12" cy="12" r="4.2" />
+                    <circle cx="17.4" cy="6.6" r="1.1" fill="currentColor" stroke="none" />
+                  </svg>
+                </a>
+                <a
+                  href={SOCIAL_LINKS.youtube}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="AI MathOCR 유튜브 (새 탭)"
+                  title="유튜브"
+                  className="flex h-9 w-9 items-center justify-center rounded-full border border-zinc-200 text-zinc-500 transition-colors hover:border-[#FF0000] hover:text-[#FF0000]"
+                >
+                  <svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true">
+                    <rect x="2" y="5" width="20" height="14" rx="4.5" fill="currentColor" />
+                    <path d="M10 9.2v5.6l4.8-2.8z" fill="#fff" />
+                  </svg>
+                </a>
+              </div>
             </div>
           </div>
 
