@@ -154,26 +154,29 @@ export default function DashboardPage() {
     <div className="min-h-screen">
       {/* Nav */}
       <nav className="border-b border-[var(--border-subtle)] bg-[var(--surface)]">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <a href="/" className="flex items-center gap-2.5">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
+          <a href="/" className="flex items-center gap-2.5 shrink-0">
             <img src="/mathocr-icon.png" alt="AI MathOCR" width={36} height={36} />
-            <span className="text-lg font-bold tracking-tight">
+            <span className="text-lg font-bold tracking-tight whitespace-nowrap">
               AI Math<span className="text-[var(--accent)]">OCR</span>
             </span>
           </a>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-zinc-600">{user?.email}</span>
+          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+            {/* 모바일에선 로고와 겹치므로 숨기고 제목 아래에 따로 표시 */}
+            <span className="hidden sm:inline truncate text-sm text-zinc-600">
+              {user?.email}
+            </span>
             {profile?.role === "admin" && (
               <a
                 href="/admin"
-                className="text-sm text-[var(--accent)] hover:underline"
+                className="shrink-0 whitespace-nowrap text-sm text-[var(--accent)] hover:underline"
               >
                 관리자
               </a>
             )}
             <button
               onClick={handleLogout}
-              className="text-sm text-zinc-500 hover:text-zinc-700 transition-colors"
+              className="shrink-0 whitespace-nowrap text-sm text-zinc-500 hover:text-zinc-700 transition-colors"
             >
               로그아웃
             </button>
@@ -181,8 +184,15 @@ export default function DashboardPage() {
         </div>
       </nav>
 
-      <div className="max-w-6xl mx-auto px-6 py-10">
-        <h1 className="text-2xl font-bold mb-8">마이페이지</h1>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
+        <h1 className="text-2xl font-bold mb-8">
+          마이페이지
+          {user?.email && (
+            <span className="sm:hidden block mt-1 text-sm font-normal text-zinc-500 break-all">
+              {user.email}
+            </span>
+          )}
+        </h1>
 
         {/* 프로모션 지급 결과 안내 (로그인 직후 1회) */}
         {promoNotice && (
@@ -419,7 +429,7 @@ export default function DashboardPage() {
                       key={c.id}
                       className="border-b border-[var(--border-subtle)] last:border-0 hover:bg-zinc-50"
                     >
-                      <td className="px-6 py-3 text-zinc-600">
+                      <td className="px-6 py-3 text-zinc-600 whitespace-nowrap">
                         {new Date(c.created_at).toLocaleDateString("ko-KR")}
                       </td>
                       <td className="px-6 py-3 text-zinc-800">
@@ -880,7 +890,7 @@ function CreditHistoryCard() {
 
   return (
     <div className="bezel-card rounded-2xl overflow-hidden mt-10">
-      <div className="px-6 py-4 border-b border-[var(--border-subtle)]">
+      <div className="px-4 sm:px-6 py-4 border-b border-[var(--border-subtle)]">
         <h2 className="text-lg font-semibold">크레딧 지급 내역</h2>
         <p className="text-xs text-zinc-400 mt-0.5">
           변환에 사용·반환된 크레딧은 위 변환 이력에서 확인할 수 있어요.
@@ -900,18 +910,24 @@ function CreditHistoryCard() {
             {shown.map((e, i) => (
               <li
                 key={`${e.at}-${i}`}
-                className="px-6 py-3 flex items-center justify-between gap-4 text-sm"
+                className="px-4 sm:px-6 py-3 flex items-center justify-between gap-4 text-sm"
               >
+                {/* 모바일: 항목·코드는 단어 단위로만 줄바꿈, 날짜는 항목 아래 줄로 */}
                 <div className="min-w-0">
-                  <span className="text-zinc-800">{e.label}</span>
-                  {e.detail && (
-                    <span className="ml-2 text-zinc-400">{e.detail}</span>
-                  )}
-                  {e.refunded && (
-                    <span className="ml-2 inline-block px-1.5 py-0.5 rounded text-xs bg-red-50 text-red-600">
-                      환불됨
-                    </span>
-                  )}
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                    <span className="text-zinc-800 whitespace-nowrap">{e.label}</span>
+                    {e.detail && (
+                      <span className="text-zinc-400 whitespace-nowrap">{e.detail}</span>
+                    )}
+                    {e.refunded && (
+                      <span className="inline-block px-1.5 py-0.5 rounded text-xs bg-red-50 text-red-600 whitespace-nowrap">
+                        환불됨
+                      </span>
+                    )}
+                  </div>
+                  <div className="sm:hidden mt-0.5 text-xs text-zinc-400">
+                    {new Date(e.at).toLocaleDateString("ko-KR")}
+                  </div>
                 </div>
                 <div className="flex items-center gap-4 shrink-0">
                   <span
@@ -925,7 +941,7 @@ function CreditHistoryCard() {
                   >
                     {e.delta >= 0 ? `+${e.delta}` : e.delta}
                   </span>
-                  <span className="text-zinc-400 text-xs w-24 text-right">
+                  <span className="hidden sm:inline text-zinc-400 text-xs w-24 text-right">
                     {new Date(e.at).toLocaleDateString("ko-KR")}
                   </span>
                 </div>
