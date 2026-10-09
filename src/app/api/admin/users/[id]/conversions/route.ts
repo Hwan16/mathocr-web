@@ -35,7 +35,7 @@ export async function GET(
   const { data, error } = await adminClient
     .from("conversions")
     .select(
-      "id, pdf_name, problem_count, solution_count, credits_used, refunded_credits, status, created_at"
+      "id, pdf_name, problem_count, solution_count, ai_solution_count, ai_solution_credits, credits_used, refunded_credits, status, created_at"
     )
     .eq("user_id", targetUserId)
     .order("created_at", { ascending: false })
@@ -49,5 +49,27 @@ export async function GET(
     );
   }
 
-  return NextResponse.json({ conversions: data ?? [] });
+  // AI 해설 생성(v2.4.0~) 누적 — 최근 20건 표와 별개로 이 사용자의 전체 합계를 보여 준다.
+  // 실패해도 이력 표는 그대로 돌려준다(합계만 생략).
+  let aiSolution: { count: number; credits: number; conversions: number } | null = null;
+  const { data: aiRows, error: aiError } = await adminClient
+    .from("conversions")
+    .select("ai_solution_count, ai_solution_credits")
+    .eq("user_id", targetUserId)
+    .gt("ai_solution_count", 0)
+    .limit(1000);
+  if (aiError) {
+    console.error("[admin/users/conversions:GET] ai summary failed", aiError);
+  } else {
+    aiSolution = (aiRows ?? []).reduce(
+      (acc, r) => ({
+        count: acc.count + (r.ai_solution_count ?? 0),
+        credits: acc.credits + (r.ai_solution_credits ?? 0),
+        conversions: acc.conversions + 1,
+      }),
+      { count: 0, credits: 0, conversions: 0 }
+    );
+  }
+
+  return NextResponse.json({ conversions: data ?? [], aiSolution });
 }

@@ -1213,10 +1213,18 @@ interface UserConversion {
   pdf_name: string | null;
   problem_count: number;
   solution_count?: number | null;
+  ai_solution_count?: number | null; // AI 해설 생성(v2.4.0~) 요청 문제 수
+  ai_solution_credits?: number | null;
   credits_used: number;
   refunded_credits: number;
   status: string;
   created_at: string;
+}
+
+interface UserAiSolutionSummary {
+  count: number; // 전체 기간 AI 해설 요청 문제 수
+  credits: number; // 그 차감 크레딧(실패분 환불 전)
+  conversions: number; // AI 해설을 켠 변환 횟수
 }
 
 const CONV_STATUS_LABELS: Record<string, string> = {
@@ -1259,6 +1267,7 @@ function UserDetailModal({
 }) {
   const [events, setEvents] = useState<UserCreditEvent[] | null>(null);
   const [convs, setConvs] = useState<UserConversion[] | null>(null);
+  const [aiSummary, setAiSummary] = useState<UserAiSolutionSummary | null>(null);
   const [autoDetect, setAutoDetect] = useState<AutoDetectUsageRow[] | null>(
     null
   );
@@ -1285,6 +1294,7 @@ function UserDetailModal({
       if (cancelled) return;
       setEvents(ev?.events ?? []);
       setConvs(cv?.conversions ?? []);
+      setAiSummary(cv?.aiSolution ?? null);
       setAutoDetect(ad?.usage ?? []);
       setLogs(lg?.logs ?? []);
     })();
@@ -1553,6 +1563,16 @@ function UserDetailModal({
 
         {/* 변환 이력 */}
         <DetailSection title="변환 이력 (최근 20건)">
+          {/* AI 해설 생성 누적(전체 기간) — 최근 20건 표 밖의 변환까지 합산 */}
+          {aiSummary && aiSummary.count > 0 && (
+            <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg bg-violet-50 border border-violet-100 px-3 py-2 text-xs text-violet-800">
+              <span className="font-semibold">💡 AI 해설 누적</span>
+              <span>
+                {aiSummary.count.toLocaleString("ko-KR")}문제 · {aiSummary.credits.toLocaleString("ko-KR")}크레딧
+              </span>
+              <span className="text-violet-500">변환 {aiSummary.conversions}회</span>
+            </div>
+          )}
           {convs === null ? (
             <p className="text-sm text-zinc-400">불러오는 중…</p>
           ) : convs.length === 0 ? (
@@ -1566,6 +1586,9 @@ function UserDetailModal({
                     <th className="py-2 pr-3 font-medium">시험지명</th>
                     <th className="py-2 pr-3 font-medium text-center">
                       문제(해설)
+                    </th>
+                    <th className="py-2 pr-3 font-medium text-center">
+                      💡AI 해설
                     </th>
                     <th className="py-2 pr-3 font-medium text-center">
                       크레딧
@@ -1591,6 +1614,18 @@ function UserDetailModal({
                         {(c.solution_count ?? 0) > 0
                           ? `(+${c.solution_count})`
                           : ""}
+                      </td>
+                      <td className="py-2 pr-3 text-center">
+                        {(c.ai_solution_count ?? 0) > 0 ? (
+                          <span className="text-violet-700 font-medium">
+                            {c.ai_solution_count}
+                            <span className="text-violet-400 font-normal">
+                              {" "}({c.ai_solution_credits ?? 0}크레딧)
+                            </span>
+                          </span>
+                        ) : (
+                          <span className="text-zinc-300">—</span>
+                        )}
                       </td>
                       <td className="py-2 pr-3 text-center">
                         {c.credits_used > 0 ? (
