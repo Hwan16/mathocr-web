@@ -174,14 +174,40 @@ const ROMAN_GROUP = /(\\{1,4}mathrm[ \t]*\{)([^{}"]*)(\})/g;
 const ROMAN_TOKEN = /(\\{1,4}u[0-9a-fA-F]{4})|(\\{1,4}[A-Za-z]+)|([A-Za-z]{2,})/g;
 
 export function protectRomanNames(text: string): string {
+  return foldRomanSubscripts(
+    text.replace(
+      ROMAN_GROUP,
+      (_match, open: string, inner: string, close: string) =>
+        open +
+        inner.replace(ROMAN_TOKEN, (token: string, unicode?: string, command?: string) =>
+          unicode || command ? token : token.split("").join(" ")
+        ) +
+        close
+    )
+  );
+}
+
+// 로만체 뒤 아래첨자를 안으로 접기 — `\mathrm{P}_1` 을 `\mathrm{P_1}` 로 (2026-10-10).
+//
+// 앱 v2.4.0 이하는 `\overline{\mathrm{P}_1\mathrm{P}_2}^2` 를 `overline{rm {P} it _{1}rm {P} it _{2}}^{2}`
+// 로 바꾸는데, 한글 수식은 이 꼴에서 괄호 짝을 잃어 윗줄이 식 끝까지 늘어나고 뒤의 식이
+// 아래첨자로 찍힌다(AI 해설 실제 사례). 첨자를 안에 넣은 `rm {P_{1}} it` 는 정상으로 그려진다
+// (실제 렌더 확인). 안에 넣은 첨자는 정자체가 되므로 **숫자 첨자만** 접는다 — 숫자는 원래
+// 정자체라 달라지는 게 없고, 글자 첨자(순열 ₙPᵣ 의 r)는 기울임이어야 하므로 그대로 둔다.
+// 바로 뒤 숫자 윗첨자(P₁²)도 함께 넣는다.
+// 다음 앱 버전 변환기도 같은 문제를 고치지만(첨자를 it 앞에 붙임) 설치된 앱을 위해 서버에서도 한다.
+// protectRomanNames 다음에 돌아야 한다 — 접은 뒤엔 중괄호가 들어가 이름 보호 패턴이 안 맞는다.
+const SCRIPT_ARG = String.raw`(?:\{[ \t]*[0-9]+[ \t]*\}|[0-9])`;
+const ROMAN_SUBSCRIPT = new RegExp(
+  String.raw`(\\{1,4}mathrm[ \t]*\{)([^{}"]*)\}[ \t]*_[ \t]*(${SCRIPT_ARG})(?:[ \t]*\^[ \t]*(${SCRIPT_ARG}))?`,
+  "g"
+);
+
+export function foldRomanSubscripts(text: string): string {
   return text.replace(
-    ROMAN_GROUP,
-    (_match, open: string, inner: string, close: string) =>
-      open +
-      inner.replace(ROMAN_TOKEN, (token: string, unicode?: string, command?: string) =>
-        unicode || command ? token : token.split("").join(" ")
-      ) +
-      close
+    ROMAN_SUBSCRIPT,
+    (_match, open: string, inner: string, sub: string, sup?: string) =>
+      open + inner + "_" + sub + (sup ? "^" + sup : "") + "}"
   );
 }
 

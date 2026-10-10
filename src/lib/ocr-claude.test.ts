@@ -165,6 +165,34 @@ test("로만체 이름은 글자 사이를 띄워 한글 수식 명령어와 겹
   assert.equal(protectRomanNames(outside), outside);
 });
 
+test("로만체 뒤 숫자 아래첨자는 안으로 접어 한글 수식 윗줄이 식 끝까지 늘어나지 않게 한다", () => {
+  const bs = String.fromCharCode(92);
+  const m = (inner: string) => bs + bs + "mathrm{" + inner + "}";
+  const ol = (inner: string) => bs + bs + "overline{" + inner + "}";
+  // AI 해설 실제 사례: \overline{\mathrm{P}_1\mathrm{P}_2}^2
+  assert.equal(
+    protectRomanNames(ol(m("P") + "_1" + m("P") + "_{2}") + "^2"),
+    ol(m("P_1") + m("P_{2}")) + "^2"
+  );
+  // 숫자 윗첨자는 함께, 공백은 정리, 이름 보호와 함께 동작
+  assert.equal(protectRomanNames(m("P") + " _ {1} ^2"), m("P_{1}^2"));
+  assert.equal(protectRomanNames(m("GE") + "_1"), m("G E_1"));
+  // 글자 첨자(순열 nPr)·명령어 첨자·글자 윗첨자는 그대로 (기울임이어야 함)
+  for (const keep of [
+    "{}_{n}" + m("P") + "_{r}",
+    m("P") + "_n",
+    m("P") + "_{" + bs + bs + "alpha}",
+    m("c m") + "^2",
+    m("P") + "_{n+1}",
+  ]) {
+    assert.equal(protectRomanNames(keep), keep);
+  }
+  // 숫자 다음 글자 윗첨자는 아래첨자만 접는다
+  assert.equal(protectRomanNames(m("P") + "_1^n"), m("P_1") + "^n");
+  // JSON 은 그대로 읽힌다
+  assert.deepEqual(JSON.parse(protectRomanNames(`{"value": "${m("P")}_1"}`)), { value: bs + "mathrm{P_1}" });
+});
+
 test("5.5 응답 마무리는 thinking 을 걸러 내고 text 안의 로만체 이름을 보호한다", () => {
   const bs = String.fromCharCode(92);
   const out = finalizeServerPromptResponse({
