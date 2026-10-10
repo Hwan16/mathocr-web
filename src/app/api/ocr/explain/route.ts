@@ -8,31 +8,60 @@ import {
   logOcrUsage,
   recordAiUsage,
 } from "@/lib/ocr-guard";
-import { MODEL_SONNET_5_5, estimateClaudeCostUsd, protectRomanNames, separateLtMinus } from "@/lib/ocr-claude";
+import {
+  MODEL_HAIKU_5_5,
+  MODEL_SONNET_5_5,
+  type PricedClaudeModel,
+  estimateClaudeCostUsd,
+  protectRomanNames,
+  separateLtMinus,
+} from "@/lib/ocr-claude";
 import {
   type ExplainKind,
   type ExplainResult,
+  buildDifficultyUserPrompt,
   buildExplainUserPrompt,
   extractExplainJson,
   looksTruncated,
+  parseDifficulty,
   toExplainResult,
 } from "@/lib/ai-solution";
-import { EXPLAIN_PROMPT_SONNET_5_5, EXPLAIN_SPEC_VERSION } from "@/lib/explain-prompt";
+import {
+  EXPLAIN_DIFFICULTY_PROMPT,
+  EXPLAIN_HAIKU_SPEC_VERSION,
+  EXPLAIN_PROMPT_HAIKU_5_5,
+  EXPLAIN_PROMPT_SONNET_5_5,
+  EXPLAIN_SPEC_VERSION,
+} from "@/lib/explain-prompt";
+import { fixExplainContent } from "@/lib/explain-postfix";
 import { NextRequest, NextResponse } from "next/server";
 
-// AI 해설 생성 프록시 (D-036·D-037)
-// 데스크톱 앱 → 우리 서버 → Claude(Sonnet 5.5). 지시문·모델·단가는 서버가 소유한다.
+// AI 해설 생성 프록시 (D-036·D-037·D-039)
+// 데스크톱 앱 → 우리 서버 → Claude. 지시문·모델·단가는 서버가 소유한다.
 //
-// 실측(2026-10-08, 40문제×3회): 평균 14초, 4점 평균 23초, 최장 96초 → 함수 상한을 넉넉히 둔다.
-// 킬러 문항은 생각 토큰이 많아 한 호출에 2만 토큰을 넘길 수 있어 max_tokens 도 크게 둔다.
-export const maxDuration = 120;
+// D-039(2026-10-10): 난이도 분류(Haiku low, 풀지 않고 easy/hard 만) → easy 는 Haiku 5.5, 나머지는 Sonnet 5.5.
+//   Haiku 가 실패하면(오류·끊김·형식 불량) 같은 요청에서 Sonnet 으로 다시 푼다. 분류가 실패·애매하면 Sonnet.
+//   근거: 쉬운 문제 116개 블라인드 비교에서 Haiku v3h4 ≒ Sonnet(순격차 2~3%p, Sonnet끼리 0), 정답 100%.
+//   분류기가 hard 로 보내는 중간 구간은 Haiku 글 품질이 확실히 낮아(순격차 30%p) 넓히지 않는다.
+//   끄기: Vercel env EXPLAIN_HAIKU_ROUTING=off → 전부 Sonnet(분류 호출도 안 함).
+// 모든 해설은 응답 직전에 fixExplainContent(문장 붙음 교정)를 거친다.
+//
+// 시간: Sonnet 실측 평균 14초·최장 96초, Haiku(easy) 평균 11초·최장 59초, 분류 평균 1.7초.
+// 앱은 150초 기다린다 → 전체 마감 138초 안에서만 다음 시도를 한다.
+export const maxDuration = 145;
 
 const CLAUDE_API_URL = "https://api.anthropic.com/v1/messages";
 const RATE_LIMIT = 30;
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const MAX_TOKENS = 32_000;
+const HAIKU_MAX_TOKENS = 16_000; // easy 실측 상위 1% 약 12,000 — 넘으면 빨리 실패하고 Sonnet 으로
 const EXPLAIN_TIMEOUT_MS = 110_000;
-const MAX_ATTEMPTS = 2; // 오류·거절·끊김이면 한 번 더 (실험: 끊김 1/126)
+const HAIKU_TIMEOUT_MS = 60_000;
+const CLASSIFY_TIMEOUT_MS = 20_000;
+const CLASSIFY_MAX_TOKENS = 4_000;
+const DEADLINE_MS = 138_000;
+const MIN_SONNET_BUDGET_MS = 20_000; // 남은 시간이 이보다 적으면 새 Sonnet 시도를 시작하지 않는다
+const MAX_SONNET_ATTEMPTS = 2; // 오류·거절·끊김이면 한 번 더 (실험: 끊김 1/126)
 const MAX_IMAGE_BASE64_LENGTH = 2_800_000;
 const MAX_PROBLEM_JSON_LENGTH = 40_000;
 const ALLOWED_IMAGE_MEDIA_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
@@ -98,7 +127,7 @@ function validateBody(body: unknown): { ok: true; value: ValidBody } | { ok: fal
 
 type Attempt = { ok: boolean; status: number; data: Record<string, unknown>; durationMs: number };
 
-async function callAnthropic(apiKey: string, body: Record<string, unknown>): Promise<Attempt> {
+async function callAnthropic(apiKey: string, body: Record<string, unknown>, timeoutMs: number): Promise<Attempt> {
   const startedAt = Date.now();
   try {
     const response = await fetch(CLAUDE_API_URL, {
@@ -109,7 +138,7 @@ async function callAnthropic(apiKey: string, body: Record<string, unknown>): Pro
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(EXPLAIN_TIMEOUT_MS),
+      signal: AbortSignal.timeout(Math.max(1_000, timeoutMs)),
     });
     const data = (await response.json()) as Record<string, unknown>;
     return { ok: response.ok, status: response.status, data, durationMs: Date.now() - startedAt };
@@ -201,56 +230,105 @@ export async function POST(request: NextRequest) {
   }
 
   const appVersion = request.headers.get("x-app-version") ?? undefined;
-  const claudeBody = {
-    model: MODEL_SONNET_5_5,
-    max_tokens: MAX_TOKENS,
-    system: [{ type: "text", text: EXPLAIN_PROMPT_SONNET_5_5, cache_control: { type: "ephemeral" } }],
-    messages: [
-      {
-        role: "user",
-        content: [
-          { type: "image", source: { type: "base64", media_type: input.image.media_type, data: input.image.data } },
-          { type: "text", text: buildExplainUserPrompt(input) },
-        ],
-      },
-    ],
-    // thinking 생략 = adaptive. 실험은 effort high 로 했고(D-036) 그대로 고정.
-    output_config: { effort: "high" },
+  const startedAt = Date.now();
+  const remainingMs = () => DEADLINE_MS - (Date.now() - startedAt);
+
+  // 사용량 기록 공통 — 콘솔(ocr_usage)과 대시보드(ai_usage_log). 응답 전에 끝낸다(서버리스).
+  const record = async (
+    kind: "explain" | "explain_route",
+    model: PricedClaudeModel,
+    res: Attempt,
+    ok: boolean,
+    blockedReason?: string
+  ) => {
+    const usage = usageOf(res.data);
+    const estCostUsd = res.ok ? estimateClaudeCostUsd(usage, model) : 0;
+    if (estCostUsd > 0) await recordCost("claude", estCostUsd);
+    const entry = {
+      provider: "claude" as const, kind, user_id: user.id, ok, status: ok ? 200 : res.status,
+      duration_ms: res.durationMs, est_cost_usd: Number(estCostUsd.toFixed(6)),
+      input_tokens: usage.input_tokens ?? 0, output_tokens: usage.output_tokens ?? 0,
+      cache_read_tokens: usage.cache_read_input_tokens ?? 0, model,
+      blocked_reason: ok ? undefined : blockedReason,
+      app_version: appVersion,
+    };
+    logOcrUsage(entry);
+    await recordAiUsage(entry);
   };
+
+  // 1. 난이도 분류 — 실패·애매하면 hard(Sonnet)로 본다
+  const routingOn = (process.env.EXPLAIN_HAIKU_ROUTING ?? "").trim().toLowerCase() !== "off";
+  let difficulty: "easy" | "hard" | null = null;
+  if (routingOn) {
+    const res = await callAnthropic(apiKey, {
+      model: MODEL_HAIKU_5_5,
+      max_tokens: CLASSIFY_MAX_TOKENS,
+      system: [{ type: "text", text: EXPLAIN_DIFFICULTY_PROMPT, cache_control: { type: "ephemeral" } }],
+      messages: [{ role: "user", content: [{ type: "text", text: buildDifficultyUserPrompt(input) }] }],
+      output_config: { effort: "low" },
+    }, CLASSIFY_TIMEOUT_MS);
+    difficulty = res.ok ? parseDifficulty(responseText(res.data)) : null;
+    await record("explain_route", MODEL_HAIKU_5_5, res, difficulty !== null,
+      res.ok ? "route_unparsed" : `route_http_${res.status}`);
+  }
+
+  // 2. 시도 계획 — easy: Haiku 1회 → (실패 시) Sonnet 최대 2회 / 그 밖: Sonnet 최대 2회
+  type Plan = { model: PricedClaudeModel; prompt: string; specVersion: string; maxTokens: number; timeoutMs: number };
+  const sonnet: Plan = {
+    model: MODEL_SONNET_5_5, prompt: EXPLAIN_PROMPT_SONNET_5_5, specVersion: EXPLAIN_SPEC_VERSION,
+    maxTokens: MAX_TOKENS, timeoutMs: EXPLAIN_TIMEOUT_MS,
+  };
+  const haiku: Plan = {
+    model: MODEL_HAIKU_5_5, prompt: EXPLAIN_PROMPT_HAIKU_5_5, specVersion: EXPLAIN_HAIKU_SPEC_VERSION,
+    maxTokens: HAIKU_MAX_TOKENS, timeoutMs: HAIKU_TIMEOUT_MS,
+  };
+  const plans: Plan[] = difficulty === "easy" ? [haiku, sonnet, sonnet] : [sonnet, sonnet];
+  const userContent = [
+    { type: "image", source: { type: "base64", media_type: input.image.media_type, data: input.image.data } },
+    { type: "text", text: buildExplainUserPrompt(input) },
+  ];
 
   let lastReason = "unknown";
   let lastStatus = 502;
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
-    const res = await callAnthropic(apiKey, claudeBody);
-    const usage = usageOf(res.data);
-    const estCostUsd = res.ok ? estimateClaudeCostUsd(usage, MODEL_SONNET_5_5) : 0;
-    if (estCostUsd > 0) await recordCost("claude", estCostUsd);
+  let sonnetTries = 0;
+  for (let i = 0; i < plans.length; i += 1) {
+    const plan = plans[i];
+    const isSonnet = plan.model === MODEL_SONNET_5_5;
+    if (isSonnet && sonnetTries >= MAX_SONNET_ATTEMPTS) break;
+    // 앱이 기다리는 시간 안에 끝낼 수 있을 때만 새 시도를 시작한다
+    const budget = Math.min(plan.timeoutMs, remainingMs() - 2_000);
+    if (budget < (isSonnet ? MIN_SONNET_BUDGET_MS : 10_000)) {
+      lastReason = lastReason === "unknown" ? "deadline" : `${lastReason}+deadline`;
+      break;
+    }
+    if (isSonnet) sonnetTries += 1;
+    const res = await callAnthropic(apiKey, {
+      model: plan.model,
+      max_tokens: plan.maxTokens,
+      system: [{ type: "text", text: plan.prompt, cache_control: { type: "ephemeral" } }],
+      messages: [{ role: "user", content: userContent }],
+      // thinking 생략 = adaptive. 실험은 두 모델 모두 effort high(D-036·D-039)로 했고 그대로 고정.
+      output_config: { effort: "high" },
+    }, budget);
     const outcome = interpretAttempt(res, input.kind);
     const ok = "result" in outcome;
-    const usageEntry = {
-      provider: "claude" as const, kind: "explain" as const, user_id: user.id, ok, status: ok ? 200 : res.status,
-      duration_ms: res.durationMs, est_cost_usd: Number(estCostUsd.toFixed(6)),
-      input_tokens: usage.input_tokens ?? 0, output_tokens: usage.output_tokens ?? 0,
-      cache_read_tokens: usage.cache_read_input_tokens ?? 0, model: MODEL_SONNET_5_5,
-      blocked_reason: ok ? undefined : `explain_${outcome.reason}:attempt${attempt}`,
-      app_version: appVersion,
-    };
-    logOcrUsage(usageEntry);
-    // 1건당 원가 기록(대시보드) — 응답 전에 끝낸다. 실패해도 변환에는 영향 없음.
-    await recordAiUsage(usageEntry);
+    const tag = plan.model === MODEL_HAIKU_5_5 ? "haiku" : "sonnet";
+    await record("explain", plan.model, res, ok, ok ? undefined : `explain_${"reason" in outcome ? outcome.reason : "?"}:${tag}:attempt${i + 1}`);
     if (ok) {
+      const fixed = fixExplainContent(outcome.result.content);
+      const result = { ...outcome.result, content: fixed.length > 0 ? fixed : outcome.result.content };
       return NextResponse.json(
-        { ...outcome.result, model: MODEL_SONNET_5_5, spec_version: EXPLAIN_SPEC_VERSION, attempts: attempt },
-        { headers: { "X-Claude-Model": MODEL_SONNET_5_5 } }
+        {
+          ...result, model: plan.model, spec_version: plan.specVersion, attempts: i + 1,
+          route: difficulty === "easy" ? "easy" : routingOn ? "hard" : "off",
+        },
+        { headers: { "X-Claude-Model": plan.model } }
       );
     }
     lastReason = outcome.reason;
-    // 429(한도)·401(키)·400(요청) 은 재시도해도 같다 — 바로 돌려준다
-    if (!res.ok && [400, 401, 403, 413].includes(res.status)) {
-      lastStatus = res.status;
-      break;
-    }
     lastStatus = res.ok ? 502 : res.status;
+    // Sonnet 의 401(키)·400(요청)·413 은 재시도해도 같다 — 바로 돌려준다. Haiku 실패는 무엇이든 Sonnet 으로 넘긴다.
+    if (isSonnet && !res.ok && [400, 401, 403, 413].includes(res.status)) break;
   }
 
   return errorResponse(`AI 해설을 만들지 못했습니다. (${lastReason})`, lastStatus === 200 ? 502 : lastStatus);

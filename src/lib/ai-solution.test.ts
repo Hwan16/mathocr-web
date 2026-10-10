@@ -6,15 +6,24 @@ import {
   AI_SOLUTION_REGULAR_PRICE,
   aiSolutionCredits,
   aiSolutionUnitPrice,
+  buildDifficultyUserPrompt,
   buildExplainUserPrompt,
   extractExplainJson,
   isAiSolutionPromoActive,
   levelDescription,
   looksTruncated,
   normalizeAnswer,
+  parseDifficulty,
   toExplainResult,
 } from "./ai-solution.ts";
-import { EXPLAIN_PROMPT_SONNET_5_5, EXPLAIN_SPEC_VERSION } from "./explain-prompt.ts";
+import {
+  EXPLAIN_DIFFICULTY_PROMPT,
+  EXPLAIN_DIFFICULTY_VERSION,
+  EXPLAIN_HAIKU_SPEC_VERSION,
+  EXPLAIN_PROMPT_HAIKU_5_5,
+  EXPLAIN_PROMPT_SONNET_5_5,
+  EXPLAIN_SPEC_VERSION,
+} from "./explain-prompt.ts";
 
 test("단가: 정가 2가 기본(이벤트 꺼짐), NEXT_PUBLIC_AI_SOLUTION_PROMO=on 일 때만 이벤트가", () => {
   const saved = process.env.NEXT_PUBLIC_AI_SOLUTION_PROMO;
@@ -35,11 +44,39 @@ test("단가: 정가 2가 기본(이벤트 꺼짐), NEXT_PUBLIC_AI_SOLUTION_PROM
   assert.equal(aiSolutionCredits(2.9, 3), 6);
 });
 
-test("서버 지시문은 v3 명세에서 내보낸 완성본이다", () => {
-  assert.equal(EXPLAIN_SPEC_VERSION, "v3");
+test("서버 지시문은 v4 명세에서 내보낸 완성본이다", () => {
+  assert.equal(EXPLAIN_SPEC_VERSION, "v4");
   assert.ok(EXPLAIN_PROMPT_SONNET_5_5.includes("출제 학년·시험 범위 안의 방법"));
   assert.ok(EXPLAIN_PROMPT_SONNET_5_5.includes("글(text) 항목에는 수학 기호·알파벳·수식을 절대 넣지 않는다"));
   assert.ok(EXPLAIN_PROMPT_SONNET_5_5.includes("JSON 응답 escape 규칙"));
+  // v4: 출력 예시가 '글 속 수식 금지'를 스스로 어기던 줄이 없어야 한다
+  assert.ok(!EXPLAIN_PROMPT_SONNET_5_5.includes(`"value": "f'(x) = 0에서 "`));
+  assert.ok(!EXPLAIN_PROMPT_SONNET_5_5.includes("\\\\hline f'(x)"));
+});
+
+test("Haiku 지시문(v3h5)·난이도 분류 지시문이 함께 내보내져 있다", () => {
+  assert.equal(EXPLAIN_HAIKU_SPEC_VERSION, "v3h5");
+  assert.ok(EXPLAIN_PROMPT_HAIKU_5_5.includes("2-1. 풀이 경로"));
+  assert.ok(EXPLAIN_PROMPT_HAIKU_5_5.includes("2-4. 문장 완결"));
+  assert.ok(EXPLAIN_PROMPT_HAIKU_5_5.includes("소문항 순서대로 모든 답"));
+  assert.equal(EXPLAIN_DIFFICULTY_VERSION, "difficulty_v1");
+  assert.ok(EXPLAIN_DIFFICULTY_PROMPT.includes("애매하면 반드시 hard"));
+});
+
+test("난이도 분류 입력: 배점 글자를 지우고 문제 텍스트만", () => {
+  const text = buildDifficultyUserPrompt({
+    problem: { content: [{ type: "text", value: "값은? [3.5점]" }], choices: [], problem_type: "multiple_choice", extra: 1 },
+    kind: "choice",
+    level: "고2",
+  });
+  assert.ok(text.startsWith("시험: 고등학교 2학년"));
+  assert.ok(!text.includes("3.5점"));
+  assert.ok(!text.includes("extra"));
+  assert.ok(text.includes('"problem_type":"multiple_choice"'));
+  assert.equal(parseDifficulty('{"level": "easy", "reason": "공식 하나"}'), "easy");
+  assert.equal(parseDifficulty('설명 {"level":"hard"}'), "hard");
+  assert.equal(parseDifficulty("모르겠음"), null);
+  assert.equal(parseDifficulty('{"level":"medium"}'), null);
 });
 
 test("입력 지시문: 학년 코드·배점·유형이 실험과 같은 모양으로 들어간다", () => {
@@ -93,8 +130,11 @@ test("응답 해석: 홑 백슬래시 이스케이프도 복구하고, 본문이
 test("answer 정리: 객관식은 ①~⑤, 단답형은 공백·쉼표 제거", () => {
   assert.equal(normalizeAnswer("4", "choice"), "④");
   assert.equal(normalizeAnswer("④ ", "choice"), "④");
-  assert.equal(normalizeAnswer("1,024", "number"), "1024");
   assert.equal(normalizeAnswer(97, "number"), "97");
+  // 단답형은 앞뒤 공백만 정리 — 소문항이 여럿인 서답형 답의 쉼표를 지우면 "√33297π/32"로 붙던 버그(D-039).
+  // 입력 답과의 비교는 앱이 양쪽을 같은 방식으로 정리해서 한다.
+  assert.equal(normalizeAnswer(" √33, 297π/32 ", "number"), "√33, 297π/32");
+  assert.equal(normalizeAnswer("1,024", "number"), "1,024");
 });
 
 test("끊김 감지: 중괄호가 안 닫힌 마지막 수식·confidence 0", () => {

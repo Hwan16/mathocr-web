@@ -144,7 +144,10 @@ function parseLeadingObject(text: string): Record<string, unknown> | null {
 
 const CIRCLED = ["①", "②", "③", "④", "⑤"];
 
-// answer 정리 — 객관식은 ①~⑤ 로 통일(숫자 1~5 도 허용), 단답형은 공백·쉼표 제거.
+// answer 정리 — 객관식은 ①~⑤ 로 통일(숫자 1~5 도 허용), 단답형은 앞뒤 공백만 정리하고 그대로 둔다.
+// 예전에는 단답형의 공백·쉼표를 모두 지웠는데, 소문항이 여럿인 서답형 답("√33, 297π/32")이
+// "√33297π/32"로 붙어 엉뚱한 답이 찍혔다(10-10 발견, D-039). 입력 답과의 비교는 앱이
+// 양쪽을 같은 방식(공백·쉼표 제거)으로 정리해서 하므로(converter_worker.normalize_answer_text) 서버는 다듬지 않는다.
 export function normalizeAnswer(raw: unknown, kind: ExplainKind): string {
   const s = String(raw ?? "").trim();
   if (kind === "choice") {
@@ -152,7 +155,46 @@ export function normalizeAnswer(raw: unknown, kind: ExplainKind): string {
     if (/^[1-5]$/.test(s)) return CIRCLED[Number(s) - 1];
     return s;
   }
-  return s.replace(/[,\s]/g, "");
+  return s;
+}
+
+// ── 난이도 사전 분류 (D-039) ────────────────────────────────
+// 쉬운 문제만 Haiku 로 보낸다. 분류는 문제를 풀지 않고 easy/hard 만 고르며, 애매하면 hard.
+// 실측(10-10, tools/explain_gen/judge.py --blind): 배점 글자를 지우고 이미지 없이 텍스트만 넣은 설정으로
+// 257문제에서 'Haiku 가 못 푸는 문제'를 easy 로 보낸 적 0건 — 같은 입력 모양을 그대로 쓴다.
+const SCORE_MARK_RE = /\[\s*\d+(?:\.\d+)?\s*점\s*\]/g;
+
+export function buildDifficultyUserPrompt(input: ExplainInput): string {
+  const problem = JSON.parse(JSON.stringify(input.problem ?? {})) as Record<string, unknown>;
+  const content = Array.isArray(problem.content) ? problem.content : [];
+  for (const item of content) {
+    if (item && typeof item === "object" && (item as { type?: unknown }).type === "text") {
+      const rec = item as { value?: unknown };
+      if (typeof rec.value === "string") rec.value = rec.value.replace(SCORE_MARK_RE, "");
+    }
+  }
+  const slim: Record<string, unknown> = {};
+  for (const key of ["content", "choices", "problem_type"]) {
+    if (key in problem) slim[key] = problem[key];
+  }
+  return (
+    `시험: ${levelDescription(input.level)}\n` +
+    "첫 번째 입력은 문제 이미지, 아래는 이미지에서 읽은 문제 텍스트(JSON)입니다. 배점 표시는 무시하세요.\n\n" +
+    JSON.stringify(slim)
+  );
+}
+
+// 분류 응답 → "easy" | "hard". 읽을 수 없으면 null(호출하는 쪽은 hard 로 본다 — 안전한 쪽).
+export function parseDifficulty(text: string): "easy" | "hard" | null {
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start < 0 || end <= start) return null;
+  try {
+    const obj = JSON.parse(text.slice(start, end + 1)) as { level?: unknown };
+    return obj.level === "easy" ? "easy" : obj.level === "hard" ? "hard" : null;
+  } catch {
+    return null;
+  }
 }
 
 // 모델 응답 → 앱이 쓰는 모양. 허용되지 않은 항목은 버리고, 본문이 비면 실패로 본다.

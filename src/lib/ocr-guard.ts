@@ -332,8 +332,9 @@ async function sendCostAlert(
 // ── 4. 구조화 사용량 로그 ────────────────────────────────────
 export function logOcrUsage(entry: {
   provider: OcrProvider;
-  // 같은 공급자 안의 용도 구분 — 생략하면 변환 OCR, "explain" 은 AI 해설 생성(D-037)
-  kind?: "explain";
+  // 같은 공급자 안의 용도 구분 — 생략하면 변환 OCR, "explain" 은 AI 해설 생성(D-037),
+  // "explain_route" 는 해설 전 난이도 분류 호출(D-039, 해설 1건이 아니므로 생성 수에 세지 않는다)
+  kind?: "explain" | "explain_route";
   user_id: string;
   ok: boolean;
   status: number;

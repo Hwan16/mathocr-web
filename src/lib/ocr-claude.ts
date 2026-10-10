@@ -20,6 +20,10 @@ export type ClaudeModel = (typeof ALLOWED_MODELS)[number];
 export const DEFAULT_MODEL: ClaudeModel = MODEL_SONNET_5_5;
 // 구세대 프롬프트와 5.5 실패 시 폴백에 쓰는 모델
 export const LEGACY_MODEL: ClaudeModel = MODEL_SONNET_4_6;
+// AI 해설의 쉬운 문제·난이도 분류 전용(D-039). 변환(OCR) 모델 목록(ALLOWED_MODELS)에는 넣지 않는다 —
+// CLAUDE_MODEL env 로 변환 모델이 Haiku 로 바뀌는 일이 없게.
+export const MODEL_HAIKU_5_5 = "claude-haiku-5-5";
+export type PricedClaudeModel = ClaudeModel | typeof MODEL_HAIKU_5_5;
 
 export type PromptKind = "problem" | "solution";
 export type PromptInfo = { kind: PromptKind | null; current: boolean };
@@ -302,11 +306,13 @@ export function responsePayload(run: ClaudeRunResult): Record<string, unknown> {
 
 // 단가 (USD/1M tokens, anthropic.com 가격표 2026-10-02 확인) — 캐시 쓰기는 5분 TTL 기준
 const CLAUDE_USD_PER_MTOK: Record<
-  ClaudeModel,
+  PricedClaudeModel,
   { input: number; output: number; cacheWrite: number; cacheRead: number }
 > = {
   [MODEL_SONNET_4_6]: { input: 3, output: 15, cacheWrite: 3.75, cacheRead: 0.3 },
   [MODEL_SONNET_5_5]: { input: 2, output: 10, cacheWrite: 2.5, cacheRead: 0.2 },
+  // 2026-10-10 확인, 프롬프트 100K 토큰 이하 단가(해설 요청은 수천 토큰)
+  [MODEL_HAIKU_5_5]: { input: 0.1, output: 0.5, cacheWrite: 0.125, cacheRead: 0.01 },
 };
 
 export function estimateClaudeCostUsd(
@@ -316,7 +322,7 @@ export function estimateClaudeCostUsd(
     cache_creation_input_tokens?: number;
     cache_read_input_tokens?: number;
   },
-  model: ClaudeModel = LEGACY_MODEL
+  model: PricedClaudeModel = LEGACY_MODEL
 ): number {
   const price = CLAUDE_USD_PER_MTOK[model];
   const n = (v: unknown) => (typeof v === "number" && v > 0 ? v : 0);
