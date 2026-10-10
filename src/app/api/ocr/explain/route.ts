@@ -55,12 +55,15 @@ const RATE_LIMIT = 30;
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const MAX_TOKENS = 32_000;
 const HAIKU_MAX_TOKENS = 16_000; // easy 실측 상위 1% 약 12,000 — 넘으면 빨리 실패하고 Sonnet 으로
-const EXPLAIN_TIMEOUT_MS = 110_000;
+// 10-11 실사용: 킬러 문항 하나가 Sonnet 110초 상한에 걸려 실패, 재시도는 남은 24초로 또 실패.
+// → 첫 Sonnet 시도에 남은 시간을 거의 다 주고(최대 135초), 재시도는 빨리 실패한 경우(60초 이상 남음)만 한다.
+const EXPLAIN_TIMEOUT_MS = 135_000;
 const HAIKU_TIMEOUT_MS = 60_000;
 const CLASSIFY_TIMEOUT_MS = 20_000;
 const CLASSIFY_MAX_TOKENS = 4_000;
 const DEADLINE_MS = 138_000;
-const MIN_SONNET_BUDGET_MS = 20_000; // 남은 시간이 이보다 적으면 새 Sonnet 시도를 시작하지 않는다
+const MIN_SONNET_BUDGET_MS = 20_000; // 첫 Sonnet 시도 — 남은 시간이 이보다 적으면 시작하지 않는다
+const MIN_SONNET_RETRY_BUDGET_MS = 60_000; // Sonnet 재시도 — 이만큼 남았을 때만(어차피 못 끝낼 짧은 재시도 방지)
 const MAX_SONNET_ATTEMPTS = 2; // 오류·거절·끊김이면 한 번 더 (실험: 끊김 1/126)
 const MAX_IMAGE_BASE64_LENGTH = 2_800_000;
 const MAX_PROBLEM_JSON_LENGTH = 40_000;
@@ -297,7 +300,8 @@ export async function POST(request: NextRequest) {
     if (isSonnet && sonnetTries >= MAX_SONNET_ATTEMPTS) break;
     // 앱이 기다리는 시간 안에 끝낼 수 있을 때만 새 시도를 시작한다
     const budget = Math.min(plan.timeoutMs, remainingMs() - 2_000);
-    if (budget < (isSonnet ? MIN_SONNET_BUDGET_MS : 10_000)) {
+    const minBudget = !isSonnet ? 10_000 : sonnetTries === 0 ? MIN_SONNET_BUDGET_MS : MIN_SONNET_RETRY_BUDGET_MS;
+    if (budget < minBudget) {
       lastReason = lastReason === "unknown" ? "deadline" : `${lastReason}+deadline`;
       break;
     }
