@@ -21,9 +21,9 @@ export function currentAppNotice(): AppNotice | null {
   return {
     id: "new-features-2026-10",
     title: "새 기능 2가지 — AI 해설 · 완성된 시험지",
-    body:
-      "💡 AI 해설 — 해설 PDF가 없어도 문제별 해설을 써서 정답·해설에 함께 넣어 드려요.\n" +
-      "🖨️ 완성된 시험지 — [변환하기]에서 고르면 문제 길이에 맞춰 칸을 나누고 제목·로고까지 넣어, 받자마자 인쇄할 수 있어요.",
+    // 설명 두 줄은 뺐다(사용자 10-12: "그림만으로 충분, 텍스트 부연 불필요"). 아이콘·제목은 v2.5.0 이하 앱이 늘 그리고
+    // 제목이 비면 공지 자체를 버리므로 남긴다 — 그림만 띄우려면 앱 쪽 변경이 필요.
+    body: "",
     image_url: "https://mathocr.ai.kr/app-notice/new-features-2026-10.png",
   };
 }
