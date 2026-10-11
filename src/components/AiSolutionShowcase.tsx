@@ -2,6 +2,7 @@
 // 실제 스크린샷이 아니라 사이트 디자인 언어(zinc + violet)로 그린 목업.
 // 연출: ① 우측 목록의 [💡AI] 체크 ② 변환 뒤 한글 문서 [정답 및 해설]에 들어간 풀이
 // ③ 떠 있는 진행 칩(💡 AI 해설 생성 중). 앱 UI가 크게 바뀌면 디테일만 동기화.
+import { AI_SOLUTION_RULE } from "@/lib/plans";
 const serif = { fontFamily: '"Times New Roman", Times, serif' } as const;
 
 const ROWS: { n: number; answer?: string; solution?: string; ai: "on" | "off" | "blocked" }[] = [
@@ -111,7 +112,7 @@ export default function AiSolutionShowcase() {
         </span>
         <span className="leading-tight">
           <span className="block text-[11px] font-semibold text-zinc-800">💡 AI 해설 생성 중</span>
-          <span className="block text-[9px] text-zinc-500">문제당 2크레딧</span>
+          <span className="block text-[9px] text-zinc-500">문제당 {AI_SOLUTION_RULE.current}크레딧</span>
         </span>
       </div>
     </div>

@@ -38,7 +38,8 @@ test("단가: 정가 2가 기본(이벤트 꺼짐), NEXT_PUBLIC_AI_SOLUTION_PROM
   if (saved === undefined) delete process.env.NEXT_PUBLIC_AI_SOLUTION_PROMO;
   else process.env.NEXT_PUBLIC_AI_SOLUTION_PROMO = saved;
   assert.equal(AI_SOLUTION_REGULAR_PRICE, 2);
-  assert.ok(AI_SOLUTION_PROMO_PRICE <= AI_SOLUTION_REGULAR_PRICE);
+  assert.ok(AI_SOLUTION_PROMO_PRICE < AI_SOLUTION_REGULAR_PRICE);
+  assert.equal(AI_SOLUTION_PROMO_PRICE, 1);
   assert.equal(aiSolutionCredits(7, 2), 14);
   assert.equal(aiSolutionCredits(-1, 2), 0);
   assert.equal(aiSolutionCredits(2.9, 3), 6);

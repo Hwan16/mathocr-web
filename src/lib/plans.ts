@@ -108,12 +108,17 @@ export const CREDIT_RULE = [
 // (서버 차감과 같은 값). launched 는 앱 v2.4.0 배포와 함께 true 로.
 // ⚠️ 표시 원칙(2026-07-12 감사 LA-01): 취소선 비교가는 실제로 받은(받을) 가격일 때만 —
 //   2026-10-09 "정가 3 · 기념가 2" 표시를 걷고 2를 정가로 확정했다(D-038). promoActive 는
-//   이벤트를 실제로 할 때만 켠다(NEXT_PUBLIC_AI_SOLUTION_PROMO=on, 종료일을 함께 공지할 것).
+//   이벤트를 실제로 할 때만 켠다(NEXT_PUBLIC_AI_SOLUTION_PROMO=on).
+// D-040(2026-10-11): 출시 기념가 1크레딧 · 종료일 없이 "종료 시 2주 전 미리 공지"(작게 표시 — 사용자 지시).
+//   취소선 비교가는 쓰지 않는다 — 기념가가 길어지면 2가 '종전 가격'으로 약해지기 때문.
 export const AI_SOLUTION_RULE = {
   launched: true,
   label: "AI 해설 생성 (문제당)",
   regular: AI_SOLUTION_REGULAR_PRICE,
   promo: AI_SOLUTION_PROMO_PRICE,
   promoActive: isAiSolutionPromoActive(),
-  promoNote: "이벤트",
+  // 지금 실제로 차감되는 문제당 크레딧(서버 차감 aiSolutionUnitPrice 와 같은 값) — 화면 문구는 이것만 쓴다
+  current: isAiSolutionPromoActive() ? AI_SOLUTION_PROMO_PRICE : AI_SOLUTION_REGULAR_PRICE,
+  promoNote: "출시 기념가",
+  promoFinePrint: "종료 시 2주 전 미리 공지",
 } as const;

@@ -7,9 +7,13 @@
 // 취소선 '정가'로 계속 두면 허위 종전가격(표시광고법)이 되므로 기념가 표시 자체를 걷었다.
 // 이벤트가 필요하면 NEXT_PUBLIC_AI_SOLUTION_PROMO=on 으로 켠다(기본 꺼짐, 앱 릴리스 없음,
 // 홈페이지는 같은 변수를 빌드에 쓰므로 재배포 필요). 켜기 전에 PROMO 가격을 정가보다 낮게 둘 것.
+//
+// D-040(2026-10-11): 출시 기념가 1크레딧 — 종료일을 정하지 않고 "종료 시 2주 전 미리 공지".
+// 마감일을 걸고 반복 연장하는 방식은 기만 광고 위험이라(표시광고법) 쓰지 않는다.
+// 끝낼 때: 홈페이지·앱 안내로 2주 전 공지 → Vercel env NEXT_PUBLIC_AI_SOLUTION_PROMO=off + 재배포.
 
 export const AI_SOLUTION_REGULAR_PRICE = 2; // 정가 (D-038, 2026-10-09)
-export const AI_SOLUTION_PROMO_PRICE = 2; // 이벤트가(현재 이벤트 없음 — 정가와 같음)
+export const AI_SOLUTION_PROMO_PRICE = 1; // 출시 기념가 (D-040, 2026-10-11)
 
 export function isAiSolutionPromoActive(): boolean {
   return (process.env.NEXT_PUBLIC_AI_SOLUTION_PROMO ?? "").trim().toLowerCase() === "on";

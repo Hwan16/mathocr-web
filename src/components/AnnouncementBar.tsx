@@ -1,12 +1,18 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { AI_SOLUTION_RULE } from "@/lib/plans";
 
 // 상단 띠 배너 — 새 기능 홍보용. 본문을 가리지 않는 한 줄이라 검색엔진의 '방해 요소' 판정을
 // 피한다(전체 화면 팝업 금지, 2026-10-09 사용자 결정). 닫으면 같은 캠페인 키로는 다시 띄우지
 // 않는다. 캠페인을 바꿀 때는 CAMPAIGN 키와 문구만 바꾼다.
 const CAMPAIGN = "ai-solution-launch-2026-10";
 const DISMISS_KEY = "mathocr_announcement_dismissed";
+
+// 가격 문구 — 기념가 기간엔 "출시 기념가 문제당 1크레딧"(D-040)
+const PRICE_TEXT = AI_SOLUTION_RULE.promoActive
+  ? `${AI_SOLUTION_RULE.promoNote} 문제당 ${AI_SOLUTION_RULE.current}크레딧`
+  : `문제당 ${AI_SOLUTION_RULE.current}크레딧`;
 
 export default function AnnouncementBar() {
   // 첫 렌더에서는 보이고(서버 HTML과 동일), 마운트 후 닫은 기록이 있으면 접는다.
@@ -60,9 +66,9 @@ export default function AnnouncementBar() {
           <span className="font-semibold whitespace-nowrap">AI 해설 생성 기능 출시</span>
           {/* 폰에서는 한 줄로: 긴 설명 대신 가격만 */}
           <span className="hidden md:inline text-white/85">
-            해설 PDF가 없어도 프론티어 AI가 문제별 해설을 만들어 드려요 · 문제당 2크레딧
+            해설 PDF가 없어도 프론티어 AI가 문제별 해설을 만들어 드려요 · {PRICE_TEXT}
           </span>
-          <span className="md:hidden text-white/85 whitespace-nowrap">문제당 2크레딧</span>
+          <span className="md:hidden text-white/85 whitespace-nowrap">{PRICE_TEXT}</span>
           <span className="hidden lg:inline-flex items-center gap-1 font-semibold underline-offset-4 group-hover:underline whitespace-nowrap">
             자세히 보기
             <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span>
