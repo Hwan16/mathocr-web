@@ -6,8 +6,6 @@
 // - id 를 바꾸면 이미 본 사용자에게도 다시 뜬다(앱이 id 별로 '봤음'을 기록). 같은 공지면 id 를 유지할 것.
 // - 그림은 https://mathocr.ai.kr/ 아래(web/public)만 — 앱이 다른 주소의 그림은 받지 않는다. 폭 1008px(2배) 권장.
 // - 대외 문구라 제목·설명은 사용자 확인 후 바꾼다(하이라이트 마커와 같은 원칙).
-import { AI_SOLUTION_RULE } from "./plans";
-
 export type AppNotice = {
   id: string;
   title: string;
@@ -15,15 +13,17 @@ export type AppNotice = {
   image_url: string;
 };
 
+// 이력: ai-solution-promo-2026-10 (10-11 ~ 10-12, AI 해설 출시 기념가 이벤트 — 문제당 +1크레딧, 기념가 배너 그림)
 export function currentAppNotice(): AppNotice | null {
-  // D-040 AI 해설 출시 기념가 — 기념가가 꺼지면 공지도 함께 내려간다
-  if (AI_SOLUTION_RULE.launched && AI_SOLUTION_RULE.promoActive) {
-    return {
-      id: "ai-solution-promo-2026-10",
-      title: `AI 해설 출시 기념가 이벤트 — 문제당 +${AI_SOLUTION_RULE.current}크레딧`,
-      body: "해설 PDF가 없어도 AI가 문제별 해설을 써 드려요. 우측 목록의 [💡AI] 칸을 체크하면 변환할 때 함께 들어가요.",
-      image_url: "https://mathocr.ai.kr/app-notice/ai-solution-promo-2026-10.png",
-    };
-  }
-  return null;
+  // 2026-10-12 v2.5.0 — 새 기능 2가지(AI 해설 · 완성된 시험지). 업데이트 팝업(릴리스 하이라이트)과 같은 그림·문구 —
+  // 사용자 지시: 앱을 켠 사람에게 두 기능을 나란히 보여 준다. v2.5.0으로 올린 사람은 업데이트 팝업을 다시 못 보므로 이 경로로.
+  // 서버는 앱 버전을 모르므로 v2.4.5·2.4.6 사용자에게도 뜬다(같은 실행에서 업데이트 팝업이 떴으면 다음 실행으로 미뤄짐).
+  return {
+    id: "new-features-2026-10",
+    title: "새 기능 2가지 — AI 해설 · 완성된 시험지",
+    body:
+      "💡 AI 해설 — 해설 PDF가 없어도 문제별 해설을 써서 정답·해설에 함께 넣어 드려요.\n" +
+      "🖨️ 완성된 시험지 — [변환하기]에서 고르면 문제 길이에 맞춰 칸을 나누고 제목·로고까지 넣어, 받자마자 인쇄할 수 있어요.",
+    image_url: "https://mathocr.ai.kr/app-notice/new-features-2026-10.png",
+  };
 }
