@@ -20,7 +20,7 @@ export function currentAppNotice(): AppNotice | null {
   if (AI_SOLUTION_RULE.launched && AI_SOLUTION_RULE.promoActive) {
     return {
       id: "ai-solution-promo-2026-10",
-      title: `AI 해설 출시 기념가 — 문제당 +${AI_SOLUTION_RULE.current}크레딧`,
+      title: `AI 해설 출시 기념가 이벤트 — 문제당 +${AI_SOLUTION_RULE.current}크레딧`,
       body: "해설 PDF가 없어도 AI가 문제별 해설을 써 드려요. 우측 목록의 [💡AI] 칸을 체크하면 변환할 때 함께 들어가요.",
       image_url: "https://mathocr.ai.kr/app-notice/ai-solution-promo-2026-10.png",
     };
