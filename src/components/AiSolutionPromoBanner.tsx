@@ -36,9 +36,9 @@ export default function AiSolutionPromoBanner() {
             <p className="mt-3 text-[15px] sm:text-[17px] font-medium text-violet-200 leading-relaxed">
               해설 PDF가 없어도 AI가 문제별 해설을 써 드려요
             </p>
-            <div className="mt-3.5 flex flex-wrap gap-1.5 text-[12px] sm:text-[13px] font-bold">
-              <span className="rounded-full border border-[#4C3A8C] px-2.5 py-1 text-violet-200">문제 변환 1크레딧</span>
-              <span className="rounded-full bg-[#D9F99D] px-2.5 py-1 text-[#1B0B45]">+ AI 해설 {unit}크레딧</span>
+            <div className="mt-3.5 flex flex-wrap items-center gap-1.5 text-[12px] sm:text-[13px] font-bold leading-none">
+              <span className="inline-flex items-center rounded-full border border-[#4C3A8C] px-2.5 py-1.5 text-violet-200">문제 변환 1크레딧</span>
+              <span className="inline-flex items-center rounded-full border border-[#D9F99D] bg-[#D9F99D] px-2.5 py-1.5 text-[#1B0B45]">+ AI 해설 {unit}크레딧</span>
             </div>
             <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2">
               <a
