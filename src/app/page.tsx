@@ -167,10 +167,10 @@ export default function Home() {
               </p>
 
               <p className="text-lg lg:text-xl text-zinc-600 leading-relaxed mb-9">
-                수식이 이미지가 아닌 <strong className="text-zinc-900 font-semibold">한글 수식편집기 객체</strong>로
-                변환됩니다. PDF는 물론 핸드폰으로 찍은 사진도 그대로 올릴 수
-                있어, 시험지·교재 제작에 쓰는 수식 입력 시간이 문제당 몇 초로
-                줄어듭니다. 해설 PDF가 없어도{" "}
+                PDF나 핸드폰으로 찍은 사진을 올리면, 수식은 이미지가 아닌{" "}
+                <strong className="text-zinc-900 font-semibold">한글 수식편집기 객체</strong>로 바뀌고, 문제는
+                길이에 맞춰 칸에 배치된 <strong className="text-zinc-900 font-semibold">완성된 시험지</strong>로도
+                받을 수 있습니다. 해설 PDF가 없어도{" "}
                 <strong className="text-zinc-900 font-semibold">프론티어 AI가 문제별 해설을 만들어</strong> 함께 넣습니다.
               </p>
 
@@ -313,12 +313,13 @@ export default function Home() {
       <section className="border-b border-zinc-200">
         <div className="max-w-screen-2xl mx-auto px-6 lg:px-12 py-10">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-            {/* "왜 써야 하나" 4가지. 결제 방식("필요한 만큼 충전")은 가격 섹션 몫이라 뺐다 (2026-10-09) */}
+            {/* "왜 써야 하나" 4가지. 결제 방식("필요한 만큼 충전")은 가격 섹션 몫이라 뺐다 (2026-10-09).
+                2026-10-12: 신기능 2개를 앞에 두고 'AI 교차 검증'은 뺐다(검증 문구는 메타 설명·광고에 남음) */}
             {[
-              ["수식편집기 객체", "이미지가 아닌 편집 가능한 한글 수식", false],
+              ["🖨️ 완성된 시험지", "받자마자 인쇄, 추가 크레딧 없음", true],
               ["💡 AI 해설 생성", "해설 PDF가 없어도 문제별 해설까지 함께", true],
+              ["수식편집기 객체", "이미지가 아닌 편집 가능한 한글 수식", false],
               ["그림은 무료", "문제 속 그래프·도형은 크레딧 차감 없이", false],
-              ["AI 교차 검증", "프론티어 AI가 인식부터 구조까지 검증", false],
             ].map(([title, desc, isNew]) => (
               <div key={title as string}>
                 <div className="font-semibold text-zinc-900 mb-1 flex items-center gap-2">

@@ -18,7 +18,7 @@ const SITE_URL = "https://mathocr.ai.kr";
 const SITE_NAME = "AI MathOCR";
 const SITE_TITLE = "AI MathOCR — 수학문제 OCR, PDF·이미지를 편집 가능한 HWP로";
 const SITE_DESCRIPTION =
-  `수학문제 OCR 프로그램 AI MathOCR. 시험지·교재 PDF와 사진 속 수식을 이미지가 아닌 한글(HWP) 수식편집기 객체로 변환합니다. 프론티어 AI 이중 검증으로 정확하게, 회원가입 시 ${SIGNUP_FREE_CREDITS}문제 무료.`;
+  `수학문제 OCR 프로그램 AI MathOCR. 시험지·교재 PDF와 사진 속 수식을 이미지가 아닌 한글(HWP) 수식편집기 객체로 변환하고, 바로 인쇄하는 완성된 시험지와 AI 해설까지 한 번에. 프론티어 AI 이중 검증, 회원가입 시 ${SIGNUP_FREE_CREDITS}문제 무료.`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
