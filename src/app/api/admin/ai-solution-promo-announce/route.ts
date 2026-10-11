@@ -4,9 +4,10 @@ import { PROMO_BATCH, PROMO_SUBJECT, buildPromoHtml } from "@/lib/ai-solution-pr
 import { AI_SOLUTION_RULE } from "@/lib/plans";
 import { REPLY_TO } from "@/lib/mail";
 
-// ── AI 해설 출시 기념가 안내 발송 (2026-10-11, D-040) ──
+// ── 새 기능 2가지 안내 발송 — 완성된 시험지(D-041) + AI 해설 출시 기념가(D-040) ──
+// 2026-10-11 기념가 단독 메일로 만들었다가 사용자 지시로 보류 → 10-12 완성된 시험지 출시와 합본.
 // autodetect-announce(2026-07-28)와 같은 구조 — 본문만 lib/ai-solution-promo-mail.ts.
-// 기념가가 꺼져 있으면 발송을 거부한다(끝난 이벤트 메일 방지).
+// 본문에 기념가 단가가 들어가므로, 기념가가 꺼져 있으면 발송을 거부한다(끝난 이벤트 메일 방지).
 //
 // terms-notice와 같은 서버 발송 패턴: RESEND_API_KEY가 Vercel에 Sensitive로
 // 저장돼 로컬로 내려받을 수 없으므로, 서버가 자기 키로 발송한다.
