@@ -9,10 +9,11 @@ import { AI_SOLUTION_RULE } from "@/lib/plans";
 const CAMPAIGN = "ai-solution-launch-2026-10";
 const DISMISS_KEY = "mathocr_announcement_dismissed";
 
-// 가격 문구 — 기념가 기간엔 "출시 기념가 문제당 1크레딧"(D-040)
+// 가격 문구 — 기념가 기간엔 "출시 기념가 문제당 +1크레딧"(D-040). '+'는 변환 1크레딧에 더해지는 값이라는 표시 —
+// 빼면 "변환+해설 합쳐 1크레딧"으로 읽힐 수 있다(2026-10-11 사용자 지적).
 const PRICE_TEXT = AI_SOLUTION_RULE.promoActive
-  ? `${AI_SOLUTION_RULE.promoNote} 문제당 ${AI_SOLUTION_RULE.current}크레딧`
-  : `문제당 ${AI_SOLUTION_RULE.current}크레딧`;
+  ? `${AI_SOLUTION_RULE.promoNote} 문제당 +${AI_SOLUTION_RULE.current}크레딧`
+  : `문제당 +${AI_SOLUTION_RULE.current}크레딧`;
 
 export default function AnnouncementBar() {
   // 첫 렌더에서는 보이고(서버 HTML과 동일), 마운트 후 닫은 기록이 있으면 접는다.
