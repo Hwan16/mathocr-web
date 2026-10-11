@@ -10,6 +10,7 @@ import AutoDetectShowcase from "@/components/AutoDetectShowcase";
 import AnswerToolsShowcase, { AnswerPanelPreview, RootTwo } from "@/components/AnswerToolsShowcase";
 import RomanTypeShowcase from "@/components/RomanTypeShowcase";
 import AiSolutionShowcase from "@/components/AiSolutionShowcase";
+import AiSolutionPromoBanner from "@/components/AiSolutionPromoBanner";
 import AnnouncementBar from "@/components/AnnouncementBar";
 import Changelog from "@/components/Changelog";
 import DownloadGuideModal from "@/components/DownloadGuideModal";
@@ -303,6 +304,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* ── AI 해설 출시 기념가 배너 (D-040 — 기념가가 꺼지면 사라짐) ── */}
+      <AiSolutionPromoBanner />
 
       {/* ── 핵심 사실 스트립 ── */}
       <section className="border-b border-zinc-200">
