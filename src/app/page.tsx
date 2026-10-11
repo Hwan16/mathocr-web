@@ -10,6 +10,7 @@ import AutoDetectShowcase from "@/components/AutoDetectShowcase";
 import AnswerToolsShowcase, { AnswerPanelPreview, RootTwo } from "@/components/AnswerToolsShowcase";
 import RomanTypeShowcase from "@/components/RomanTypeShowcase";
 import AiSolutionShowcase from "@/components/AiSolutionShowcase";
+import ExamSheetShowcase from "@/components/ExamSheetShowcase";
 import AiSolutionPromoBanner from "@/components/AiSolutionPromoBanner";
 import AnnouncementBar from "@/components/AnnouncementBar";
 import Changelog from "@/components/Changelog";
@@ -351,6 +352,47 @@ export default function Home() {
             </p>
           </div>
 
+          {/* 대표 기능: 완성된 시험지 (v2.5.0 신규, D-041) — 최신 업데이트라 배너 색(짙은 보라 + 라임)으로 가장 먼저 */}
+          <div id="exam-sheet" className="relative overflow-hidden rounded-xl bg-[#1B0B45] text-white p-6 sm:p-8 lg:p-10 mb-5">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -right-40 -top-56 h-[560px] w-[560px] rounded-full bg-[radial-gradient(circle,rgba(139,92,246,0.38),rgba(139,92,246,0)_65%)]"
+            />
+            <div className="relative grid md:grid-cols-2 gap-10 lg:gap-12 items-center">
+              <div className="min-w-0">
+                <span className="inline-flex items-center gap-1 text-[11px] font-extrabold tracking-widest text-[#1B0B45] bg-[#D9F99D] rounded-full px-3 py-1 mb-4">
+                  🖨️ NEW · v2.5.0
+                </span>
+                <h3 className="text-2xl lg:text-3xl font-bold mb-4 leading-snug">
+                  받자마자 바로 인쇄하는
+                  <br />
+                  <span className="text-[#D9F99D]">완성된 시험지</span>
+                </h3>
+                <p className="text-violet-200 leading-relaxed mb-4">
+                  [변환하기]를 누를 때 <strong className="text-white font-semibold">[완성된 시험지로 받을래요]</strong>를
+                  고르면, 문제 길이에 맞춰 한 단에 2문제 또는 1문제씩 칸에 배치합니다. 문제마다 실제 길이를 재서{" "}
+                  <strong className="text-white font-semibold">칸을 넘치지 않게</strong> 맞추고, 선택지는 한 줄로 정리합니다.
+                </p>
+                <p className="text-violet-200 leading-relaxed mb-6">
+                  <strong className="text-white font-semibold">과목명·시험지 제목·학원 로고·이름 칸·꼬리말</strong>을
+                  넣을 수 있고, 정답과 해설은 새 쪽부터 이어집니다. 같은 내용의 문제은행용 파일도 함께 저장되고,
+                  크레딧은 그대로입니다.
+                </p>
+                <div className="flex flex-wrap gap-1.5 text-[12px] sm:text-[13px] font-bold leading-none">
+                  {["길이별 칸 배치", "제목·로고", "이름 칸·꼬리말", "문제은행 파일도 함께"].map((t) => (
+                    <span key={t} className="inline-flex items-center rounded-full border border-[#4C3A8C] px-2.5 py-1.5 text-violet-200">
+                      {t}
+                    </span>
+                  ))}
+                  <span className="inline-flex items-center rounded-full border border-[#D9F99D] bg-[#D9F99D] px-2.5 py-1.5 text-[#1B0B45]">
+                    추가 크레딧 없음
+                  </span>
+                </div>
+              </div>
+              <ExamSheetShowcase />
+            </div>
+          </div>
+
           {/* 대표 기능: AI 해설 생성 (v2.4.0 신규, D-037) — 텍스트 + 목업 2단 카드 */}
           <div id="ai-solution" className="card rounded-xl p-6 sm:p-8 lg:p-10 mb-5 !border-[var(--accent-border)]">
             <div className="grid md:grid-cols-2 gap-8 lg:gap-12 items-center">
@@ -462,16 +504,8 @@ export default function Home() {
           </div>
 
           <div className="grid md:grid-cols-2 gap-5">
+            {/* '더러운 원본도'·'한 번에 최대 50문제' 카드는 사용자 요청으로 뺐다(2026-10-12, 완성된 시험지 카드 추가와 함께) */}
             {[
-              {
-                title: "더러운 원본도, 깔끔한 문제만",
-                desc: "스캔 얼룩·인쇄 잡티·회색 배경이 있어도 프론티어 AI가 원문 수식과 텍스트만 골라 복원합니다. 그림 배경의 음영은 자동으로 흰색 처리하고, 인식을 방해하는 요소는 걸러냅니다.",
-              },
-              {
-                // 영역 지정 카드는 위 자동 인식 카드·첫 화면 "그림은 무료"와 겹쳐 뺐다(2026-10-09). 대신 분량·속도 안내.
-                title: "한 번에 최대 50문제",
-                desc: "시험지 한 장이든 여러 페이지 PDF든 한 번에 최대 50문제까지 변환합니다. 진행률이 실시간으로 보이고, 인식에 실패한 문제는 크레딧이 자동으로 돌아옵니다.",
-              },
               {
                 title: "문제뿐 아니라 해설·정답까지",
                 desc: "해설 PDF가 있으면 해설 영역을 지정해 정답과 풀이 과정을 함께 변환하고, 없으면 AI 해설 생성을 켜서 문제별 해설을 만들어 넣을 수 있습니다. 정답과 해설은 미주로 문제와 자동 연결돼 시험지와 해설지가 한 번에 완성됩니다.",
