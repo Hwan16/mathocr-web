@@ -90,7 +90,7 @@ const usageVideo = {
   "@type": "VideoObject",
   name: "AI MathOCR 사용법 — 수학문제 PDF를 편집 가능한 HWP로 변환하기",
   description:
-    "회원가입과 설치부터 PDF·사진 열기, AI 자동 인식으로 문제·그림 영역 지정, 정답·수식 답안과 해설 연결, 해설지가 없는 문제의 AI 해설 생성, 변환, 완성된 한글(HWP) 파일 확인까지 AI MathOCR 전체 사용 과정을 보여주는 동영상 가이드입니다.",
+    "회원가입과 설치부터 PDF·사진 열기, AI 자동 인식으로 문제·그림 영역 지정, 정답·수식 답안과 해설 연결, 해설지가 없는 문제의 해설 생성, 변환, 완성된 한글(HWP) 파일 확인까지 AI MathOCR 전체 사용 과정을 보여주는 동영상 가이드입니다.",
   thumbnailUrl: `${SITE_URL}/guide/usage-guide-poster.jpg`,
   uploadDate: "2026-10-09",
   duration: "PT2M20S",

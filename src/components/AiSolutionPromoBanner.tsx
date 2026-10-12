@@ -3,13 +3,14 @@
 import { AI_SOLUTION_RULE } from "@/lib/plans";
 import { trackEvent } from "@/lib/analytics";
 
-// AI 해설 출시 기념가 배너(D-040, 2026-10-11 사용자 확정 시안 A "숫자 하나") — 히어로 바로 아래.
+// 해설 생성 출시 기념가 배너(D-040, 2026-10-11 사용자 확정 시안 A "숫자 하나") — 히어로 바로 아래.
 // 기념가가 꺼지면(NEXT_PUBLIC_AI_SOLUTION_PROMO=off) 배너 자체가 사라진다.
 // 문구 원칙(D-040): 마감 임박·카운트다운·"N% 할인"·취소선 정가는 쓰지 않는다(기만 광고·허위 정가 위험).
 // 가격은 '+1'로 — 변환 1크레딧에 더해지는 값임을 보여 준다(빼면 "변환+해설 합쳐 1크레딧"으로 읽힘).
 // "종료 시 2주 전 미리 공지"는 작게, 그러나 장식에 가려지지 않게 본문 칸에 둔다.
+// 2026-10-12: 화면 문구에서 'AI'를 뺀다(D-043 — "AI가 만든다고 하면 강사들이 믿지 못한다").
 
-const TAPE_A = Array(8).fill("정답 및 해설 · AI 해설 ·").join(" ");
+const TAPE_A = Array(8).fill("정답 및 해설 · 해설 생성 ·").join(" ");
 const TAPE_B = Array(6).fill("해설 PDF 없어도 · 문제마다 · 모의고사 해설처럼 ·").join(" ");
 
 const GLASS =
@@ -20,7 +21,7 @@ export default function AiSolutionPromoBanner() {
   const unit = AI_SOLUTION_RULE.current;
 
   return (
-    <section aria-label="AI 해설 출시 기념가 안내" className="border-b border-zinc-200">
+    <section aria-label="해설 생성 출시 기념가 안내" className="border-b border-zinc-200">
       <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12 py-8 lg:py-10">
         <div className="relative overflow-hidden rounded-3xl bg-[#1B0B45] text-white">
           {/* 본문 */}
@@ -29,16 +30,16 @@ export default function AiSolutionPromoBanner() {
               💡 {AI_SOLUTION_RULE.promoNote}
             </span>
             <h2 className="mt-4 text-[40px] sm:text-[48px] lg:text-[54px] font-black leading-[1.04] tracking-[-0.045em]">
-              AI 해설,
+              해설 생성,
               <br />
               문제당 <span className="text-[#D9F99D]">+{unit}</span>크레딧.
             </h2>
             <p className="mt-3 text-[15px] sm:text-[17px] font-medium text-violet-200 leading-relaxed">
-              해설 PDF가 없어도 AI가 문제별 해설을 써 드려요
+              해설 PDF가 없어도 문제별 해설까지 함께 넣어 드려요
             </p>
             <div className="mt-3.5 flex flex-wrap items-center gap-1.5 text-[12px] sm:text-[13px] font-bold leading-none">
               <span className="inline-flex items-center rounded-full border border-[#4C3A8C] px-2.5 py-1.5 text-violet-200">문제 변환 1크레딧</span>
-              <span className="inline-flex items-center rounded-full border border-[#D9F99D] bg-[#D9F99D] px-2.5 py-1.5 text-[#1B0B45]">+ AI 해설 {unit}크레딧</span>
+              <span className="inline-flex items-center rounded-full border border-[#D9F99D] bg-[#D9F99D] px-2.5 py-1.5 text-[#1B0B45]">+ 해설 생성 {unit}크레딧</span>
             </div>
             <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2">
               <a
@@ -46,7 +47,7 @@ export default function AiSolutionPromoBanner() {
                 onClick={() => trackEvent("nav_click", { label: "ai_solution_promo_banner" })}
                 className="group inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-[15px] sm:text-base font-bold text-[#1B0B45] hover:bg-violet-50 transition-colors"
               >
-                AI 해설 보기
+                해설 생성 보기
                 <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span>
               </a>
               <span className="text-[11px] text-violet-300/80">{AI_SOLUTION_RULE.promoFinePrint}</span>
@@ -80,7 +81,7 @@ export default function AiSolutionPromoBanner() {
               <div className="mt-3 font-serif italic text-[14px] text-zinc-700">∴ x = 0 또는 x = 2</div>
               <div className="mt-3 h-[7px] w-[80%] rounded bg-violet-100" />
               <div className="absolute -right-3.5 -bottom-3.5 -rotate-[8deg] rounded-full bg-violet-600 px-3 py-1.5 text-[12px] font-extrabold text-white">
-                💡 AI 해설
+                💡 해설 생성
               </div>
             </div>
           </div>

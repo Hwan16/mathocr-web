@@ -113,7 +113,7 @@ export const CREDIT_RULE = [
 //   취소선 비교가는 쓰지 않는다 — 기념가가 길어지면 2가 '종전 가격'으로 약해지기 때문.
 export const AI_SOLUTION_RULE = {
   launched: true,
-  label: "AI 해설 생성 (문제당)",
+  label: "해설 생성 (문제당)",
   regular: AI_SOLUTION_REGULAR_PRICE,
   promo: AI_SOLUTION_PROMO_PRICE,
   promoActive: isAiSolutionPromoActive(),

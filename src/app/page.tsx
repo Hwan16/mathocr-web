@@ -9,8 +9,7 @@ import { PLANS, SIGNUP_FREE_CREDITS, SIGNUP_FREE_VALIDITY_DAYS, CREDIT_RULE, AI_
 import AutoDetectShowcase from "@/components/AutoDetectShowcase";
 import AnswerToolsShowcase, { AnswerPanelPreview, RootTwo } from "@/components/AnswerToolsShowcase";
 import RomanTypeShowcase from "@/components/RomanTypeShowcase";
-import AiSolutionShowcase from "@/components/AiSolutionShowcase";
-import ExamSheetShowcase from "@/components/ExamSheetShowcase";
+import RealSolutionShowcase from "@/components/RealSolutionShowcase";
 import AiSolutionPromoBanner from "@/components/AiSolutionPromoBanner";
 import AnnouncementBar from "@/components/AnnouncementBar";
 import Changelog from "@/components/Changelog";
@@ -161,17 +160,18 @@ export default function Home() {
                 PDF와 이미지를 편집 가능한 <span className="text-[var(--accent)]">HWP</span>로
               </h1>
 
-              {/* 둘째 줄 — 카테고리(H1) 위에 얹는 차별점. 전 채널 공통 문장 (2026-10-09 사용자 결정) */}
+              {/* 둘째 줄 — 카테고리(H1) 위에 얹는 차별점. 전 채널 공통 문장 (2026-10-09 사용자 결정).
+                  2026-10-12: 해설 문구에서 'AI'를 뺀다(D-043 — "AI가 만든다고 하면 믿지 못한다") */}
               <p className="text-xl lg:text-2xl font-semibold text-[var(--accent)] tracking-tight mb-5">
-                해설까지, AI로 한 번에.
+                해설까지, 한 번에.
               </p>
 
               <p className="text-lg lg:text-xl text-zinc-600 leading-relaxed mb-9">
-                PDF나 핸드폰으로 찍은 사진을 올리면, 수식은 이미지가 아닌{" "}
-                <strong className="text-zinc-900 font-semibold">한글 수식편집기 객체</strong>로 바뀌고, 문제는
-                길이에 맞춰 칸에 배치된 <strong className="text-zinc-900 font-semibold">완성된 시험지</strong>로도
-                받을 수 있습니다. 해설 PDF가 없어도{" "}
-                <strong className="text-zinc-900 font-semibold">프론티어 AI가 문제별 해설을 만들어</strong> 함께 넣습니다.
+                수식이 이미지가 아닌 <strong className="text-zinc-900 font-semibold">한글 수식편집기 객체</strong>로
+                변환됩니다. PDF는 물론 핸드폰으로 찍은 사진도 그대로 올릴 수
+                있어, 시험지·교재 제작에 쓰는 수식 입력 시간이 문제당 몇 초로
+                줄어듭니다. 해설 PDF가 없어도{" "}
+                <strong className="text-zinc-900 font-semibold">모의고사 해설처럼 담백한 풀이</strong>를 함께 넣습니다.
               </p>
 
               <div className="flex flex-col 2xl:flex-row gap-3">
@@ -306,7 +306,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── AI 해설 출시 기념가 배너 (D-040 — 기념가가 꺼지면 사라짐) ── */}
+      {/* ── 해설 생성 출시 기념가 배너 (D-040 — 기념가가 꺼지면 사라짐) ── */}
       <AiSolutionPromoBanner />
 
       {/* ── 핵심 사실 스트립 ── */}
@@ -314,12 +314,12 @@ export default function Home() {
         <div className="max-w-screen-2xl mx-auto px-6 lg:px-12 py-10">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
             {/* "왜 써야 하나" 4가지. 결제 방식("필요한 만큼 충전")은 가격 섹션 몫이라 뺐다 (2026-10-09).
-                2026-10-12: 신기능 2개를 앞에 두고 'AI 교차 검증'은 뺐다(검증 문구는 메타 설명·광고에 남음) */}
+                2026-10-12: 완성된 시험지 폐기(D-042)로 10-09 구성으로 되돌림, 해설 칸은 'AI' 없이(D-043) */}
             {[
-              ["🖨️ 완성된 시험지", "받자마자 인쇄, 추가 크레딧 없음", true],
-              ["💡 AI 해설 생성", "해설 PDF가 없어도 문제별 해설까지 함께", true],
               ["수식편집기 객체", "이미지가 아닌 편집 가능한 한글 수식", false],
+              ["💡 해설 생성", "해설 PDF가 없어도 문제별 해설까지 함께", true],
               ["그림은 무료", "문제 속 그래프·도형은 크레딧 차감 없이", false],
+              ["AI 교차 검증", "프론티어 AI가 인식부터 구조까지 검증", false],
             ].map(([title, desc, isNew]) => (
               <div key={title as string}>
                 <div className="font-semibold text-zinc-900 mb-1 flex items-center gap-2">
@@ -353,48 +353,8 @@ export default function Home() {
             </p>
           </div>
 
-          {/* 대표 기능: 완성된 시험지 (v2.5.0 신규, D-041) — 최신 업데이트라 배너 색(짙은 보라 + 라임)으로 가장 먼저 */}
-          <div id="exam-sheet" className="relative overflow-hidden rounded-xl bg-[#1B0B45] text-white p-6 sm:p-8 lg:p-10 mb-5">
-            <div
-              aria-hidden
-              className="pointer-events-none absolute -right-40 -top-56 h-[560px] w-[560px] rounded-full bg-[radial-gradient(circle,rgba(139,92,246,0.38),rgba(139,92,246,0)_65%)]"
-            />
-            <div className="relative grid md:grid-cols-2 gap-10 lg:gap-12 items-center">
-              <div className="min-w-0">
-                <span className="inline-flex items-center gap-1 text-[11px] font-extrabold tracking-widest text-[#1B0B45] bg-[#D9F99D] rounded-full px-3 py-1 mb-4">
-                  🖨️ NEW · v2.5.0
-                </span>
-                <h3 className="text-2xl lg:text-3xl font-bold mb-4 leading-snug">
-                  받자마자 바로 인쇄하는
-                  <br />
-                  <span className="text-[#D9F99D]">완성된 시험지</span>
-                </h3>
-                <p className="text-violet-200 leading-relaxed mb-4">
-                  [변환하기]를 누를 때 <strong className="text-white font-semibold">[완성된 시험지로 받을래요]</strong>를
-                  고르면, 문제 길이에 맞춰 한 단에 2문제 또는 1문제씩 칸에 배치합니다. 문제마다 실제 길이를 재서{" "}
-                  <strong className="text-white font-semibold">칸을 넘치지 않게</strong> 맞추고, 선택지는 한 줄로 정리합니다.
-                </p>
-                <p className="text-violet-200 leading-relaxed mb-6">
-                  <strong className="text-white font-semibold">과목명·시험지 제목·학원 로고·이름 칸·꼬리말</strong>을
-                  넣을 수 있고, 정답과 해설은 새 쪽부터 이어집니다. 같은 내용의 문제은행용 파일도 함께 저장되고,
-                  크레딧은 그대로입니다.
-                </p>
-                <div className="flex flex-wrap gap-1.5 text-[12px] sm:text-[13px] font-bold leading-none">
-                  {["길이별 칸 배치", "제목·로고", "이름 칸·꼬리말", "문제은행 파일도 함께"].map((t) => (
-                    <span key={t} className="inline-flex items-center rounded-full border border-[#4C3A8C] px-2.5 py-1.5 text-violet-200">
-                      {t}
-                    </span>
-                  ))}
-                  <span className="inline-flex items-center rounded-full border border-[#D9F99D] bg-[#D9F99D] px-2.5 py-1.5 text-[#1B0B45]">
-                    추가 크레딧 없음
-                  </span>
-                </div>
-              </div>
-              <ExamSheetShowcase />
-            </div>
-          </div>
-
-          {/* 대표 기능: AI 해설 생성 (v2.4.0 신규, D-037) — 텍스트 + 목업 2단 카드 */}
+          {/* 대표 기능: 해설 생성 (v2.4.0 신규, D-037) — 텍스트 + 실제 변환 결과 2단 카드.
+              2026-10-12: 'AI' 표현을 빼고 앱 목업 대신 실제 시험지 사진 → 실제 변환 결과를 보여 준다(D-043) */}
           <div id="ai-solution" className="card rounded-xl p-6 sm:p-8 lg:p-10 mb-5 !border-[var(--accent-border)]">
             <div className="grid md:grid-cols-2 gap-8 lg:gap-12 items-center">
               <div className="min-w-0">
@@ -402,24 +362,29 @@ export default function Home() {
                   NEW · v2.4.0
                 </span>
                 <h3 className="text-2xl lg:text-3xl font-bold mb-4">
-                  해설 PDF가 없어도,
-                  <br />프론티어 AI가 해설을 써 드립니다
+                  문제 변환부터,
+                  <br />해설까지 한 번에
                 </h3>
                 <p className="text-zinc-600 leading-relaxed mb-4">
-                  우측 목록의 <strong className="text-zinc-900 font-semibold">[💡AI] 칸을 체크</strong>하면 변환할 때
-                  프론티어 AI가 그 문제의 풀이를 모의고사 해설처럼 써서{" "}
+                  해설지가 없는 시험지도 괜찮습니다. 우측 목록의{" "}
+                  <strong className="text-zinc-900 font-semibold">[💡] 칸을 체크</strong>하면 변환할 때 그 문제의 풀이를
+                  모의고사 해설처럼 담백하게 써서{" "}
                   <strong className="text-zinc-900 font-semibold">정답·해설에 함께</strong> 넣습니다.
                   문제별로 켜고 끄거나 한 번에 적용할 수 있고, 학년을 고르면 그 학년까지 배운 방법으로만 풉니다.
                 </p>
+                <p className="text-zinc-600 leading-relaxed mb-4">
+                  함께 보이는 그림은 실제 학교 시험지 사진을 변환한 결과 그대로입니다. 학생 풀이 낙서는 빼고 문제만
+                  옮기고, 해설까지 붙여 한글 파일 하나로 받습니다.
+                </p>
                 <p className="text-zinc-600 leading-relaxed">
-                  AI 해설은 <strong className="text-zinc-900 font-semibold">
+                  해설 생성은 <strong className="text-zinc-900 font-semibold">
                     {AI_SOLUTION_RULE.promoActive && `${AI_SOLUTION_RULE.promoNote} `}문제당 {AI_SOLUTION_RULE.current}크레딧
                   </strong>이 추가로 들어갑니다.
                   변환 전에 추가 차감 크레딧을 미리 보여 드리고, 만들지 못한 해설은 크레딧을 돌려드립니다.
                 </p>
               </div>
-              <div className="md:pt-6 md:pb-8">
-                <AiSolutionShowcase />
+              <div className="md:pt-2 md:pb-2">
+                <RealSolutionShowcase />
               </div>
             </div>
           </div>
@@ -517,7 +482,7 @@ export default function Home() {
               },
               {
                 title: "문제뿐 아니라 해설·정답까지",
-                desc: "해설 PDF가 있으면 해설 영역을 지정해 정답과 풀이 과정을 함께 변환하고, 없으면 AI 해설 생성을 켜서 문제별 해설을 만들어 넣을 수 있습니다. 정답과 해설은 미주로 문제와 자동 연결돼 시험지와 해설지가 한 번에 완성됩니다.",
+                desc: "해설 PDF가 있으면 해설 영역을 지정해 정답과 풀이 과정을 함께 변환하고, 없으면 해설 생성을 켜서 문제별 해설을 만들어 넣을 수 있습니다. 정답과 해설은 미주로 문제와 자동 연결돼 시험지와 해설지가 한 번에 완성됩니다.",
               },
               {
                 title: "진짜 한글 수식편집기 객체",
@@ -1038,7 +1003,7 @@ export default function Home() {
               </li>
               {AI_SOLUTION_RULE.launched && (
                 <li>
-                  해설 PDF가 없는 문제는 <strong className="text-zinc-700">AI 해설 생성</strong>을 켜면 프론티어 AI가
+                  해설 PDF가 없는 문제는 <strong className="text-zinc-700">해설 생성</strong>을 켜면
                   풀이를 만들어 함께 담습니다. 문제당{" "}
                   {AI_SOLUTION_RULE.promoActive
                     ? `${AI_SOLUTION_RULE.promo}크레딧이 추가로 들어갑니다 (출시 기념가 · 기념가가 끝나면 ${AI_SOLUTION_RULE.regular}크레딧)`
