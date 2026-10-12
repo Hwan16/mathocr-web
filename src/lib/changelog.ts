@@ -45,15 +45,6 @@ export type ChangelogEntry = {
 /** 최신순. 접힌 상태에서 보이는 개수는 CHANGELOG_PREVIEW_COUNT */
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    version: "v2.5.0",
-    tag: "new",
-    title: "🖨️ 완성된 시험지로 받기",
-    items: [
-      "변환할 때 '완성된 시험지'를 고르면 문제 길이에 맞춰 한 단에 2문제 또는 1문제씩 칸에 배치해, 받자마자 인쇄할 수 있습니다.",
-      "과목명·시험지 제목·학원 로고·이름 칸·꼬리말을 넣을 수 있고, 같은 내용의 문제은행용 파일도 함께 저장됩니다.",
-    ],
-  },
-  {
     version: "v2.4.2 ~ v2.4.6",
     tag: "stable",
     title: "오류 수정",
