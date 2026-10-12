@@ -335,5 +335,5 @@ export async function POST(request: NextRequest) {
     if (isSonnet && !res.ok && [400, 401, 403, 413].includes(res.status)) break;
   }
 
-  return errorResponse(`AI 해설을 만들지 못했습니다. (${lastReason})`, lastStatus === 200 ? 502 : lastStatus);
+  return errorResponse(`해설을 만들지 못했습니다. (${lastReason})`, lastStatus === 200 ? 502 : lastStatus);
 }

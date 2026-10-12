@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
       ai_solution_count > 1000
     ) {
       return NextResponse.json(
-        { error: "AI 해설 수가 올바르지 않습니다." },
+        { error: "해설 생성 수가 올바르지 않습니다." },
         { status: 400 }
       );
     }
