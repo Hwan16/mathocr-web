@@ -161,9 +161,9 @@ export default function Home() {
               </h1>
 
               {/* 둘째 줄 — 카테고리(H1) 위에 얹는 차별점. 전 채널 공통 문장 (2026-10-09 사용자 결정).
-                  2026-10-12: 해설 문구에서 'AI'를 뺀다(D-043 — "AI가 만든다고 하면 믿지 못한다") */}
+                  2026-10-12: 'AI 해설'만 빼는 원칙(D-043)이지만 이 문장은 사용자 지시로 그대로 유지 */}
               <p className="text-xl lg:text-2xl font-semibold text-[var(--accent)] tracking-tight mb-5">
-                해설까지, 한 번에.
+                해설까지, AI로 한 번에.
               </p>
 
               <p className="text-lg lg:text-xl text-zinc-600 leading-relaxed mb-9">
