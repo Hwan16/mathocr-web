@@ -355,33 +355,49 @@ export default function Home() {
 
           {/* 대표 기능: 해설 생성 (v2.4.0 신규, D-037) — 텍스트 + 실제 변환 결과 2단 카드.
               2026-10-12: 'AI' 표현을 빼고 앱 목업 대신 실제 시험지 사진 → 실제 변환 결과를 보여 준다(D-043) */}
-          <div id="ai-solution" className="card rounded-xl p-6 sm:p-8 lg:p-10 mb-5 !border-[var(--accent-border)]">
-            <div className="grid md:grid-cols-2 gap-8 lg:gap-12 items-center">
+          {/* 2026-10-13: 대표 기능이라 예전 '완성된 시험지' 카드와 같은 배너 색(짙은 보라 + 라임)으로 눈에 띄게 (사용자) */}
+          <div id="ai-solution" className="relative overflow-hidden rounded-xl bg-[#1B0B45] text-white p-6 sm:p-8 lg:p-10 mb-5">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -left-40 -top-56 h-[560px] w-[560px] rounded-full bg-[radial-gradient(circle,rgba(139,92,246,0.38),rgba(139,92,246,0)_65%)]"
+            />
+            <div className="relative grid md:grid-cols-2 gap-10 lg:gap-12 items-center">
               <div className="min-w-0">
-                <span className="inline-block text-[11px] font-bold tracking-widest text-violet-700 bg-violet-100 rounded-full px-3 py-1 mb-4">
-                  NEW · v2.4.0
+                <span className="inline-flex items-center gap-1 text-[11px] font-extrabold tracking-widest text-[#1B0B45] bg-[#D9F99D] rounded-full px-3 py-1 mb-4">
+                  💡 NEW · v2.4.0
                 </span>
-                <h3 className="text-2xl lg:text-3xl font-bold mb-4">
+                <h3 className="text-2xl lg:text-3xl font-bold mb-4 leading-snug">
                   문제 변환부터,
-                  <br />해설까지 한 번에
+                  <br />
+                  <span className="text-[#D9F99D]">해설까지 한 번에</span>
                 </h3>
-                <p className="text-zinc-600 leading-relaxed mb-4">
+                <p className="text-violet-200 leading-relaxed mb-4">
                   해설지가 없는 시험지도 괜찮습니다. 우측 목록의{" "}
-                  <strong className="text-zinc-900 font-semibold">[💡] 칸을 체크</strong>하면 변환할 때 그 문제의 풀이를
+                  <strong className="text-white font-semibold">[💡] 칸을 체크</strong>하면 변환할 때 그 문제의 풀이를
                   모의고사 해설처럼 담백하게 써서{" "}
-                  <strong className="text-zinc-900 font-semibold">정답·해설에 함께</strong> 넣습니다.
+                  <strong className="text-white font-semibold">정답·해설에 함께</strong> 넣습니다.
                   문제별로 켜고 끄거나 한 번에 적용할 수 있고, 학년을 고르면 그 학년까지 배운 방법으로만 풉니다.
                 </p>
-                <p className="text-zinc-600 leading-relaxed mb-4">
+                <p className="text-violet-200 leading-relaxed mb-4">
                   함께 보이는 그림은 실제 학교 시험지 사진을 변환한 결과 그대로입니다. 학생 풀이 낙서는 빼고 문제만
                   옮기고, 해설까지 붙여 한글 파일 하나로 받습니다.
                 </p>
-                <p className="text-zinc-600 leading-relaxed">
-                  해설 생성은 <strong className="text-zinc-900 font-semibold">
+                <p className="text-violet-200 leading-relaxed mb-6">
+                  해설 생성은 <strong className="text-white font-semibold">
                     {AI_SOLUTION_RULE.promoActive && `${AI_SOLUTION_RULE.promoNote} `}문제당 {AI_SOLUTION_RULE.current}크레딧
                   </strong>이 추가로 들어갑니다.
                   변환 전에 추가 차감 크레딧을 미리 보여 드리고, 만들지 못한 해설은 크레딧을 돌려드립니다.
                 </p>
+                <div className="flex flex-wrap gap-1.5 text-[12px] sm:text-[13px] font-bold leading-none">
+                  {["문제별로 켜고 끄기", "학년 맞춤 풀이", "실패하면 크레딧 환불"].map((t) => (
+                    <span key={t} className="inline-flex items-center rounded-full border border-[#4C3A8C] px-2.5 py-1.5 text-violet-200">
+                      {t}
+                    </span>
+                  ))}
+                  <span className="inline-flex items-center rounded-full border border-[#D9F99D] bg-[#D9F99D] px-2.5 py-1.5 text-[#1B0B45]">
+                    문제당 +{AI_SOLUTION_RULE.current}크레딧
+                  </span>
+                </div>
               </div>
               <div className="md:pt-2 md:pb-2">
                 <RealSolutionShowcase />
