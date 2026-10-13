@@ -57,7 +57,10 @@ const CSP_ENFORCED = [
   // 데이터를 받는 엔드포인트가 아니므로 허용 위험이 사실상 없다).
   "img-src 'self' data: blob: https://*.supabase.co https://www.facebook.com https://www.googletagmanager.com https://*.google-analytics.com https://www.google.com https://www.google.co.kr https://wcs.naver.net https://wcs.naver.com https://ssl.pstatic.net",
   "font-src 'self' data:",
-  `connect-src 'self'${devConnectSrc} https://*.supabase.co wss://*.supabase.co https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://www.googletagmanager.com https://stats.g.doubleclick.net https://www.google.com https://www.google.co.kr https://www.facebook.com https://connect.facebook.net https://wcs.naver.net https://wcs.naver.com`,
+  // nam.veta.naver.com — 위 gfp-nac-module(synchronizer.js)이 보내는 식별 동기화
+  // 요청(/nac/2, fetch). 2026-10-13 프로덕션 콘솔에서 차단 확인(주 전송 wcs.naver.com/b
+  // 는 정상이었음). 네이버 광고 클릭↔전환 매칭 보조용이라 허용한다.
+  `connect-src 'self'${devConnectSrc} https://*.supabase.co wss://*.supabase.co https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://www.googletagmanager.com https://stats.g.doubleclick.net https://www.google.com https://www.google.co.kr https://www.facebook.com https://connect.facebook.net https://wcs.naver.net https://wcs.naver.com https://nam.veta.naver.com`,
   // www.facebook.com — 메타 픽셀이 iframe·form POST 폴백 경로를 쓴다.
   // 2026-08-12 프로덕션 실측: enforce 승격 시 위반하는 유일한 항목이 이 둘이었다.
   //
