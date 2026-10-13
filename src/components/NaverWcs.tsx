@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 
 import { flushNaverWcsQueue } from "@/lib/naver-wcs";
+import { isInternalVisitor } from "@/lib/internal-visitor";
 
 // 네이버 프리미엄 로그분석 (검색광고 전환 추적) — 검색어 단위로 가입·구매 전환을
 // 연결해, 네이버 광고 판정(키워드·제외 검색어)을 추측이 아니라 전환 수치로 내리게 한다.
@@ -34,7 +35,8 @@ export default function NaverWcs() {
 
   // 최초 마운트: 공식 공통 스크립트 로드 → 계정 연결 → 최초 PV → 밀린 전환 재생
   useEffect(() => {
-    if (!active || initialized.current) return;
+    // 운영자 기기는 로드 자체를 하지 않는다 → 이후 PV·전환 호출도 전부 무동작
+    if (!active || initialized.current || isInternalVisitor()) return;
     initialized.current = true;
     const script = document.createElement("script");
     script.async = true;

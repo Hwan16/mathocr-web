@@ -3,6 +3,8 @@
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 
+import { isInternalVisitor } from "@/lib/internal-visitor";
+
 // 메타 픽셀 (M6 — docs/MARKETING_2026-07-10.md). 리타게팅 광고(M3)의 전제 인프라.
 //
 // NEXT_PUBLIC_META_PIXEL_ID 가 설정된 프로덕션 빌드에서만 로드된다 — ID가 없으면
@@ -54,7 +56,8 @@ export default function MetaPixel() {
 
   // 최초 마운트: 픽셀 초기화 (PageView는 아래 pathname 이펙트가 첫 렌더 포함 전송)
   useEffect(() => {
-    if (!active || initialized.current) return;
+    // 운영자 기기는 로드 자체를 하지 않는다 → 이후 PV·전환 호출도 전부 무동작
+    if (!active || initialized.current || isInternalVisitor()) return;
     initialized.current = true;
     const w = window as unknown as FbqWindow;
     bootstrapFbq(w);

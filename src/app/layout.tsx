@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { GoogleAnalytics } from "@next/third-parties/google";
+import Script from "next/script";
 import StructuredData from "./structured-data";
 import UtmTracker from "@/components/UtmTracker";
 import MetaPixel from "@/components/MetaPixel";
 import NaverWcs from "@/components/NaverWcs";
 import IconifyProvider from "@/components/IconifyProvider";
 import { SIGNUP_FREE_CREDITS } from "@/lib/plans";
+import { internalVisitorBootstrap } from "@/lib/internal-visitor";
 // 폰트 자체 번들 (LA-10) — jsDelivr CDN 대신 npm 패키지에서 번들.
 // 참조된 woff2 서브셋은 빌드가 /_next/static 자산으로 자동 포함한다.
 import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
@@ -111,6 +113,11 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body className="antialiased bg-white text-zinc-900" suppressHydrationWarning>
+        {/* 운영자 기기 통계 제외 — GA4 opt-out 플래그는 gtag 설정보다 먼저 세워야 해서
+            beforeInteractive 로 둔다 (lib/internal-visitor.ts) */}
+        <Script id="internal-visitor" strategy="beforeInteractive">
+          {internalVisitorBootstrap(GA_MEASUREMENT_ID)}
+        </Script>
         {children}
         <StructuredData />
         {/* 아이콘 자체 번들 — CDN 없이 iconify-icon 웹 컴포넌트 + 내장 데이터 등록 */}
