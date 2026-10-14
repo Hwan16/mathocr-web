@@ -7,7 +7,8 @@ import MetaPixel from "@/components/MetaPixel";
 import NaverWcs from "@/components/NaverWcs";
 import IconifyProvider from "@/components/IconifyProvider";
 import { SIGNUP_FREE_CREDITS } from "@/lib/plans";
-import { internalVisitorBootstrap } from "@/lib/internal-visitor";
+import { INTERNAL_VISITOR_KEY, internalVisitorBootstrap } from "@/lib/internal-visitor";
+import { naverWcsInlineScript } from "@/lib/naver-wcs";
 // 폰트 자체 번들 (LA-10) — jsDelivr CDN 대신 npm 패키지에서 번들.
 // 참조된 woff2 서브셋은 빌드가 /_next/static 자산으로 자동 포함한다.
 import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
@@ -15,6 +16,7 @@ import "./globals.css";
 
 // GA4 측정 ID (공개 값 — 모든 페이지 HTML에 노출되는 값이라 비밀 아님)
 const GA_MEASUREMENT_ID = "G-N5B03EJ16V";
+const NAVER_WCS_ID = process.env.NEXT_PUBLIC_NAVER_WCS_ID;
 
 const SITE_URL = "https://mathocr.ai.kr";
 const SITE_NAME = "AI MathOCR";
@@ -126,7 +128,19 @@ export default function RootLayout({
         <UtmTracker />
         {/* 메타 픽셀 — NEXT_PUBLIC_META_PIXEL_ID 설정 시에만 활성 (M6) */}
         <MetaPixel />
-        {/* 네이버 프리미엄 로그분석 — NEXT_PUBLIC_NAVER_WCS_ID 설정 시에만 활성 */}
+        {/* 네이버 프리미엄 로그분석 — NEXT_PUBLIC_NAVER_WCS_ID 설정 시에만 활성.
+            공통 스크립트는 네이버 설치 안내대로 페이지 원본에 둔다(설치 확인 로봇이 찾도록, 10-15).
+            페이지 이동·전환은 NaverWcs 컴포넌트가 맡는다. */}
+        {NAVER_WCS_ID && process.env.NODE_ENV === "production" && (
+          <>
+            <script type="text/javascript" src="https://wcs.naver.net/wcslog.js" />
+            <script
+              type="text/javascript"
+              // 신뢰된 내부 정적 값(사이트 식별자)만 들어간다
+              dangerouslySetInnerHTML={{ __html: naverWcsInlineScript(NAVER_WCS_ID, INTERNAL_VISITOR_KEY) }}
+            />
+          </>
+        )}
         <NaverWcs />
       </body>
       {/* GA4: 실제 배포(production)에서만 로드 — 로컬/개발 접속은 추적하지 않음 */}

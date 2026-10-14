@@ -29,6 +29,20 @@ export function naverWcsTrans(conv: WcsConv) {
   }
 }
 
+// 루트 레이아웃이 페이지 원본(HTML)에 직접 넣는 공통 스크립트 본문 (2026-10-15).
+// 배경: 7-21 전환 추적 신청이 석 달째 '신청중' — 스크립트를 하이드레이션 뒤 동적으로 붙이는
+// 방식이라 네이버 설치 확인이 못 알아보는 것으로 추정. 네이버 공식 설치 안내와 같은 모양
+// (wcslog.js 직후 wcs_add["wa"] → wcs_do)으로 원본에 둔다. 운영자 기기(/internal)는
+// 라이브러리만 받고 기록(wcs_do)은 보내지 않는다 — internal-visitor 부트스트랩이 먼저 세운
+// window.__mathocrInternal 과 localStorage 표시를 둘 다 본다.
+export function naverWcsInlineScript(wcsId: string, internalKey: string): string {
+  return [
+    "if(!wcs_add) var wcs_add = {};",
+    `wcs_add["wa"] = ${JSON.stringify(wcsId)};`,
+    `if(window.wcs && !(window.__mathocrInternal || (function(){try{return localStorage.getItem(${JSON.stringify(internalKey)})==="1"}catch(e){return false}})())) { wcs.inflow("mathocr.ai.kr"); wcs_do(); window.__naverWcsFirstPv = true; }`,
+  ].join("\n");
+}
+
 // NaverWcs 컴포넌트 전용 — 스크립트 로드 완료 후 밀린 전환 재생
 export function flushNaverWcsQueue() {
   if (typeof window === "undefined") return;
