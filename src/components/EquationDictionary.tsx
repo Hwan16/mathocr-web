@@ -88,7 +88,9 @@ export default function EquationDictionary({
 
     copyCount.current += 1;
     trackEvent("equation_copy", { name: item.name, count: copyCount.current });
-    if (copyCount.current >= NUDGE_AFTER_COPIES && !nudgeShown.current) {
+    // PC(xl 이상)는 오른쪽 기능 카드가 늘 보이므로 안내 창을 띄우지 않는다(겹침·중복 방지)
+    const wide = typeof window.matchMedia === "function" && window.matchMedia("(min-width: 1280px)").matches;
+    if (!wide && copyCount.current >= NUDGE_AFTER_COPIES && !nudgeShown.current) {
       nudgeShown.current = true;
       markNudgeSeen();
       setNudgeOpen(true);

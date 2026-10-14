@@ -6,6 +6,8 @@ import { SIGNUP_FREE_CREDITS } from "@/lib/plans";
 import { EQUATION_CATEGORIES, EQUATION_SHORTCUTS } from "@/lib/hwp-equation-commands";
 import EquationDictionary, { type DictionaryCategory } from "@/components/EquationDictionary";
 import TrackedLink from "@/components/TrackedLink";
+import ArticleShell from "@/components/article/ArticleShell";
+import { PromoInline } from "@/components/article/PromoCards";
 
 export const metadata: Metadata = {
   title: "한글(HWP) 수식 입력 방법 — 수식 편집기 명령어·단축키 총정리",
@@ -149,7 +151,7 @@ const TOC = [
 
 export default function HwpEquationGuidePage() {
   return (
-    <div className="min-h-screen px-4 py-16 md:py-20 bg-zinc-50">
+    <ArticleShell location="help_eq" category="hwp" toc={TOC.map((t, i) => ({ href: t.href, label: `${i + 1}. ${t.label}` }))}>
       <style>{`
 .eq{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:0.85em;background:#f4f4f5;border:1px solid #e4e4e7;border-radius:4px;padding:1px 5px;color:#18181b;white-space:nowrap}
 .eq-code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;background:#f4f4f5;border:1px solid #e4e4e7;border-radius:5px;padding:5px 8px;color:#18181b;overflow-wrap:anywhere;word-break:normal}
@@ -161,16 +163,11 @@ export default function HwpEquationGuidePage() {
         // JSON-LD는 신뢰된 내부 정적 데이터라 안전
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqStructuredData) }}
       />
-      <article className="w-full max-w-3xl mx-auto">
+      <article>
         {/* Header */}
-        <div className="text-center mb-10">
-          <a href="/" className="inline-flex flex-col items-center gap-3">
-            <img src="/mathocr-icon.png" alt="AI MathOCR" width={48} height={48} />
-            <span className="text-2xl font-bold tracking-tight">
-              AI Math<span className="text-[var(--accent)]">OCR</span>
-            </span>
-          </a>
-          <h1 className="text-2xl md:text-3xl font-bold mt-5">한글(HWP) 수식 입력 방법</h1>
+        <div className="mb-8">
+          <p className="text-[12px] font-semibold text-[var(--accent)] mb-2">한글 수식 · 2026-10-14 업데이트</p>
+          <h1 className="text-2xl md:text-3xl font-bold">한글(HWP) 수식 입력 방법</h1>
           <p className="text-zinc-500 text-sm mt-3">
             수식 편집기 여는 법 · 단축키 · 명령어 {COMMAND_COUNT}개 복사 · 자주 막히는 부분
           </p>
@@ -202,8 +199,8 @@ export default function HwpEquationGuidePage() {
           </p>
         </section>
 
-        {/* 목차 */}
-        <nav aria-label="목차" className="mb-6 px-1">
+        {/* 목차 — PC(xl 이상)는 왼쪽 목차가 대신한다 */}
+        <nav aria-label="목차" className="mb-6 px-1 xl:hidden">
           <ol className="flex flex-wrap gap-x-4 gap-y-1.5 text-[13px] text-zinc-500">
             {TOC.map((t, i) => (
               <li key={t.href}>
@@ -285,6 +282,8 @@ export default function HwpEquationGuidePage() {
           </p>
         </section>
 
+        <PromoInline location="help_eq" />
+
         {/* 팁 */}
         <section id="tips" className="card rounded-xl p-6 md:p-8 shadow-sm mb-6">
           <h2 className="text-lg font-semibold text-zinc-900 mb-4">3. 자주 막히는 부분</h2>
@@ -353,13 +352,7 @@ export default function HwpEquationGuidePage() {
             </TrackedLink>
           </div>
         </section>
-
-        <div className="mt-8 text-center">
-          <a href="/" className="text-sm text-zinc-500 hover:text-zinc-900 transition-colors">
-            홈으로 돌아가기
-          </a>
-        </div>
       </article>
-    </div>
+    </ArticleShell>
   );
 }

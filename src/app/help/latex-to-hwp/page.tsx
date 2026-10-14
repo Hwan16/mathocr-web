@@ -6,6 +6,16 @@ import { SIGNUP_FREE_CREDITS } from "@/lib/plans";
 import { latexToHwp } from "@/lib/latex-to-hwp";
 import LatexToHwpTool from "@/components/LatexToHwpTool";
 import TrackedLink from "@/components/TrackedLink";
+import ArticleShell from "@/components/article/ArticleShell";
+import { PromoInline } from "@/components/article/PromoCards";
+
+const TOC = [
+  { href: "#tool", label: "변환기" },
+  { href: "#howto", label: "사용 방법" },
+  { href: "#table", label: "LaTeX ↔ 한글 대응표" },
+  { href: "#faq", label: "자주 묻는 질문" },
+  { href: "#bulk", label: "문제지를 통째로 옮기려면" },
+];
 
 export const metadata: Metadata = {
   title: "ChatGPT 수식 한글(HWP) 변환기 — LaTeX를 한글 수식으로",
@@ -78,7 +88,7 @@ const faqStructuredData = {
 
 export default function LatexToHwpPage() {
   return (
-    <div className="min-h-screen px-4 py-16 md:py-20 bg-zinc-50">
+    <ArticleShell location="latex_tool" category="tool" toc={TOC}>
       <style>{`
 .eq{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:0.85em;background:#f4f4f5;border:1px solid #e4e4e7;border-radius:4px;padding:1px 5px;color:#18181b;white-space:nowrap}
 .eq-code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;background:#f4f4f5;border:1px solid #e4e4e7;border-radius:5px;padding:5px 8px;color:#18181b;overflow-wrap:anywhere;word-break:normal}
@@ -90,23 +100,18 @@ export default function LatexToHwpPage() {
         // JSON-LD는 신뢰된 내부 정적 데이터라 안전
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqStructuredData) }}
       />
-      <article className="w-full max-w-3xl mx-auto">
+      <article>
         {/* Header */}
-        <div className="text-center mb-10">
-          <a href="/" className="inline-flex flex-col items-center gap-3">
-            <img src="/mathocr-icon.png" alt="AI MathOCR" width={48} height={48} />
-            <span className="text-2xl font-bold tracking-tight">
-              AI Math<span className="text-[var(--accent)]">OCR</span>
-            </span>
-          </a>
-          <h1 className="text-2xl md:text-3xl font-bold mt-5">ChatGPT 수식 → 한글(HWP) 수식 변환기</h1>
+        <div className="mb-8">
+          <p className="text-[12px] font-semibold text-[var(--accent)] mb-2">무료 도구 · 2026-10-14</p>
+          <h1 className="text-2xl md:text-3xl font-bold">ChatGPT 수식 → 한글(HWP) 수식 변환기</h1>
           <p className="text-zinc-500 text-sm mt-3">
             LaTeX 수식을 한글 수식 편집기 명령어로 · 무료 · 로그인 없음
           </p>
         </div>
 
         {/* 도구 */}
-        <section className="card rounded-xl p-6 md:p-8 shadow-sm mb-6">
+        <section id="tool" className="card rounded-xl p-6 md:p-8 shadow-sm mb-6">
           <p className="text-sm text-zinc-600 leading-relaxed mb-5">
             ChatGPT가 준 수식을 한글에 그대로 붙이면{" "}
             <code className="eq">{"\\frac{a}{b}"}</code>가 <strong className="text-zinc-900">fracab</strong>
@@ -117,7 +122,7 @@ export default function LatexToHwpPage() {
         </section>
 
         {/* 사용 방법 */}
-        <section className="card rounded-xl p-6 md:p-8 shadow-sm mb-6">
+        <section id="howto" className="card rounded-xl p-6 md:p-8 shadow-sm mb-6">
           <h2 className="text-lg font-semibold text-zinc-900 mb-4">사용 방법</h2>
           <ol className="text-sm text-zinc-600 leading-relaxed space-y-2 list-decimal pl-5">
             <li>
@@ -136,8 +141,10 @@ export default function LatexToHwpPage() {
           </ol>
         </section>
 
+        <PromoInline location="latex_tool" />
+
         {/* 대응표 */}
-        <section className="card rounded-xl p-6 md:p-8 shadow-sm mb-6">
+        <section id="table" className="card rounded-xl p-6 md:p-8 shadow-sm mb-6">
           <h2 className="text-lg font-semibold text-zinc-900 mb-2">LaTeX ↔ 한글 수식 대응표</h2>
           <p className="text-sm text-zinc-500 mb-4">
             자주 나오는 것만 모았습니다. 단원별 전체 목록은{" "}
@@ -202,7 +209,7 @@ export default function LatexToHwpPage() {
         </section>
 
         {/* 문제가 많을 때 */}
-        <section className="card rounded-xl p-6 md:p-8 shadow-sm border-2 border-[var(--accent)]/20">
+        <section id="bulk" className="card rounded-xl p-6 md:p-8 shadow-sm border-2 border-[var(--accent)]/20">
           <h2 className="text-lg font-semibold text-zinc-900 mb-3">문제지를 통째로 옮겨야 한다면</h2>
           <p className="text-sm text-zinc-600 leading-relaxed">
             ChatGPT 수식은 이 변환기로 충분합니다. 하지만 시험지·교재처럼{" "}
@@ -234,13 +241,7 @@ export default function LatexToHwpPage() {
             </TrackedLink>
           </div>
         </section>
-
-        <div className="mt-8 text-center">
-          <a href="/" className="text-sm text-zinc-500 hover:text-zinc-900 transition-colors">
-            홈으로 돌아가기
-          </a>
-        </div>
       </article>
-    </div>
+    </ArticleShell>
   );
 }

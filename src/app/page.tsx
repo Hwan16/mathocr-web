@@ -94,6 +94,8 @@ export default function Home() {
             <a href="#guide" onClick={() => trackEvent("nav_click", { label: "guide" })} className="hover:text-zinc-900 transition-colors">사용법</a>
             <a href="#pricing" onClick={() => trackEvent("nav_click", { label: "pricing" })} className="hover:text-zinc-900 transition-colors">가격</a>
             <a href="#download" onClick={() => trackEvent("nav_click", { label: "download" })} className="hover:text-zinc-900 transition-colors">다운로드</a>
+            {/* md·lg 폭은 메뉴가 이미 꽉 차 [15문제 무료]가 잘린다(10-14 실측) — 자료실은 xl 이상에서만, 좁은 화면은 푸터 링크 */}
+            <a href="/guides" onClick={() => trackEvent("nav_click", { label: "guides" })} className="hidden xl:inline hover:text-zinc-900 transition-colors">자료실</a>
             {/* md·lg(768~1279px)에서는 전체 표기가 헤더를 넘치게 해(실측 36~47px) 짧은 표기로 전환 */}
             <a href="#faq" onClick={() => trackEvent("nav_click", { label: "faq" })} className="hover:text-zinc-900 transition-colors">
               <span className="xl:hidden">FAQ</span>
@@ -1194,8 +1196,14 @@ export default function Home() {
               </span>
             </div>
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-zinc-500">
+              <a href="/guides" className="font-medium text-zinc-600 hover:text-zinc-900 transition-colors">
+                자료실
+              </a>
               <a href="/help/hwp-equation" className="hover:text-zinc-900 transition-colors">
                 한글 수식 입력 방법
+              </a>
+              <a href="/help/latex-to-hwp" className="hover:text-zinc-900 transition-colors">
+                ChatGPT 수식 변환기
               </a>
               <a href="/terms" className="hover:text-zinc-900 transition-colors">
                 이용약관
