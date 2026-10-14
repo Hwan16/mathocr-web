@@ -1,9 +1,10 @@
 // 자료실(/guides) 카드 목록 — 글을 추가하면 여기 한 줄 + sitemap 날짜만 갱신한다.
 // 주소는 기존 /help/... 를 그대로 쓴다(이미 검색에 잡힌 주소를 바꾸면 순위가 처음부터 다시 쌓인다).
 
-export type ArticleCategory = "hwp" | "tool" | "app";
+export type ArticleCategory = "exam" | "hwp" | "tool" | "app";
 
 export const ARTICLE_CATEGORIES: { id: ArticleCategory; label: string }[] = [
+  { id: "exam", label: "시험지 제작" },
   { id: "hwp", label: "한글 수식" },
   { id: "tool", label: "무료 도구" },
   { id: "app", label: "앱 도움말" },
@@ -15,12 +16,21 @@ export type Article = {
   title: string;
   summary: string;
   date: string; // 최근 수정일 YYYY-MM-DD
-  // 썸네일: 대표 수식(LaTeX, 서버에서 MathML로 그림) 또는 짧은 글자
-  thumb: { tex: string } | { text: string };
-  thumbTone: "violet" | "sky" | "amber" | "rose";
+  // 썸네일: 대표 이미지(public 경로) · 대표 수식(LaTeX, 서버에서 MathML로 그림) · 짧은 글자 중 하나
+  thumb: { img: string; alt: string } | { tex: string } | { text: string };
+  thumbTone: "violet" | "sky" | "amber" | "rose" | "emerald";
 };
 
 export const ARTICLES: Article[] = [
+  {
+    href: "/help/math-exam-to-hwp",
+    category: "exam",
+    title: "수학 시험지 PDF를 한글(HWP)로 옮기는 3가지 방법",
+    summary: "직접 타이핑·타이핑 외주(문제당 400~1,300원)·변환 프로그램을 비용·시간·품질로 비교하고, 문제 수별 계산기로 내 경우를 따져 봅니다.",
+    date: "2026-10-14",
+    thumb: { img: "/articles/exam-3ways-thumb.webp", alt: "시험지를 한글 문서로 옮기는 세 가지 길 — 스캔·외주·직접 타이핑" },
+    thumbTone: "emerald",
+  },
   {
     href: "/help/hwp-equation",
     category: "hwp",

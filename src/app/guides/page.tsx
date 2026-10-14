@@ -24,6 +24,7 @@ const CARDS: GuideCard[] = ARTICLES.map((a) => ({
   tone: a.thumbTone,
   thumbHtml: "tex" in a.thumb ? temml.renderToString("\\displaystyle " + a.thumb.tex, { throwOnError: false }) : null,
   thumbText: "text" in a.thumb ? a.thumb.text : null,
+  thumbImg: "img" in a.thumb ? { src: a.thumb.img, alt: a.thumb.alt } : null,
 }));
 
 export default function GuidesPage() {

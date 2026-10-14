@@ -13,9 +13,10 @@ export type GuideCard = {
   title: string;
   summary: string;
   date: string;
-  tone: "violet" | "sky" | "amber" | "rose";
+  tone: "violet" | "sky" | "amber" | "rose" | "emerald";
   thumbHtml: string | null; // 서버에서 만든 MathML
   thumbText: string | null;
+  thumbImg: { src: string; alt: string } | null;
 };
 
 const TONE: Record<GuideCard["tone"], string> = {
@@ -23,6 +24,7 @@ const TONE: Record<GuideCard["tone"], string> = {
   sky: "bg-sky-50 text-sky-900",
   amber: "bg-amber-50 text-amber-900",
   rose: "bg-rose-50 text-rose-900",
+  emerald: "bg-emerald-50 text-emerald-900",
 };
 
 export default function GuideList({
@@ -80,6 +82,16 @@ export default function GuideList({
               onClick={() => trackEvent("nav_click", { label: `guide_card:${c.href}` })}
               className="group block h-full rounded-xl border border-zinc-200 bg-white overflow-hidden hover:border-zinc-300 hover:shadow-sm transition"
             >
+              {c.thumbImg ? (
+                <img
+                  src={c.thumbImg.src}
+                  alt={c.thumbImg.alt}
+                  width={720}
+                  height={405}
+                  loading="lazy"
+                  className="block w-full h-36 object-cover bg-white border-b border-zinc-100"
+                />
+              ) : (
               <div className={`h-36 flex items-center justify-center px-5 ${TONE[c.tone]}`} aria-hidden="true">
                 {c.thumbHtml ? (
                   <span className="guide-thumb" dangerouslySetInnerHTML={{ __html: c.thumbHtml }} />
@@ -87,6 +99,7 @@ export default function GuideList({
                   <span className="text-[15px] font-semibold tracking-tight text-center font-mono">{c.thumbText}</span>
                 )}
               </div>
+              )}
               <div className="p-4">
                 <p className="text-[11px] font-semibold text-[var(--accent)] mb-1.5 tracking-wide">
                   {c.categoryLabel.toUpperCase()}
