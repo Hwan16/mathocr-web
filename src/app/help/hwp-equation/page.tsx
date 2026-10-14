@@ -1,40 +1,33 @@
 import type { Metadata } from "next";
+import temml from "temml";
+// 결과 미리보기 MathML 기본 스타일(Cambria Math 등 OS 수식 글꼴 지정 + 크롬 보정)
+import "temml/dist/Temml-Local.css";
 import { SIGNUP_FREE_CREDITS } from "@/lib/plans";
+import { EQUATION_CATEGORIES, EQUATION_SHORTCUTS } from "@/lib/hwp-equation-commands";
+import EquationDictionary, { type DictionaryCategory } from "@/components/EquationDictionary";
+import TrackedLink from "@/components/TrackedLink";
 
 export const metadata: Metadata = {
-  title: "한글(HWP) 수식 입력 방법 — 수식 편집기 명령어 정리",
+  title: "한글(HWP) 수식 입력 방법 — 수식 편집기 명령어·단축키 총정리",
   description:
-    "한글(한컴오피스)에서 수식 편집기를 여는 법과 분수·루트·지수·극한·시그마·적분·벡터·각도 등 수학 수식 명령어를 예시와 함께 정리했습니다. 자주 막히는 중괄호·띄어쓰기·정자체 팁까지.",
+    "한글(한컴오피스) 수식 편집기 여는 법과 단축키, 분수·루트·극한·시그마·적분·집합·벡터·경우의 수까지 중고등 수학 명령어 70여 개를 복사 버튼과 함께 정리했습니다. 줄바꿈·정렬·한글 넣기 등 자주 막히는 부분도 담았습니다.",
   alternates: { canonical: "/help/hwp-equation" },
 };
 
-// 명령어 예시는 앱의 LaTeX→HWP 변환기(src/latex_to_hwp.py)가 실제 변환에서
-// 한글에 넣는 문법과 동일하다. 표를 고칠 때는 변환기 출력으로 다시 확인할 것.
-const COMMANDS: { name: string; code: string; result: string }[] = [
-  { name: "분수", code: "{a} over {b}", result: "a/b (분수)" },
-  { name: "제곱근", code: "sqrt{2}", result: "√2" },
-  { name: "세제곱근", code: "root {3} of {x}", result: "∛x" },
-  { name: "거듭제곱", code: "x^{2}", result: "x²" },
-  { name: "아래첨자", code: "a_{n}", result: "aₙ" },
-  { name: "첨자 함께", code: "x_{1}^{2}", result: "x₁²" },
-  { name: "플러스마이너스", code: "+-", result: "±" },
-  { name: "부등호", code: "a <= b , a >= b", result: "a ≤ b, a ≥ b" },
-  { name: "무한대", code: "inf", result: "∞" },
-  { name: "극한", code: "lim _{x rightarrow 0} {sin x} over {x}", result: "lim(x→0) sin x / x" },
-  { name: "시그마", code: "sum _{k=1}^{n} a_{k}", result: "Σ(k=1~n) aₖ" },
-  { name: "적분", code: "int _{0}^{1} f(x) dx", result: "∫₀¹ f(x) dx" },
-  { name: "로그", code: "log _{2} 8", result: "log₂ 8" },
-  { name: "큰 괄호", code: "left( {1} over {2} right)^{2}", result: "(½)² — 괄호가 분수 높이에 맞춰짐" },
-  { name: "선분", code: "overline{AB}", result: "AB 위 가로줄" },
-  { name: "벡터", code: "vec{AB}", result: "AB 위 화살표" },
-  { name: "각도(도)", code: "60 DEG", result: "60°" },
-  { name: "각", code: "angle ABC", result: "∠ABC" },
-  { name: "삼각형", code: "TRIANGLE ABC", result: "△ABC" },
-  { name: "그리스 문자", code: "alpha + beta , theta , pi", result: "α + β, θ, π" },
-  { name: "따라서", code: "therefore", result: "∴" },
-  { name: "경우 나누기", code: "cases{x+1 & x >= 0 # -x & x < 0}", result: "중괄호로 묶인 두 줄 식" },
-  { name: "행렬", code: "left( matrix{1 & 2 # 3 & 4} right)", result: "2×2 행렬" },
-];
+// 결과 미리보기는 빌드 시 서버에서 MathML로 만든다 — 방문자 브라우저가 기본 수식 표시로 그린다.
+const DICTIONARY: DictionaryCategory[] = EQUATION_CATEGORIES.map((c) => ({
+  id: c.id,
+  label: c.label,
+  items: c.items.map((it) => ({
+    name: it.name,
+    hwp: it.hwp,
+    kw: it.kw,
+    // \displaystyle — 분수·시그마를 한글 수식처럼 본문 크기로 보여 준다
+    mathml: temml.renderToString("\\displaystyle " + it.tex, { throwOnError: false }),
+  })),
+}));
+
+const COMMAND_COUNT = EQUATION_CATEGORIES.reduce((n, c) => n + c.items.length, 0);
 
 const TIPS: { title: string; body: React.ReactNode }[] = [
   {
@@ -44,7 +37,20 @@ const TIPS: { title: string; body: React.ReactNode }[] = [
         <code className="eq">a+b over c</code>라고 쓰면 <strong className="text-zinc-900">c 위에
         b만</strong> 올라갑니다. 분자·분모·지수·첨자가 두 글자 이상이면{" "}
         <code className="eq">{"{a+b} over {c}"}</code>, <code className="eq">{"x^{n+1}"}</code>처럼
-        항상 중괄호로 묶으세요. 수식이 이상하게 나올 때 대부분 이 문제입니다.
+        항상 중괄호로 묶으세요. 수식이 이상하게 나올 때 대부분 이 문제입니다. 한글 도움말에
+        따르면 스크립트 입력 창은 최대 9글자까지만 한 덩어리로 읽기 때문에, 긴 묶음도 중괄호로
+        감싸야 합니다.
+      </>
+    ),
+  },
+  {
+    title: "대문자·소문자가 다른 명령어가 있다",
+    body: (
+      <>
+        대부분의 명령어는 대소문자를 가리지 않지만, 일부는 다른 기호가 됩니다. 예를 들어{" "}
+        <code className="eq">rightarrow</code>는 →, <code className="eq">RIGHTARROW</code>는 ⇒입니다.
+        필요충분조건 ⇔은 <code className="eq">LRARROW</code>로 써야 하고,{" "}
+        <code className="eq">LEFTRIGHTARROW</code>라고 쓰면 ⇒로 잘못 나옵니다.
       </>
     ),
   },
@@ -91,10 +97,70 @@ const TIPS: { title: string; body: React.ReactNode }[] = [
   },
 ];
 
+// 화면의 질문·답과 FAQ 구조화 데이터가 같은 출처를 쓴다(구글: 보이는 FAQ만 마크업).
+const FAQ: { q: string; a: string }[] = [
+  {
+    q: "수식 안에서 줄을 바꾸려면 어떻게 하나요?",
+    a: "스크립트 입력 창(아래쪽 입력 칸)에서는 줄을 바꿀 자리에 # 을 넣습니다. 위쪽 수식 편집 창에서 직접 입력할 때는 Enter를 누르면 됩니다.",
+  },
+  {
+    q: "여러 줄 수식의 등호(=) 위치를 맞추려면?",
+    a: "맞추고 싶은 기호 앞에 & 를 넣고 줄 사이에 # 을 넣습니다. 예: f(x) & = (x+1)^{2} # & = x^{2} + 2x + 1 이라고 쓰면 두 줄의 등호가 세로로 맞춰집니다.",
+  },
+  {
+    q: "수식 글자 크기나 색은 어디서 바꾸나요?",
+    a: "본문에 넣은 수식을 한 번 클릭해 선택한 뒤 P 키를 누르면(또는 [서식-개체 속성]) 수식 속성 창이 열리고, 수식 탭에서 글자 크기와 색을 바꿀 수 있습니다. 적용 범위를 바꾸면 문서의 여러 수식에 한꺼번에 적용할 수도 있습니다.",
+  },
+  {
+    q: "수식 안에 한글을 넣을 수 있나요?",
+    a: "네. 스크립트 입력 창에서 한/영 전환 후 그대로 입력하면 됩니다. \"넓이\"처럼 큰따옴표로 감싸면 한 덩어리의 글자로 들어갑니다.",
+  },
+  {
+    q: "ChatGPT가 준 수식(\\frac{a}{b} 같은 LaTeX)을 그대로 붙여 넣어도 되나요?",
+    a: "안 됩니다. 한글 수식 편집기는 LaTeX를 읽지 못해서 \\frac{a}{b}를 붙여 넣으면 fracab처럼 글자로 깨집니다. 위 사전에서 같은 기호의 한글 명령어(예: {a} over {b})를 찾아 바꿔 입력해야 합니다.",
+  },
+  {
+    q: "자주 쓰는 수식을 매번 다시 입력해야 하나요?",
+    a: "한글 2022부터는 수식 편집기에서 만든 수식을 '수식 매크로'로 저장해 두고 [입력-수식-수식 매크로]에서 바로 넣을 수 있습니다. 이전 버전이라면 자주 쓰는 수식을 문서 한쪽에 모아 두고 복사해 쓰는 방법이 편합니다.",
+  },
+  {
+    q: "명령어 대신 버튼으로 입력할 수는 없나요?",
+    a: "수식 편집기 위쪽 도구 상자의 분수·근호·적분 같은 틀 버튼을 누르면 빈칸이 있는 수식 틀이 들어가고, Tab 키로 다음 칸으로 옮겨 가며 채울 수 있습니다. 분수 Ctrl+O, 근호 Ctrl+R처럼 단축키도 있습니다.",
+  },
+];
+
+const faqStructuredData = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: FAQ.map((f) => ({
+    "@type": "Question",
+    name: f.q,
+    acceptedAnswer: { "@type": "Answer", text: f.a },
+  })),
+};
+
+const TOC = [
+  { href: "#open", label: "수식 편집기 여는 법·단축키" },
+  { href: "#commands", label: `수식 명령어 사전 (${COMMAND_COUNT}개)` },
+  { href: "#tips", label: "자주 막히는 부분" },
+  { href: "#faq", label: "자주 묻는 질문" },
+  { href: "#bulk", label: "옮길 문제가 많다면" },
+];
+
 export default function HwpEquationGuidePage() {
   return (
     <div className="min-h-screen px-4 py-16 md:py-20 bg-zinc-50">
-      <style>{`.eq{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:0.85em;background:#f4f4f5;border:1px solid #e4e4e7;border-radius:4px;padding:1px 5px;color:#18181b;white-space:nowrap}`}</style>
+      <style>{`
+.eq{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:0.85em;background:#f4f4f5;border:1px solid #e4e4e7;border-radius:4px;padding:1px 5px;color:#18181b;white-space:nowrap}
+.eq-code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;background:#f4f4f5;border:1px solid #e4e4e7;border-radius:5px;padding:5px 8px;color:#18181b;overflow-wrap:anywhere;word-break:normal}
+.eq-render math{font-size:1.15em}
+.eq-render math,.eq-render math *{font-family:"Cambria Math","STIX Two Math","Latin Modern Math",math}
+`}</style>
+      <script
+        type="application/ld+json"
+        // JSON-LD는 신뢰된 내부 정적 데이터라 안전
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqStructuredData) }}
+      />
       <article className="w-full max-w-3xl mx-auto">
         {/* Header */}
         <div className="text-center mb-10">
@@ -104,11 +170,9 @@ export default function HwpEquationGuidePage() {
               AI Math<span className="text-[var(--accent)]">OCR</span>
             </span>
           </a>
-          <h1 className="text-2xl md:text-3xl font-bold mt-5">
-            한글(HWP) 수식 입력 방법
-          </h1>
+          <h1 className="text-2xl md:text-3xl font-bold mt-5">한글(HWP) 수식 입력 방법</h1>
           <p className="text-zinc-500 text-sm mt-3">
-            수식 편집기 여는 법 · 자주 쓰는 명령어 · 자주 막히는 부분
+            수식 편집기 여는 법 · 단축키 · 명령어 {COMMAND_COUNT}개 복사 · 자주 막히는 부분
           </p>
         </div>
 
@@ -121,14 +185,39 @@ export default function HwpEquationGuidePage() {
             <strong className="text-zinc-900">Ctrl+N, M</strong>)으로 수식 편집기를 열고, 아래쪽
             입력 칸에 <code className="eq">{"{a} over {b}"}</code>,{" "}
             <code className="eq">{"sqrt{2}"}</code> 같은 명령어를 입력한 뒤{" "}
-            <strong className="text-zinc-900">[넣기]</strong>를 누르면 됩니다. 이렇게 넣은 수식은
-            그림이 아니라 편집 가능한 수식 개체라서, 나중에 더블클릭해 언제든 고칠 수 있습니다.
+            <strong className="text-zinc-900">[넣기]</strong>(Shift+Esc)를 누르면 됩니다. 이렇게
+            넣은 수식은 그림이 아니라 편집 가능한 수식 개체라서, 나중에 더블클릭해 언제든 고칠 수
+            있습니다.
+          </p>
+          <p className="text-[13px] text-zinc-500 mt-4 pt-4 border-t border-zinc-100">
+            시험지 한 장을 통째로 옮겨야 한다면?{" "}
+            <TrackedLink
+              href="#bulk"
+              label="help_bulk"
+              location="help_eq_summary"
+              className="font-medium text-[var(--accent)] hover:underline"
+            >
+              PDF·사진 속 수식을 한글 수식으로 자동 변환하기 →
+            </TrackedLink>
           </p>
         </section>
 
-        {/* 여는 법 */}
-        <section className="card rounded-xl p-6 md:p-8 shadow-sm mb-6">
-          <h2 className="text-lg font-semibold text-zinc-900 mb-4">1. 수식 편집기 여는 법</h2>
+        {/* 목차 */}
+        <nav aria-label="목차" className="mb-6 px-1">
+          <ol className="flex flex-wrap gap-x-4 gap-y-1.5 text-[13px] text-zinc-500">
+            {TOC.map((t, i) => (
+              <li key={t.href}>
+                <a href={t.href} className="hover:text-zinc-900 transition-colors">
+                  {i + 1}. {t.label}
+                </a>
+              </li>
+            ))}
+          </ol>
+        </nav>
+
+        {/* 여는 법·단축키 */}
+        <section id="open" className="card rounded-xl p-6 md:p-8 shadow-sm mb-6">
+          <h2 className="text-lg font-semibold text-zinc-900 mb-4">1. 수식 편집기 여는 법·단축키</h2>
           <ol className="text-sm text-zinc-600 leading-relaxed space-y-2 list-decimal pl-5">
             <li>수식을 넣을 위치에 커서를 둡니다.</li>
             <li>
@@ -137,74 +226,89 @@ export default function HwpEquationGuidePage() {
               <strong className="text-zinc-900">M</strong>을 누릅니다.
             </li>
             <li>
-              열린 창의 아래쪽 입력 칸에 명령어를 입력하면 위쪽에 결과가 미리 보입니다. 위쪽
-              도구 상자의 기호 버튼을 눌러도 명령어가 입력됩니다.
+              열린 창의 아래쪽 입력 칸(스크립트 입력 창)에 명령어를 입력하면 위쪽에 결과가 미리
+              보입니다. 아래 사전의 [복사] 버튼으로 복사해 이 칸에{" "}
+              <strong className="text-zinc-900">Ctrl+V</strong>로 붙여 넣어도 됩니다.
             </li>
             <li>
-              <strong className="text-zinc-900">[넣기]</strong>를 누르면 본문에 수식이 들어갑니다.
+              <strong className="text-zinc-900">[넣기]</strong>를 누르거나{" "}
+              <strong className="text-zinc-900">Shift+Esc</strong>를 누르면 본문에 수식이 들어갑니다.
             </li>
           </ol>
+
+          <h3 className="text-sm font-semibold text-zinc-900 mt-7 mb-2">수식 편집기 단축키</h3>
+          <dl className="grid sm:grid-cols-2 sm:gap-x-8 text-sm">
+            {EQUATION_SHORTCUTS.map((s) => (
+              <div
+                key={s.action}
+                className="flex items-center justify-between gap-3 py-2 border-b border-zinc-100"
+              >
+                <dt className="text-zinc-600">{s.action}</dt>
+                <dd className="whitespace-nowrap">
+                  <kbd className="eq">{s.key}</kbd>
+                </dd>
+              </div>
+            ))}
+          </dl>
+          <p className="text-xs text-zinc-400 mt-3">
+            한글 2022 도움말 기준입니다. 틀 단축키는 수식 편집기 위쪽 편집 창에서 동작합니다.
+          </p>
         </section>
 
-        {/* 명령어 표 */}
-        <section className="card rounded-xl p-6 md:p-8 shadow-sm mb-6">
+        {/* 명령어 사전 */}
+        <section id="commands" className="card rounded-xl p-6 md:p-8 shadow-sm mb-6">
           <h2 className="text-lg font-semibold text-zinc-900 mb-2">
-            2. 수학 수식 명령어 정리
+            2. 수학 수식 명령어 사전 ({COMMAND_COUNT}개)
           </h2>
-          <p className="text-sm text-zinc-500 mb-4">
-            중·고등 수학 시험지에서 자주 쓰는 것 위주입니다. 입력 칸에 왼쪽 명령어를 그대로
-            쓰면 오른쪽처럼 나옵니다.
+          <p className="text-sm text-zinc-500 mb-5">
+            중·고등 수학 시험지에 나오는 기호를 단원별로 모았습니다. [복사]를 누른 뒤 수식 편집기
+            아래쪽 입력 칸에 붙여 넣으면 오른쪽 모양대로 들어갑니다. 모든 명령어는 한글 2022에서
+            직접 넣어 확인했습니다.
           </p>
-          <div className="overflow-x-auto -mx-2">
-            <table className="w-full text-sm border-collapse">
-              <thead>
-                <tr className="text-left text-zinc-500 border-b border-zinc-200">
-                  <th className="py-2 px-2 font-medium whitespace-nowrap">종류</th>
-                  <th className="py-2 px-2 font-medium">입력할 명령어</th>
-                  <th className="py-2 px-2 font-medium">결과</th>
-                </tr>
-              </thead>
-              <tbody>
-                {COMMANDS.map((c) => (
-                  <tr key={c.name} className="border-b border-zinc-100 align-top">
-                    <td className="py-2 px-2 text-zinc-900 font-medium whitespace-nowrap">
-                      {c.name}
-                    </td>
-                    <td className="py-2 px-2">
-                      <code className="eq" style={{ whiteSpace: "normal" }}>{c.code}</code>
-                    </td>
-                    <td className="py-2 px-2 text-zinc-600">{c.result}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p className="text-xs text-zinc-400 mt-3">
-            경우 나누기·행렬에서 <code className="eq">&amp;</code>는 칸 구분,{" "}
+          <EquationDictionary categories={DICTIONARY} signupFreeCredits={SIGNUP_FREE_CREDITS} />
+          <p className="text-xs text-zinc-400 mt-4">
+            경우 나누기·행렬·여러 줄 수식에서 <code className="eq">&amp;</code>는 칸(맞춤) 구분,{" "}
             <code className="eq">#</code>은 줄바꿈입니다.
           </p>
         </section>
 
         {/* 팁 */}
-        <section className="card rounded-xl p-6 md:p-8 shadow-sm mb-6">
+        <section id="tips" className="card rounded-xl p-6 md:p-8 shadow-sm mb-6">
           <h2 className="text-lg font-semibold text-zinc-900 mb-4">3. 자주 막히는 부분</h2>
           <div className="space-y-5">
             {TIPS.map((t) => (
               <div key={t.title}>
-                <h3 className="text-sm md:text-base font-semibold text-zinc-900 mb-1.5">
-                  {t.title}
-                </h3>
+                <h3 className="text-sm md:text-base font-semibold text-zinc-900 mb-1.5">{t.title}</h3>
                 <p className="text-sm text-zinc-600 leading-relaxed">{t.body}</p>
               </div>
             ))}
           </div>
         </section>
 
+        {/* 자주 묻는 질문 */}
+        <section id="faq" className="card rounded-xl p-6 md:p-8 shadow-sm mb-6">
+          <h2 className="text-lg font-semibold text-zinc-900 mb-3">4. 자주 묻는 질문</h2>
+          <div className="divide-y divide-zinc-100">
+            {FAQ.map((f) => (
+              <details key={f.q} className="group py-3">
+                <summary className="cursor-pointer list-none flex items-start justify-between gap-3 text-sm font-medium text-zinc-900">
+                  <h3 className="font-medium">{f.q}</h3>
+                  <span className="text-zinc-400 transition-transform group-open:rotate-45 leading-none text-lg">
+                    +
+                  </span>
+                </summary>
+                <p className="text-sm text-zinc-600 leading-relaxed mt-2">{f.a}</p>
+              </details>
+            ))}
+          </div>
+        </section>
+
         {/* 문제가 많을 때 */}
-        <section className="card rounded-xl p-6 md:p-8 shadow-sm border-2 border-[var(--accent)]/20">
-          <h2 className="text-lg font-semibold text-zinc-900 mb-3">
-            4. 옮길 문제가 많다면
-          </h2>
+        <section
+          id="bulk"
+          className="card rounded-xl p-6 md:p-8 shadow-sm border-2 border-[var(--accent)]/20"
+        >
+          <h2 className="text-lg font-semibold text-zinc-900 mb-3">5. 옮길 문제가 많다면</h2>
           <p className="text-sm text-zinc-600 leading-relaxed">
             한두 문제는 위 명령어로 직접 입력하는 게 가장 빠릅니다. 하지만 시험지 한 장을
             옮기려면 수식을 하나하나 입력하느라 시간이 오래 걸립니다.{" "}
@@ -218,26 +322,27 @@ export default function HwpEquationGuidePage() {
             <li>회원가입하면 {SIGNUP_FREE_CREDITS}문제를 무료로 변환해 볼 수 있습니다.</li>
           </ul>
           <div className="mt-5 flex flex-col sm:flex-row gap-3">
-            <a
+            <TrackedLink
               href="/auth/signup"
+              label="sign_up_free_15"
+              location="help_eq_bottom"
               className="btn-primary text-sm px-5 py-2.5 rounded-lg text-center"
             >
               회원가입하고 {SIGNUP_FREE_CREDITS}문제 무료로 시작
-            </a>
-            <a
+            </TrackedLink>
+            <TrackedLink
               href="/#guide"
+              label="guide_video"
+              location="help_eq_bottom"
               className="text-sm px-5 py-2.5 rounded-lg text-center border border-zinc-300 text-zinc-700 hover:bg-zinc-100 transition-colors"
             >
               사용법 영상 보기
-            </a>
+            </TrackedLink>
           </div>
         </section>
 
         <div className="mt-8 text-center">
-          <a
-            href="/"
-            className="text-sm text-zinc-500 hover:text-zinc-900 transition-colors"
-          >
+          <a href="/" className="text-sm text-zinc-500 hover:text-zinc-900 transition-colors">
             홈으로 돌아가기
           </a>
         </div>

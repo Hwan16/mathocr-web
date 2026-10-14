@@ -15,7 +15,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     {
       url: `${SITE_URL}/help/hwp-equation`,
-      lastModified: "2026-09-25",
+      lastModified: "2026-10-14",
       changeFrequency: "monthly",
       priority: 0.6,
     },
