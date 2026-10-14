@@ -175,6 +175,16 @@ export default function HwpEquationGuidePage() {
           </p>
         </div>
 
+        <figure className="mb-6 rounded-xl overflow-hidden border border-zinc-200 bg-white">
+          <img
+            src="/articles/eq-dict-hero.webp"
+            alt="AI MathOCR 마스코트가 수학 기호 키보드와 수식 문서를 소개하는 그림"
+            width={1440}
+            height={810}
+            className="block w-full h-auto"
+          />
+        </figure>
+
         {/* 바로 답 */}
         <section className="card rounded-xl p-6 md:p-8 shadow-sm mb-6">
           <h2 className="text-lg font-semibold text-zinc-900 mb-3">한 줄 요약</h2>

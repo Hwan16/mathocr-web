@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import temml from "temml";
 // 썸네일 수식 MathML 기본 스타일
 import "temml/dist/Temml-Local.css";
-import { ARTICLES, ARTICLE_CATEGORIES, DEFAULT_OG_IMAGE, SITE_URL } from "@/lib/articles";
+import { ARTICLES, ARTICLE_CATEGORIES, SITE_URL } from "@/lib/articles";
 import { ArticleHeader, ArticleTopBar } from "@/components/article/ArticleShell";
 import { PromoInline, PromoRail } from "@/components/article/PromoCards";
 import GuideList, { type GuideCard } from "@/components/article/GuideList";
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     siteName: "AI MathOCR",
     title: "자료실 — 한글 수식·수학 시험지 제작 팁",
     description: "한글 수식 명령어 사전, ChatGPT 수식 변환기, 시험지를 한글로 옮기는 방법 비교 등 수학 선생님을 위한 자료 모음.",
-    images: [{ url: `${SITE_URL}${DEFAULT_OG_IMAGE}`, width: 1200, height: 630 }],
+    images: [{ url: `${SITE_URL}/articles/guides-og.jpg`, width: 1200, height: 675 }],
   },
 };
 
