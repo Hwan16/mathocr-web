@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import temml from "temml";
 // 썸네일 수식 MathML 기본 스타일
 import "temml/dist/Temml-Local.css";
-import { ARTICLES, ARTICLE_CATEGORIES } from "@/lib/articles";
+import { ARTICLES, ARTICLE_CATEGORIES, DEFAULT_OG_IMAGE, SITE_URL } from "@/lib/articles";
 import { ArticleHeader, ArticleTopBar } from "@/components/article/ArticleShell";
 import { PromoInline, PromoRail } from "@/components/article/PromoCards";
 import GuideList, { type GuideCard } from "@/components/article/GuideList";
@@ -11,7 +11,33 @@ export const metadata: Metadata = {
   title: "자료실 — 한글 수식·수학 시험지 제작 팁",
   description:
     "한글(HWP) 수식 입력 방법과 명령어 사전, ChatGPT 수식을 한글 수식으로 바꾸는 무료 변환기, 앱 오류 해결 가이드를 모았습니다.",
-  alternates: { canonical: "/guides" },
+  alternates: {
+    canonical: "/guides",
+    // 새 글 알림(RSS) — 네이버 서치어드바이저에 제출해 새 글 수집을 앞당긴다
+    types: { "application/rss+xml": [{ url: "/rss.xml", title: "AI MathOCR 자료실" }] },
+  },
+  openGraph: {
+    type: "website",
+    locale: "ko_KR",
+    url: `${SITE_URL}/guides`,
+    siteName: "AI MathOCR",
+    title: "자료실 — 한글 수식·수학 시험지 제작 팁",
+    description: "한글 수식 명령어 사전, ChatGPT 수식 변환기, 시험지를 한글로 옮기는 방법 비교 등 수학 선생님을 위한 자료 모음.",
+    images: [{ url: `${SITE_URL}${DEFAULT_OG_IMAGE}`, width: 1200, height: 630 }],
+  },
+};
+
+// 목록 구조화 데이터 — 자료실이 어떤 글들을 담고 있는지 검색엔진에 알린다
+const itemListJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  name: "AI MathOCR 자료실",
+  itemListElement: ARTICLES.map((a, i) => ({
+    "@type": "ListItem",
+    position: i + 1,
+    url: `${SITE_URL}${a.href}`,
+    name: a.title,
+  })),
 };
 
 const CARDS: GuideCard[] = ARTICLES.map((a) => ({
@@ -34,6 +60,11 @@ export default function GuidesPage() {
 .guide-thumb math{font-size:1.6em}
 .guide-thumb math,.guide-thumb math *{font-family:"Cambria Math","STIX Two Math","Latin Modern Math",math}
 `}</style>
+      <script
+        type="application/ld+json"
+        // JSON-LD는 신뢰된 내부 정적 데이터라 안전
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }}
+      />
       <ArticleTopBar location="guides" />
       <ArticleHeader location="guides" />
       <div className="max-w-[1240px] mx-auto px-4 py-10 md:py-14 xl:grid xl:grid-cols-[minmax(0,1fr)_250px] xl:gap-10">

@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
+import { articleSeoMetadata } from "@/lib/articles";
+import ArticleJsonLd from "@/components/article/ArticleJsonLd";
 
 export const metadata: Metadata = {
   title: "한글(한컴오피스) 연결 오류 해결 가이드",
   description:
     "MathOCR 변환 시 '한글(한컴오피스) 설치가 손상되어 있어 앱과 연결할 수 없습니다' 또는 '라이브러리가 등록되지 않았습니다' 오류가 뜰 때, 한컴오피스 복구 설치로 해결하는 방법을 그림과 함께 안내합니다.",
   alternates: { canonical: "/help/hwp-repair" },
+  ...articleSeoMetadata("/help/hwp-repair"),
 };
 
 // 복구 절차 각 단계. 스크린샷은 실제 복구 과정(한컴오피스 2022, Windows 11)에서 캡처.
@@ -112,6 +115,7 @@ const STEPS: {
 export default function HwpRepairGuidePage() {
   return (
     <div className="min-h-screen px-4 py-16 md:py-20 bg-zinc-50">
+      <ArticleJsonLd href="/help/hwp-repair" />
       <div className="w-full max-w-3xl mx-auto">
         {/* Header */}
         <div className="text-center mb-10">

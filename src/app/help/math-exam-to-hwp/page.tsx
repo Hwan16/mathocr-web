@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { SIGNUP_FREE_CREDITS } from "@/lib/plans";
+import { articleSeoMetadata } from "@/lib/articles";
 import TrackedLink from "@/components/TrackedLink";
 import ArticleShell from "@/components/article/ArticleShell";
 import { PromoInline } from "@/components/article/PromoCards";
@@ -16,16 +17,7 @@ export const metadata: Metadata = {
   description:
     "수학 시험지·교재 PDF를 편집 가능한 한글 파일로 옮기는 방법 3가지를 비용·시간·품질로 비교했습니다. 타이핑 외주 시세(문제당 400~1,300원), 맡길 때와 프로그램 고를 때 확인할 것, 문제 수별 시간·비용 계산기까지.",
   alternates: { canonical: "/help/math-exam-to-hwp" },
-  // 카톡·쓰레드 공유 미리보기 — 글 대표 이미지(jpg: 일부 메신저가 webp 미리보기를 못 그림)
-  openGraph: {
-    type: "article",
-    locale: "ko_KR",
-    url: "https://mathocr.ai.kr/help/math-exam-to-hwp",
-    siteName: "AI MathOCR",
-    title: "수학 시험지 PDF를 한글(HWP)로 옮기는 3가지 방법",
-    description: "직접 타이핑·타이핑 외주·변환 프로그램을 비용·시간·품질로 비교하고, 문제 수별 계산기로 내 경우를 따져 봅니다.",
-    images: [{ url: "https://mathocr.ai.kr/articles/exam-3ways-og.jpg", width: 1200, height: 675 }],
-  },
+  ...articleSeoMetadata("/help/math-exam-to-hwp"),
 };
 
 const TOC = [
@@ -131,7 +123,7 @@ function Checklist({ title, items }: { title: string; items: { q: string; why: s
 
 export default function MathExamToHwpPage() {
   return (
-    <ArticleShell location="exam_compare" category="exam" toc={TOC}>
+    <ArticleShell href="/help/math-exam-to-hwp" location="exam_compare" toc={TOC}>
       <style>{`
 .eq{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:0.85em;background:#f4f4f5;border:1px solid #e4e4e7;border-radius:4px;padding:1px 5px;color:#18181b;white-space:nowrap}
 .prose-p{font-size:14.5px;line-height:1.85;color:#3f3f46}

@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { articleSeoMetadata } from "@/lib/articles";
+import ArticleJsonLd from "@/components/article/ArticleJsonLd";
 import UpdateCard from "./UpdateCard";
 
 export const metadata: Metadata = {
@@ -6,6 +8,7 @@ export const metadata: Metadata = {
   description:
     "MathOCR 변환 중 '한글이 응답하지 않아' 또는 '한글 프로그램을 실행하지 못해' 문서를 만들지 못했다는 오류가 뜰 때, AI 인식 결과를 그대로 살려 한글 문서를 다시 만드는 방법을 그림과 함께 안내합니다.",
   alternates: { canonical: "/help/hwp-launch" },
+  ...articleSeoMetadata("/help/hwp-launch"),
 };
 
 // 앱의 복구 창에서 [그림으로 보는 해결 방법]으로 연결되는 페이지.
@@ -91,6 +94,7 @@ const STEPS: {
 export default function HwpLaunchGuidePage() {
   return (
     <div className="min-h-screen px-4 py-16 md:py-20 bg-zinc-50">
+      <ArticleJsonLd href="/help/hwp-launch" />
       <div className="w-full max-w-3xl mx-auto">
         {/* Header */}
         <div className="text-center mb-10">

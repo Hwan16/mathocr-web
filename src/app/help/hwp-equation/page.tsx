@@ -3,6 +3,7 @@ import temml from "temml";
 // 결과 미리보기 MathML 기본 스타일(Cambria Math 등 OS 수식 글꼴 지정 + 크롬 보정)
 import "temml/dist/Temml-Local.css";
 import { SIGNUP_FREE_CREDITS } from "@/lib/plans";
+import { articleSeoMetadata } from "@/lib/articles";
 import { EQUATION_CATEGORIES, EQUATION_SHORTCUTS } from "@/lib/hwp-equation-commands";
 import EquationDictionary, { type DictionaryCategory } from "@/components/EquationDictionary";
 import TrackedLink from "@/components/TrackedLink";
@@ -14,6 +15,7 @@ export const metadata: Metadata = {
   description:
     "한글(한컴오피스) 수식 편집기 여는 법과 단축키, 분수·루트·극한·시그마·적분·집합·벡터·경우의 수까지 중고등 수학 명령어 70여 개를 복사 버튼과 함께 정리했습니다. 줄바꿈·정렬·한글 넣기 등 자주 막히는 부분도 담았습니다.",
   alternates: { canonical: "/help/hwp-equation" },
+  ...articleSeoMetadata("/help/hwp-equation"),
 };
 
 // 결과 미리보기는 빌드 시 서버에서 MathML로 만든다 — 방문자 브라우저가 기본 수식 표시로 그린다.
@@ -151,7 +153,7 @@ const TOC = [
 
 export default function HwpEquationGuidePage() {
   return (
-    <ArticleShell location="help_eq" category="hwp" toc={TOC.map((t, i) => ({ href: t.href, label: `${i + 1}. ${t.label}` }))}>
+    <ArticleShell href="/help/hwp-equation" location="help_eq" toc={TOC.map((t, i) => ({ href: t.href, label: `${i + 1}. ${t.label}` }))}>
       <style>{`
 .eq{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:0.85em;background:#f4f4f5;border:1px solid #e4e4e7;border-radius:4px;padding:1px 5px;color:#18181b;white-space:nowrap}
 .eq-code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;background:#f4f4f5;border:1px solid #e4e4e7;border-radius:5px;padding:5px 8px;color:#18181b;overflow-wrap:anywhere;word-break:normal}

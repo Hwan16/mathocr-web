@@ -3,6 +3,7 @@ import temml from "temml";
 // 결과 미리보기 MathML 기본 스타일(Cambria Math 등 OS 수식 글꼴 지정 + 크롬 보정)
 import "temml/dist/Temml-Local.css";
 import { SIGNUP_FREE_CREDITS } from "@/lib/plans";
+import { articleSeoMetadata } from "@/lib/articles";
 import { latexToHwp } from "@/lib/latex-to-hwp";
 import LatexToHwpTool from "@/components/LatexToHwpTool";
 import TrackedLink from "@/components/TrackedLink";
@@ -22,6 +23,7 @@ export const metadata: Metadata = {
   description:
     "ChatGPT가 준 수식(\\frac, \\sqrt 같은 LaTeX)을 한글(한컴오피스) 수식 편집기에 그대로 붙이면 깨집니다. 답변을 붙여 넣으면 수식마다 한글 수식 명령어로 바꿔 복사 버튼으로 바로 넣을 수 있습니다. 무료, 로그인 필요 없음.",
   alternates: { canonical: "/help/latex-to-hwp" },
+  ...articleSeoMetadata("/help/latex-to-hwp"),
 };
 
 // 대응표 — 한글 쪽은 실제 변환기로 빌드 때 만든다(표와 도구 결과가 어긋나지 않게).
@@ -88,7 +90,7 @@ const faqStructuredData = {
 
 export default function LatexToHwpPage() {
   return (
-    <ArticleShell location="latex_tool" category="tool" toc={TOC}>
+    <ArticleShell href="/help/latex-to-hwp" location="latex_tool" toc={TOC}>
       <style>{`
 .eq{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:0.85em;background:#f4f4f5;border:1px solid #e4e4e7;border-radius:4px;padding:1px 5px;color:#18181b;white-space:nowrap}
 .eq-code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;background:#f4f4f5;border:1px solid #e4e4e7;border-radius:5px;padding:5px 8px;color:#18181b;overflow-wrap:anywhere;word-break:normal}

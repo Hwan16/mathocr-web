@@ -1,8 +1,9 @@
 import { SIGNUP_FREE_CREDITS } from "@/lib/plans";
-import { ARTICLE_CATEGORIES, type ArticleCategory } from "@/lib/articles";
+import { categoryLabel, getArticle } from "@/lib/articles";
 import TrackedLink from "@/components/TrackedLink";
 import ArticleToc from "./ArticleToc";
 import { PromoRail } from "./PromoCards";
+import ArticleJsonLd from "./ArticleJsonLd";
 
 // 자료실 글 공통 틀 — 맨 위 얇은 띠(따라 내려오지 않음) · 사이트 메뉴 · 경로 표시 ·
 // PC(xl 이상)에서는 왼쪽 목차 / 가운데 본문 / 오른쪽 기능 카드(둘 다 스크롤을 따라 내려옴).
@@ -67,19 +68,21 @@ export function ArticleHeader({ location }: { location: string }) {
 }
 
 export default function ArticleShell({
+  href,
   location,
-  category,
   toc,
   children,
 }: {
+  href: string; // lib/articles.ts 의 글 주소 — 분류·구조화 데이터를 여기서 찾는다
   location: string;
-  category: ArticleCategory;
   toc: { href: string; label: string }[];
   children: React.ReactNode;
 }) {
-  const categoryLabel = ARTICLE_CATEGORIES.find((c) => c.id === category)?.label ?? "";
+  const article = getArticle(href);
+  const category = article.category;
   return (
     <div className="min-h-screen bg-zinc-50">
+      <ArticleJsonLd href={href} />
       <ArticleTopBar location={location} />
       <ArticleHeader location={location} />
       <div className="max-w-[1240px] mx-auto px-4 py-8 md:py-10 xl:grid xl:grid-cols-[190px_minmax(0,720px)_250px] xl:gap-8 xl:justify-center">
@@ -95,7 +98,7 @@ export default function ArticleShell({
             </a>
             <span className="mx-1.5 text-zinc-300">›</span>
             <a href={`/guides?c=${category}`} className="hover:text-zinc-900">
-              {categoryLabel}
+              {categoryLabel(category)}
             </a>
           </nav>
           {children}
