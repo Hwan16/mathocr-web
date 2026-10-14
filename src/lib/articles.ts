@@ -51,11 +51,12 @@ export const ARTICLES: Article[] = [
   {
     href: "/help/latex-to-hwp",
     published: "2026-10-14",
+    ogImage: "/articles/latex-tool-og.jpg",
     category: "tool",
     title: "ChatGPT 수식을 한글 수식으로 — 무료 변환기",
     summary: "ChatGPT 답변을 붙여 넣으면 \\frac 같은 LaTeX 수식만 골라 한글 수식 명령어로 바꿔 줍니다. 로그인 없이 무료.",
     date: "2026-10-14",
-    thumb: { text: "\\frac{a}{b}  →  {a} over {b}" },
+    thumb: { img: "/articles/latex-tool-thumb.webp", alt: "엉킨 LaTeX 코드를 마스코트가 깔끔한 한글 수식으로 바꾸는 그림" },
     thumbTone: "sky",
   },
   {
