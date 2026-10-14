@@ -117,7 +117,7 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: "ChatGPT가 준 수식(\\frac{a}{b} 같은 LaTeX)을 그대로 붙여 넣어도 되나요?",
-    a: "안 됩니다. 한글 수식 편집기는 LaTeX를 읽지 못해서 \\frac{a}{b}를 붙여 넣으면 fracab처럼 글자로 깨집니다. 위 사전에서 같은 기호의 한글 명령어(예: {a} over {b})를 찾아 바꿔 입력해야 합니다.",
+    a: "안 됩니다. 한글 수식 편집기는 LaTeX를 읽지 못해서 \\frac{a}{b}를 붙여 넣으면 fracab처럼 글자로 깨집니다. 이 사이트의 ChatGPT 수식 변환기(mathocr.ai.kr/help/latex-to-hwp)에 답변을 통째로 붙여 넣으면 수식마다 한글 명령어로 바꿔 줍니다.",
   },
   {
     q: "자주 쓰는 수식을 매번 다시 입력해야 하나요?",
@@ -266,7 +266,20 @@ export default function HwpEquationGuidePage() {
             직접 넣어 확인했습니다.
           </p>
           <EquationDictionary categories={DICTIONARY} signupFreeCredits={SIGNUP_FREE_CREDITS} />
-          <p className="text-xs text-zinc-400 mt-4">
+          <p className="text-[13px] text-zinc-500 mt-5">
+            ChatGPT가 준 수식(<code className="eq">{"\\frac{a}{b}"}</code> 같은 LaTeX)이라면 하나씩 찾지
+            말고{" "}
+            <TrackedLink
+              href="/help/latex-to-hwp"
+              label="latex_tool"
+              location="help_eq_commands"
+              className="font-medium text-[var(--accent)] hover:underline"
+            >
+              ChatGPT 수식 변환기
+            </TrackedLink>
+            에 통째로 붙여 넣으세요.
+          </p>
+          <p className="text-xs text-zinc-400 mt-3">
             경우 나누기·행렬·여러 줄 수식에서 <code className="eq">&amp;</code>는 칸(맞춤) 구분,{" "}
             <code className="eq">#</code>은 줄바꿈입니다.
           </p>

@@ -20,6 +20,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.6,
     },
     {
+      url: `${SITE_URL}/help/latex-to-hwp`,
+      lastModified: "2026-10-14",
+      changeFrequency: "monthly",
+      priority: 0.6,
+    },
+    {
       url: `${SITE_URL}/report`,
       lastModified: "2026-07-09",
       changeFrequency: "monthly",

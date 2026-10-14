@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { trackEvent } from "@/lib/analytics";
+import { copyText, selectElementText } from "@/lib/clipboard";
 
 // /help/hwp-equation 의 명령어 사전 — 분류 탭·검색·복사 버튼.
 // 결과 미리보기(MathML)는 서버에서 만들어 넘겨받는다(수식 라이브러리를 방문자에게 내려보내지 않기 위해).
@@ -26,29 +27,6 @@ function markNudgeSeen() {
     window.localStorage.setItem(NUDGE_SEEN_KEY, "1");
   } catch {
     // 저장소를 못 쓰는 환경(사생활 보호 모드 등) — 이번 방문에서만 1회로 제한된다
-  }
-}
-
-async function copyText(text: string): Promise<boolean> {
-  try {
-    await navigator.clipboard.writeText(text);
-    return true;
-  } catch {
-    // http·구형 브라우저 등 Clipboard API 불가 — 임시 textarea 로 대체
-    try {
-      const ta = document.createElement("textarea");
-      ta.value = text;
-      ta.setAttribute("readonly", "");
-      ta.style.position = "fixed";
-      ta.style.opacity = "0";
-      document.body.appendChild(ta);
-      ta.select();
-      const ok = document.execCommand("copy");
-      document.body.removeChild(ta);
-      return ok;
-    } catch {
-      return false;
-    }
   }
 }
 
@@ -99,13 +77,7 @@ export default function EquationDictionary({
     const ok = await copyText(item.hwp);
     if (!ok) {
       // 클립보드 권한이 막힌 브라우저 — 명령어를 선택해 두고 Ctrl+C 를 안내한다
-      if (codeEl) {
-        const range = document.createRange();
-        range.selectNodeContents(codeEl);
-        const sel = window.getSelection();
-        sel?.removeAllRanges();
-        sel?.addRange(range);
-      }
+      selectElementText(codeEl);
       setFailedKey(key);
       return;
     }

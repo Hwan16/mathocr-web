@@ -1,0 +1,903 @@
+{
+ "convert": [
+  {
+   "latex": "\\overline{AB} = 6",
+   "hwp": "overline{AB} = 6"
+  },
+  {
+   "latex": "\\angle B",
+   "hwp": "angle B"
+  },
+  {
+   "latex": "\\sqrt{15}",
+   "hwp": "sqrt{15}"
+  },
+  {
+   "latex": "\\sqrt{x^{2}+1}",
+   "hwp": "sqrt{x^{2}+1}"
+  },
+  {
+   "latex": "\\frac{a}{b}",
+   "hwp": "{a} over {b}"
+  },
+  {
+   "latex": "\\frac{\\overline{AC}}{\\sin B}",
+   "hwp": "{overline{AC}} over {sin B}"
+  },
+  {
+   "latex": "\\frac{a}{\\sin A} = \\frac{b}{\\sin B}",
+   "hwp": "{a} over {sin A} = {b} over {sin B}"
+  },
+  {
+   "latex": "\\frac{3\\sqrt{6}}{4}",
+   "hwp": "{3 sqrt{6}} over {4}"
+  },
+  {
+   "latex": "\\dfrac{x+1}{x-1}",
+   "hwp": "{x+1} over {x-1}"
+  },
+  {
+   "latex": "\\binom{1}{3}",
+   "hwp": "left( matrix{1 # 3} right)"
+  },
+  {
+   "latex": "A\\binom{a+1}{b-1}=\\binom{0}{2}",
+   "hwp": "A left( matrix{a+1 # b-1} right)=left( matrix{0 # 2} right)"
+  },
+  {
+   "latex": "\\angle B = 60^{\\circ}",
+   "hwp": "angle B = 60 DEG"
+  },
+  {
+   "latex": "90^{\\circ}",
+   "hwp": "90 DEG"
+  },
+  {
+   "latex": "60°",
+   "hwp": "60 DEG"
+  },
+  {
+   "latex": "x^{2}",
+   "hwp": "x^{2}"
+  },
+  {
+   "latex": "x^2",
+   "hwp": "x^{2}"
+  },
+  {
+   "latex": "a^{2} + b^{2}",
+   "hwp": "a^{2} + b^{2}"
+  },
+  {
+   "latex": "x_{n}",
+   "hwp": "x_{n}"
+  },
+  {
+   "latex": "a_{1}",
+   "hwp": "a_{1}"
+  },
+  {
+   "latex": "x^{2}_{n}",
+   "hwp": "x^{2}_{n}"
+  },
+  {
+   "latex": "x^{10}",
+   "hwp": "x^{10}"
+  },
+  {
+   "latex": "a_{ij}",
+   "hwp": "a_{ij}"
+  },
+  {
+   "latex": "\\sin A",
+   "hwp": "sin A"
+  },
+  {
+   "latex": "\\cos \\theta",
+   "hwp": "cos theta"
+  },
+  {
+   "latex": "\\tan^{-1} x",
+   "hwp": "tan ^{-1} x"
+  },
+  {
+   "latex": "\\log_{2} 8",
+   "hwp": "log _{2} 8"
+  },
+  {
+   "latex": "\\ln x",
+   "hwp": "ln x"
+  },
+  {
+   "latex": "\\alpha + \\beta = \\gamma",
+   "hwp": "alpha + beta = gamma"
+  },
+  {
+   "latex": "\\theta",
+   "hwp": "theta"
+  },
+  {
+   "latex": "\\pi",
+   "hwp": "pi"
+  },
+  {
+   "latex": "\\Delta ABC",
+   "hwp": "DELTA ABC"
+  },
+  {
+   "latex": "a \\times b",
+   "hwp": "a times b"
+  },
+  {
+   "latex": "a \\cdot b",
+   "hwp": "a cdot b"
+  },
+  {
+   "latex": "x \\leq y",
+   "hwp": "x leq y"
+  },
+  {
+   "latex": "x \\geq y",
+   "hwp": "x geq y"
+  },
+  {
+   "latex": "a \\neq b",
+   "hwp": "a ≠ b"
+  },
+  {
+   "latex": "\\overline{AD} \\perp \\overline{AB}",
+   "hwp": "overline{AD} bot overline{AB}"
+  },
+  {
+   "latex": "a \\ne b",
+   "hwp": "a ≠ b"
+  },
+  {
+   "latex": "a ≠ b",
+   "hwp": "a ≠ b"
+  },
+  {
+   "latex": "a <> b",
+   "hwp": "a ≠ b"
+  },
+  {
+   "latex": "a \\pm b",
+   "hwp": "a +- b"
+  },
+  {
+   "latex": "\\infty",
+   "hwp": "inf"
+  },
+  {
+   "latex": "B={x\\mid x는 k의 양의 약수}",
+   "hwp": "B={x | x는 k의 양의 약수}"
+  },
+  {
+   "latex": "B={xmid x는 k의 양의 약수}",
+   "hwp": "B={x | x는 k의 양의 약수}"
+  },
+  {
+   "latex": "B={x mid x는 k의 양의 약수}",
+   "hwp": "B={x | x는 k의 양의 약수}"
+  },
+  {
+   "latex": "x \\to y",
+   "hwp": "x rightarrow y"
+  },
+  {
+   "latex": "A \\Rightarrow B",
+   "hwp": "A RIGHTARROW B"
+  },
+  {
+   "latex": "A \\Leftarrow B",
+   "hwp": "A LEFTARROW B"
+  },
+  {
+   "latex": "p \\Leftrightarrow q",
+   "hwp": "p LRARROW q"
+  },
+  {
+   "latex": "p \\iff q",
+   "hwp": "p LRARROW q"
+  },
+  {
+   "latex": "p \\Longleftrightarrow q",
+   "hwp": "p LRARROW q"
+  },
+  {
+   "latex": "p \\implies q",
+   "hwp": "p RIGHTARROW q"
+  },
+  {
+   "latex": "x \\leftrightarrow y",
+   "hwp": "x lrarrow y"
+  },
+  {
+   "latex": "x \\longrightarrow y",
+   "hwp": "x rightarrow y"
+  },
+  {
+   "latex": "p ⇔ q",
+   "hwp": "p LRARROW q"
+  },
+  {
+   "latex": "x ↔ y",
+   "hwp": "x lrarrow y"
+  },
+  {
+   "latex": "p ⇒ q",
+   "hwp": "p RIGHTARROW q"
+  },
+  {
+   "latex": "\\sqrt[3]{x}",
+   "hwp": "root {3} of {x}"
+  },
+  {
+   "latex": "\\sqrt[n]{a}",
+   "hwp": "root {n} of {a}"
+  },
+  {
+   "latex": "\\sum_{k=1}^{n} k",
+   "hwp": "sum _{k=1}^{n} k"
+  },
+  {
+   "latex": "\\int_{0}^{1} f(x) dx",
+   "hwp": "int _{0}^{1} f(x) dx"
+  },
+  {
+   "latex": "\\prod_{i=1}^{n} a_{i}",
+   "hwp": "prod _{i=1}^{n} a_{i}"
+  },
+  {
+   "latex": "\\left( \\frac{a}{b} \\right)",
+   "hwp": "left( {a} over {b} right)"
+  },
+  {
+   "latex": "\\left| x \\right|",
+   "hwp": "left| x right|"
+  },
+  {
+   "latex": "\\left[ a \\right]",
+   "hwp": "left[ a right]"
+  },
+  {
+   "latex": "\\left\\{ x \\right\\}",
+   "hwp": "left lbrace x right rbrace"
+  },
+  {
+   "latex": "\\text{if } x > 0",
+   "hwp": "rm \"if \" it x > 0"
+  },
+  {
+   "latex": "\\textrm{cm}",
+   "hwp": "rm \"cm\" it"
+  },
+  {
+   "latex": "\\textit{n}",
+   "hwp": "\"n\""
+  },
+  {
+   "latex": "\\vec{a}",
+   "hwp": "vec{a}"
+  },
+  {
+   "latex": "\\hat{x}",
+   "hwp": "hat{x}"
+  },
+  {
+   "latex": "\\tilde{n}",
+   "hwp": "tilde{n}"
+  },
+  {
+   "latex": "\\dot{x}",
+   "hwp": "dot{x}"
+  },
+  {
+   "latex": "\\bar{z}",
+   "hwp": "bar{z}"
+  },
+  {
+   "latex": "$\\alpha$",
+   "hwp": "alpha"
+  },
+  {
+   "latex": "$$\\frac{a}{b}$$",
+   "hwp": "{a} over {b}"
+  },
+  {
+   "latex": "\\mathbf{v}",
+   "hwp": "v"
+  },
+  {
+   "latex": "\\mathbb{R}",
+   "hwp": "R"
+  },
+  {
+   "latex": "\\mathrm{d}x",
+   "hwp": "rm {d} it x"
+  },
+  {
+   "latex": "\\mathrm{AB}",
+   "hwp": "rm {AB} it"
+  },
+  {
+   "latex": "\\overrightarrow{\\mathrm{AB}}",
+   "hwp": "vec{rm {AB} it }"
+  },
+  {
+   "latex": "\\mathrm{A}(3, 0, 0)",
+   "hwp": "rm {A} it (3, 0, 0)"
+  },
+  {
+   "latex": "x_{\\mathrm{max}}",
+   "hwp": "x_{rm {max} it}"
+  },
+  {
+   "latex": "\\mathrm{}",
+   "hwp": ""
+  },
+  {
+   "latex": "\\overline{\\mathrm{P}_1\\mathrm{P}_2}^2=2\\overline{\\mathrm{OP}}^2",
+   "hwp": "overline{rm {P}_{1} it rm {P}_{2} it }^{2}=2 overline{rm {OP} it }^{2}"
+  },
+  {
+   "latex": "\\mathrm{P}_{1}^{2}+x",
+   "hwp": "rm {P}_{1}^{2} it +x"
+  },
+  {
+   "latex": "\\mathrm{P} _n",
+   "hwp": "rm {P}_{it n} it"
+  },
+  {
+   "latex": "{}_{n}\\mathrm{P}_{r}",
+   "hwp": "{}_{n}rm {P}_{it r} it"
+  },
+  {
+   "latex": "3\\text{cm}^2",
+   "hwp": "3 rm \"cm\"^{2} it"
+  },
+  {
+   "latex": "\\displaystyle \\frac{a}{b}",
+   "hwp": "{a} over {b}"
+  },
+  {
+   "latex": "a\\,b",
+   "hwp": "a b"
+  },
+  {
+   "latex": "a\\;b",
+   "hwp": "a b"
+  },
+  {
+   "latex": "a\\quad b",
+   "hwp": "a b"
+  },
+  {
+   "latex": "\\operatorname{lcm}(a,b)",
+   "hwp": "rm {lcm} it (a, b)"
+  },
+  {
+   "latex": "f(x),g(x)",
+   "hwp": "f(x), g(x)"
+  },
+  {
+   "latex": "\\alpha=2+3i,\\beta=3-2i",
+   "hwp": "alpha=2+3i, beta=3-2i"
+  },
+  {
+   "latex": "f(x), g(x)",
+   "hwp": "f(x), g(x)"
+  },
+  {
+   "latex": "a^{2} = b^{2} + c^{2} - 2bc\\cos A",
+   "hwp": "a^{2} = b^{2} + c^{2} - 2bc cos A"
+  },
+  {
+   "latex": "\\frac{a}{\\sin A} = \\frac{b}{\\sin B} = \\frac{c}{\\sin C} = 2R",
+   "hwp": "{a} over {sin A} = {b} over {sin B} = {c} over {sin C} = 2R"
+  },
+  {
+   "latex": "\\overline{AB} = \\sqrt{2}",
+   "hwp": "overline{AB} = sqrt{2}"
+  },
+  {
+   "latex": "3\\sqrt{3}",
+   "hwp": "3 sqrt{3}"
+  },
+  {
+   "latex": "\\frac{15\\sqrt{3}}{4}",
+   "hwp": "{15 sqrt{3}} over {4}"
+  },
+  {
+   "latex": "\\alpha\\beta",
+   "hwp": "alpha beta"
+  },
+  {
+   "latex": "\\sin^{2} x",
+   "hwp": "sin ^{2} x"
+  },
+  {
+   "latex": "\\sum_{k=1}^{6}|a_{k+6}|",
+   "hwp": "sum _{k=1}^{6}|a_{k+6}|"
+  },
+  {
+   "latex": "\\int_{0}^{1} x^{2} dx",
+   "hwp": "int _{0}^{1} x^{2} dx"
+  },
+  {
+   "latex": "\\int_a^b f(x) dx",
+   "hwp": "int _{a}^{b} f(x) dx"
+  },
+  {
+   "latex": "\\left[ \\frac{x^{3}}{3} \\right]_{0}^{1}",
+   "hwp": "left[ {x^{3}} over {3} right]_{0}^{1}"
+  },
+  {
+   "latex": "\\left[ \\frac{x^{3}}{3} \\right]_{0}^{1} = \\frac{1}{3}",
+   "hwp": "left[ {x^{3}} over {3} right]_{0}^{1} = {1} over {3}"
+  },
+  {
+   "latex": "\\dfrac{2}{3}",
+   "hwp": "{2} over {3}"
+  },
+  {
+   "latex": "2\\frac{1}{3}",
+   "hwp": "2{1} over {3}"
+  },
+  {
+   "latex": "\\lim_{x \\to 0} \\frac{\\sin x}{x}",
+   "hwp": "lim _{x rightarrow 0} {sin x} over {x}"
+  },
+  {
+   "latex": "\\overrightarrow{BD}",
+   "hwp": "vec{BD}"
+  },
+  {
+   "latex": "\\overrightarrow{AB} = \\overrightarrow{BC}",
+   "hwp": "vec{AB} = vec{BC}"
+  },
+  {
+   "latex": "\\overrightarrow{PQ} \\neq \\overrightarrow{QR}",
+   "hwp": "vec{PQ} ≠ vec{QR}"
+  },
+  {
+   "latex": "\\overline{AC}",
+   "hwp": "overline{AC}"
+  },
+  {
+   "latex": "a<-2",
+   "hwp": "a< -2"
+  },
+  {
+   "latex": "x<-1",
+   "hwp": "x< -1"
+  },
+  {
+   "latex": "-1<x<-0.5",
+   "hwp": "-1<x< -0.5"
+  },
+  {
+   "latex": "f(x)<-x^2",
+   "hwp": "f(x)< -x^{2}"
+  },
+  {
+   "latex": "x<-\\frac{1}{2}",
+   "hwp": "x< -{1} over {2}"
+  },
+  {
+   "latex": "\\{x \\mid x<-1\\}",
+   "hwp": "lbrace x | x< -1 rbrace"
+  },
+  {
+   "latex": "\\sum_{x<-1} x",
+   "hwp": "sum _{x< -1} x"
+  },
+  {
+   "latex": "a<\\mp 2",
+   "hwp": "a< -+ 2"
+  },
+  {
+   "latex": "a\\ll-2",
+   "hwp": "a<< -2"
+  },
+  {
+   "latex": "a < -2",
+   "hwp": "a < -2"
+  },
+  {
+   "latex": "a>-2",
+   "hwp": "a>-2"
+  },
+  {
+   "latex": "a\\leq-2",
+   "hwp": "a leq-2"
+  },
+  {
+   "latex": "a \\geq -1",
+   "hwp": "a geq -1"
+  },
+  {
+   "latex": "x \\to -1",
+   "hwp": "x rightarrow -1"
+  },
+  {
+   "latex": "\\lim_{x \\to -1} f(x)",
+   "hwp": "lim _{x rightarrow -1} f(x)"
+  },
+  {
+   "latex": "\\text{a<-b}<-1",
+   "hwp": "rm \"a<-b\" it < -1"
+  },
+  {
+   "latex": "\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}",
+   "hwp": "left( matrix{a & b # c & d} right)"
+  },
+  {
+   "latex": "\\begin{cases} x & \\text{if } x > 0 \\\\ -x & \\text{otherwise} \\end{cases}",
+   "hwp": "cases{x & rm \"if \" it x > 0 # -x & rm \"otherwise\" it}"
+  },
+  {
+   "latex": "\\begin{vmatrix} a & b \\\\ c & d \\end{vmatrix}",
+   "hwp": "left| matrix{a & b # c & d} right|"
+  },
+  {
+   "latex": "\\begin{pmatrix}2 & 1 \\\\ 1 & 6\\end{pmatrix}",
+   "hwp": "left( matrix{2 & 1 # 1 & 6} right)"
+  },
+  {
+   "latex": "\\begin{pmatrix} 0.8 & 1 \\end{pmatrix}",
+   "hwp": "left( matrix{0.8 & 1} right)"
+  },
+  {
+   "latex": "\\begin{pmatrix} 0.9 \\\\ 0.8 \\end{pmatrix}",
+   "hwp": "left( matrix{0.9 # 0.8} right)"
+  },
+  {
+   "latex": "\\begin{pmatrix} 1 \\\\ 2 \\\\ 3 \\end{pmatrix}",
+   "hwp": "left( matrix{1 # 2 # 3} right)"
+  },
+  {
+   "latex": "\\begin{pmatrix} a \\\\ b \\\\ c \\\\ d \\end{pmatrix}",
+   "hwp": "left( matrix{a # b # c # d} right)"
+  },
+  {
+   "latex": "\\begin{pmatrix} 1 & 0 & 0 & 0 \\\\ 0 & 1 & 0 & 0 \\\\ 0 & 0 & 1 & 0 \\\\ 0 & 0 & 0 & 1 \\end{pmatrix}",
+   "hwp": "left( matrix{1 & 0 & 0 & 0 # 0 & 1 & 0 & 0 # 0 & 0 & 1 & 0 # 0 & 0 & 0 & 1} right)"
+  },
+  {
+   "latex": "\\begin{cases} -x+2a & (x < 1) \\\\ 3 & (x = 1) \\\\ x-2a & (x > 1) \\end{cases}",
+   "hwp": "cases{-x+2a & (x < 1) # 3 & (x = 1) # x-2a & (x > 1)}"
+  },
+  {
+   "latex": "f(x)=\\begin{cases} x^{2} & (x \\geq 0) \\\\ -x & (x < 0) \\end{cases}",
+   "hwp": "f(x)=cases{x^{2} & (x geq 0) # -x & (x < 0)}"
+  },
+  {
+   "latex": "\\begin{cases} -x & (x<-1) \\\\ x^{2} & (x \\geq -1) \\end{cases}",
+   "hwp": "cases{-x & (x< -1) # x^{2} & (x geq -1)}"
+  },
+  {
+   "latex": "\\frac{\\frac{1}{2}}{3}",
+   "hwp": "{{1} over {2}} over {3}"
+  },
+  {
+   "latex": "\\sqrt[3]{x}",
+   "hwp": "root {3} of {x}"
+  },
+  {
+   "latex": "\\left| x-1 \\right|",
+   "hwp": "left| x-1 right|"
+  },
+  {
+   "latex": "\\{ 1, 2, 3 \\}",
+   "hwp": "lbrace 1, 2, 3 rbrace"
+  },
+  {
+   "latex": "\\left[ x \\right]",
+   "hwp": "left[ x right]"
+  },
+  {
+   "latex": "(f \\circ g)(x)",
+   "hwp": "(f circ g)(x)"
+  },
+  {
+   "latex": "f^{-1}(x)",
+   "hwp": "f^{-1}(x)"
+  },
+  {
+   "latex": "\\log_{2} 8",
+   "hwp": "log _{2} 8"
+  },
+  {
+   "latex": "\\sin^{2} x + \\cos^{2} x = 1",
+   "hwp": "sin ^{2} x + cos ^{2} x = 1"
+  },
+  {
+   "latex": "\\lim_{x \\to 0} \\frac{\\sin x}{x}",
+   "hwp": "lim _{x rightarrow 0} {sin x} over {x}"
+  },
+  {
+   "latex": "\\lim_{n \\to \\infty} a_{n}",
+   "hwp": "lim _{n rightarrow inf} a_{n}"
+  },
+  {
+   "latex": "\\sum_{k=1}^{n} a_{k}",
+   "hwp": "sum _{k=1}^{n} a_{k}"
+  },
+  {
+   "latex": "\\int_{0}^{1} f(x)\\,dx",
+   "hwp": "int _{0}^{1} f(x) dx"
+  },
+  {
+   "latex": "\\left[ F(x) \\right]_{a}^{b}",
+   "hwp": "left[ F(x) right]_{a}^{b}"
+  },
+  {
+   "latex": "\\overrightarrow{AB}",
+   "hwp": "vec{AB}"
+  },
+  {
+   "latex": "\\overparen{AB}",
+   "hwp": "overparen{AB}"
+  },
+  {
+   "latex": "60^{\\circ}",
+   "hwp": "60 DEG"
+  },
+  {
+   "latex": "\\angle ABC",
+   "hwp": "angle ABC"
+  },
+  {
+   "latex": "\\triangle ABC \\equiv \\triangle DEF",
+   "hwp": "TRIANGLE ABC equiv TRIANGLE DEF"
+  },
+  {
+   "latex": "l \\parallel m",
+   "hwp": "l parallel m"
+  },
+  {
+   "latex": "l \\perp m",
+   "hwp": "l bot m"
+  },
+  {
+   "latex": "x \\in A ,\\ x \\notin A",
+   "hwp": "x in A , x notin A"
+  },
+  {
+   "latex": "A \\subset B ,\\ A \\not\\subset B",
+   "hwp": "A subset B , A not subset B"
+  },
+  {
+   "latex": "A \\cup B",
+   "hwp": "A cup B"
+  },
+  {
+   "latex": "\\varnothing",
+   "hwp": "emptyset"
+  },
+  {
+   "latex": "p \\Rightarrow q",
+   "hwp": "p RIGHTARROW q"
+  },
+  {
+   "latex": "p \\Leftrightarrow q",
+   "hwp": "p LRARROW q"
+  },
+  {
+   "latex": "p \\iff q",
+   "hwp": "p LRARROW q"
+  },
+  {
+   "latex": "x \\leftrightarrow y",
+   "hwp": "x lrarrow y"
+  },
+  {
+   "latex": "\\therefore",
+   "hwp": "therefore"
+  },
+  {
+   "latex": "{}_{n}\\mathrm{P}_{r}",
+   "hwp": "{}_{n}rm {P}_{it r} it"
+  },
+  {
+   "latex": "{}_{n}\\mathrm{C}_{r}",
+   "hwp": "{}_{n}rm {C}_{it r} it"
+  },
+  {
+   "latex": "\\binom{n}{r}",
+   "hwp": "left( matrix{n # r} right)"
+  },
+  {
+   "latex": "P(B \\mid A)",
+   "hwp": "P(B | A)"
+  },
+  {
+   "latex": "\\overline{X}",
+   "hwp": "overline{X}"
+  },
+  {
+   "latex": "\\begin{cases} x+1 & (x \\geq 0) \\\\ -x & (x < 0) \\end{cases}",
+   "hwp": "cases{x+1 & (x geq 0) # -x & (x < 0)}"
+  },
+  {
+   "latex": "\\begin{pmatrix} 1 & 2 \\\\ 3 & 4 \\end{pmatrix}",
+   "hwp": "left( matrix{1 & 2 # 3 & 4} right)"
+  },
+  {
+   "latex": "\\begin{aligned} f(x) &= (x+1)^2 \\\\ &= x^2 + 2x + 1 \\end{aligned}",
+   "hwp": "f(x) = (x+1)^{2} # = x^{2} + 2x + 1"
+  },
+  {
+   "latex": "\\text{넓이} = \\frac{1}{2}ab",
+   "hwp": "rm \"넓이\" it = {1} over {2}ab"
+  },
+  {
+   "latex": "3\\,\\mathrm{cm}^{2}",
+   "hwp": "3 rm {cm}^{2} it"
+  },
+  {
+   "latex": "x = \\dfrac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}",
+   "hwp": "x = {-b +- sqrt{b^{2} - 4ac}} over {2a}"
+  },
+  {
+   "latex": "\\displaystyle \\int_0^\\pi \\sin x \\, dx = 2",
+   "hwp": "int _{0}^{pi} sin x dx = 2"
+  },
+  {
+   "latex": "a_{n+1} = 2a_n + 1 \\quad (n \\ge 1)",
+   "hwp": "a_{n+1} = 2a_{n} + 1 (n geq 1)"
+  },
+  {
+   "latex": "\\overline{\\mathrm{P}_1\\mathrm{P}_2}^2",
+   "hwp": "overline{rm {P}_{1} it rm {P}_{2} it }^{2}"
+  },
+  {
+   "latex": "x<-2",
+   "hwp": "x< -2"
+  },
+  {
+   "latex": "\\vec{a} \\cdot \\vec{b} = |\\vec{a}||\\vec{b}|\\cos\\theta",
+   "hwp": "vec{a} cdot vec{b} = |vec{a}||vec{b}|cos theta"
+  },
+  {
+   "latex": "$x^2+1$",
+   "hwp": "x^{2}+1"
+  },
+  {
+   "latex": "$$\\frac{a}{b}$$",
+   "hwp": "{a} over {b}"
+  },
+  {
+   "latex": "\\mathbb{R}",
+   "hwp": "R"
+  },
+  {
+   "latex": "\\left\\{ x \\mid x > 0 \\right\\}",
+   "hwp": "left lbrace x | x > 0 right rbrace"
+  }
+ ],
+ "split": [
+  {
+   "value": "0 < \\frac{3}{4} < 1 이므로 수렴하고, 극한값은",
+   "segments": [
+    [
+     "math",
+     "0 < \\frac{3}{4} < 1"
+    ],
+    [
+     "text",
+     " 이므로 수렴하고, 극한값은"
+    ]
+   ]
+  },
+  {
+   "value": "\\frac{\\sqrt{5}}{2} > 1 이므로 발산한다.",
+   "segments": [
+    [
+     "math",
+     "\\frac{\\sqrt{5}}{2} > 1"
+    ],
+    [
+     "text",
+     " 이므로 발산한다."
+    ]
+   ]
+  },
+  {
+   "value": "-1 < -\\frac{3}{4} < 1 이므로",
+   "segments": [
+    [
+     "math",
+     "-1 < -\\frac{3}{4} < 1"
+    ],
+    [
+     "text",
+     " 이므로"
+    ]
+   ]
+  },
+  {
+   "value": "에서 \\frac{a}{b} 이고",
+   "segments": [
+    [
+     "text",
+     "에서 "
+    ],
+    [
+     "math",
+     "\\frac{a}{b}"
+    ],
+    [
+     "text",
+     " 이고"
+    ]
+   ]
+  },
+  {
+   "value": "따라서 구하는 값은 12이다.",
+   "segments": [
+    [
+     "text",
+     "따라서 구하는 값은 12이다."
+    ]
+   ]
+  },
+  {
+   "value": "\\frac{3}{4}",
+   "segments": [
+    [
+     "math",
+     "\\frac{3}{4}"
+    ]
+   ]
+  },
+  {
+   "value": "",
+   "segments": [
+    [
+     "text",
+     ""
+    ]
+   ]
+  },
+  {
+   "value": "따라서 \\frac{a}{b} 이므로 a = 2b 이다.",
+   "segments": [
+    [
+     "text",
+     "따라서 "
+    ],
+    [
+     "math",
+     "\\frac{a}{b}"
+    ],
+    [
+     "text",
+     " 이므로 a = 2b 이다."
+    ]
+   ]
+  },
+  {
+   "value": "x^2 \\geq 0 이고 \\sqrt{2} 는 무리수",
+   "segments": [
+    [
+     "math",
+     "x^2 \\geq 0"
+    ],
+    [
+     "text",
+     " 이고 "
+    ],
+    [
+     "math",
+     "\\sqrt{2}"
+    ],
+    [
+     "text",
+     " 는 무리수"
+    ]
+   ]
+  }
+ ]
+}
