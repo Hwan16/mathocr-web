@@ -19,6 +19,12 @@ x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}
 
 판별식 \\(D = b^2 - 4ac\\)에 대하여 \\(D > 0\\)이면 서로 다른 두 실근을 갖고, \\(D = 0\\)이면 중근을 갖습니다.`;
 
+// 한글에 그대로 쳐도 되는 수식(D > 0 처럼 변환 결과가 입력과 같은 것)은 카드로 띄우지 않는다
+function isUnchanged(it: Extract<ResultItem, { kind: "math" }>) {
+  const squash = (s: string) => s.replace(/\s+/g, "");
+  return squash(it.latex) === squash(it.hwp);
+}
+
 export default function LatexToHwpTool({ signupFreeCredits }: { signupFreeCredits: number }) {
   const [input, setInput] = useState("");
   const [items, setItems] = useState<ResultItem[] | null>(null);
@@ -80,7 +86,9 @@ export default function LatexToHwpTool({ signupFreeCredits }: { signupFreeCredit
     trackEvent("equation_copy", { name: "latex_tool", count: copyCount.current });
   }
 
-  const formulas = items?.filter((i) => i.kind === "math").length ?? 0;
+  const mathItems = items?.filter((i): i is Extract<ResultItem, { kind: "math" }> => i.kind === "math") ?? [];
+  const formulas = mathItems.length;
+  const changed = mathItems.filter((i) => !isUnchanged(i)).length;
   let mathNo = 0;
 
   return (
@@ -141,12 +149,20 @@ export default function LatexToHwpTool({ signupFreeCredits }: { signupFreeCredit
       {items && (
         <div ref={resultRef} className="mt-7 scroll-mt-24">
           <p className="text-sm text-zinc-900 font-semibold mb-1">
-            {formulas > 0 ? `수식 ${formulas}개를 바꿨어요` : "수식을 찾지 못했어요"}
+            {formulas === 0
+              ? "수식을 찾지 못했어요"
+              : changed === 0
+                ? "바꿀 수식이 없어요 — 그대로 입력해도 돼요"
+                : changed === formulas
+                  ? `수식 ${changed}개를 한글 명령어로 바꿨어요`
+                  : `수식 ${formulas}개 중 ${changed}개를 한글 명령어로 바꿨어요`}
           </p>
           <p className="text-[13px] text-zinc-500 mb-4">
-            {formulas > 0
+            {changed > 0
               ? "[복사]를 누르고 한글 수식 편집기(Ctrl+N, M) 아래쪽 입력 칸에 붙여 넣은 뒤 Shift+Esc 로 넣으세요."
-              : "ChatGPT 답변 아래의 [복사] 버튼으로 복사했는지 확인해 주세요. 화면을 드래그해 복사하면 수식이 글자로 풀려 들어옵니다."}
+              : formulas > 0
+                ? "아래 수식은 한글 수식 편집기에 보이는 그대로 입력하면 됩니다."
+                : "ChatGPT 답변 아래의 [복사] 버튼으로 복사했는지 확인해 주세요. 화면을 드래그해 복사하면 수식이 글자로 풀려 들어옵니다."}
           </p>
           {truncated && (
             <p className="text-[13px] text-amber-700 mb-4">
@@ -165,6 +181,14 @@ export default function LatexToHwpTool({ signupFreeCredits }: { signupFreeCredit
                   </p>
                 );
               }
+              if (isUnchanged(it)) {
+                return (
+                  <p key={idx} className="text-[13px] text-zinc-400 leading-relaxed px-1">
+                    <code className="eq">{it.hwp}</code>
+                    <span className="ml-2 text-[11px]">바꿀 것 없음 · 그대로 입력</span>
+                  </p>
+                );
+              }
               mathNo += 1;
               const copied = copiedIdx === idx;
               const failed = failedIdx === idx;
@@ -174,7 +198,7 @@ export default function LatexToHwpTool({ signupFreeCredits }: { signupFreeCredit
                     <span className="text-[11px] font-medium text-zinc-400">수식 {mathNo}</span>
                     {it.mathml && (
                       <span
-                        className="eq-render text-zinc-900 overflow-x-auto max-w-[70%]"
+                        className="eq-render text-zinc-900 overflow-x-auto overflow-y-hidden py-1 max-w-[70%]"
                         aria-hidden="true"
                         dangerouslySetInnerHTML={{ __html: it.mathml }}
                       />
@@ -202,7 +226,7 @@ export default function LatexToHwpTool({ signupFreeCredits }: { signupFreeCredit
             })}
           </div>
 
-          {formulas > 0 && (
+          {changed > 0 && (
             <div className="mt-6 rounded-lg bg-zinc-50 border border-zinc-200 px-4 py-3.5 text-[13px] text-zinc-600 leading-relaxed">
               문제 사진이나 PDF를 옮기는 중이라면, 수식을 하나씩 붙여 넣지 않아도 됩니다.{" "}
               <strong className="text-zinc-900">AI MathOCR</strong>은 문제지 전체를 편집 가능한 한글
