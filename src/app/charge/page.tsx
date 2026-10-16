@@ -105,9 +105,13 @@ function ChargeInner() {
         setPaying(false);
         return;
       }
+      // 충전업종 입점기준(나이스 2026-10-16 안내): 신용카드 일시불만 — 간편결제·할부 불가.
+      // cardQuota "00" = 일시불만. 할부는 5만 원 이상에서만 열리므로 그 금액에만 붙인다
+      // (나이스 문서상 cardQuota 최소금액 50,000원).
       AUTHNICE.requestPay({
         clientId: CLIENT_KEY,
-        method: "cardAndEasyPay",
+        method: "card",
+        ...(plan.price >= 50000 ? { cardQuota: "00" } : {}),
         orderId: buildOrderId(plan.id, user.id),
         amount: plan.price,
         goodsName: `AI MathOCR ${plan.name} ${plan.credits}크레딧`,
@@ -268,6 +272,24 @@ function ChargeInner() {
               })}
             </div>
 
+            {/* 결제수단 안내 — 충전업종 입점기준(신용카드 일시불만)과 카드사 충전 한도.
+                한도는 카드사 정책이라 결제창에서 거절될 수 있음을 미리 알린다 (2026-10-16). */}
+            <div className="card rounded-xl bg-white p-5 mb-4">
+              <p className="text-sm font-semibold text-zinc-900 mb-2">
+                결제수단 안내
+              </p>
+              <ul className="list-disc pl-5 space-y-1 text-sm text-zinc-600 leading-relaxed">
+                <li>
+                  <strong className="text-zinc-800">신용카드 일시불</strong>{" "}
+                  결제만 가능합니다. (간편결제·계좌이체·할부 미지원)
+                </li>
+                <li>
+                  카드사별 충전 결제 한도가 있어 금액에 따라 결제가 거절될 수
+                  있습니다. (예: 신한카드 1일 5만 원)
+                </li>
+              </ul>
+            </div>
+
             {/* 환불·유효기간 안내 — 결제 전 고지 (전자상거래법상 거래조건 표시 + 분쟁 예방) */}
             <div className="card rounded-xl bg-white p-5 mb-4">
               <p className="text-sm font-semibold text-zinc-900 mb-2">
@@ -293,6 +315,7 @@ function ChargeInner() {
                   만료 전에 충전하면 남아 있는 크레딧의 유효기간도 새 충전분
                   기준으로 함께 연장됩니다.
                 </li>
+                <li>카드 결제 건의 환불은 카드 매출 취소로 진행됩니다.</li>
                 <li>
                   자세한 내용은{" "}
                   <a

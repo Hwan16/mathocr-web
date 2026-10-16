@@ -21,11 +21,15 @@ export default function TermsPage() {
           <p className="text-amber-700 text-sm mt-1">
             2026년 10월 17일 시행 예정 개정 안내 (아래 참조)
           </p>
+          <p className="text-amber-700 text-sm mt-1">
+            2026년 10월 23일 시행 예정 개정 안내 (아래 참조)
+          </p>
         </div>
 
         {/* Terms Content */}
         <div className="card rounded-xl p-8 md:p-10 shadow-sm">
           <AmendmentNotice />
+          <RefundMethodAmendmentNotice />
           <TermsContent />
         </div>
 
@@ -153,6 +157,49 @@ function AmendmentNotice() {
 
       <p className="mt-4 text-amber-800">
         아래 본문은 현행 약관이며, 개정 내용은 2026년 10월 17일부터 적용됩니다.
+        개정에 동의하지 않으시는 경우 시행일 전까지 서비스 이용을 중단하고
+        탈퇴하실 수 있습니다.
+      </p>
+    </div>
+  );
+}
+
+// 약관 개정 사전 공지 (공지 2026-10-16 / 시행 2026-10-23) — 10-17 개정과 별개.
+// 나이스페이 충전업종 심사(2026-10-16 메일)에서 이용약관에 "카드결제를 통한 구매 건의 환불은
+// 원칙적으로 카드 매출 취소 환불을 통해서만 가능합니다." 문구를 요구해 제6조 제6항(환불 수단)을
+// 그 문장으로 교체한다. 결제수단이 원래 카드뿐이고 환불도 카드 취소로 해 왔던 것을 명확히 하는
+// 변경이라 이용자에게 불리한 변경이 아니므로 제10조 제1항 본문의 7일 예고로 시행한다(개별 이메일
+// 고지 대상 아님). 시행일에 본문 제6조 제6항을 개정안으로 바꾸고, 이 박스·헤더의 예고 줄·마이페이지
+// 공지를 삭제하고, LICENSE.txt 제6조 6항을 동기화하고, lib/consent.ts 의 CONSENT_VERSION 을
+// "2026-10-23"으로 올린다(CHECKLIST Phase 131).
+function RefundMethodAmendmentNotice() {
+  return (
+    <div className="mb-10 rounded-xl border border-amber-200 bg-amber-50 p-5 md:p-6 text-sm text-amber-900 leading-relaxed">
+      <h2 className="text-base font-semibold text-amber-900 mb-1">
+        2026년 10월 23일 시행 예정 약관 개정 안내
+      </h2>
+      <p className="text-amber-800/80 text-xs mb-4">
+        공지일: 2026년 10월 16일 · 시행일: 2026년 10월 23일
+      </p>
+
+      <p className="mb-4">
+        카드 결제 건의 환불 방법을 명확히 합니다. 크레딧 충전은 카드 결제로만
+        이루어지며, 환불 금액의 계산 기준(제6조 제3항·제4항)은 바뀌지 않습니다.
+      </p>
+
+      <p className="font-semibold mb-2">개정될 조문 전문</p>
+      <div className="rounded-lg border border-amber-200 bg-white/70 px-4 py-3">
+        <p className="text-xs font-medium text-amber-800/80 mb-1.5">
+          제6조 제6항 (개정안)
+        </p>
+        <p>
+          (환불 수단) 카드결제를 통한 구매 건의 환불은 원칙적으로 카드 매출 취소
+          환불을 통해서만 가능합니다.
+        </p>
+      </div>
+
+      <p className="mt-4 text-amber-800">
+        아래 본문은 현행 약관이며, 개정 내용은 2026년 10월 23일부터 적용됩니다.
         개정에 동의하지 않으시는 경우 시행일 전까지 서비스 이용을 중단하고
         탈퇴하실 수 있습니다.
       </p>
