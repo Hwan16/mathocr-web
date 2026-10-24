@@ -61,6 +61,31 @@ html {
   background: #fafafa;
 }
 
+/* 주요 행동 버튼(첫 화면·다운로드·하단 띠)만 — 마우스 올리면 살짝 떠오름. 요금 카드 버튼엔 쓰지 않는다 */
+.btn-lift {
+  transition: background 0.15s ease, border-color 0.15s ease,
+    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px -8px rgba(76, 29, 149, 0.45); /* violet-900 */
+}
+
+.btn-lift:active {
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-lift .lift-arrow {
+  display: inline-block;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-lift:hover .lift-arrow {
+  transform: translateX(3px);
+}
+
 /* ── 카드 ── */
 .card {
   background: #fff;
@@ -79,4 +104,43 @@ html {
   background: #fafafa;
   border: 1px dashed #d4d4d8;
   color: #a1a1aa;
+}
+
+/* ── 전/후 비교: 원본은 그대로, 변환된 HWP가 뒤이어 나타남 (RevealPair가 data-reveal을 붙임) ── */
+[data-reveal] > :nth-child(2) {
+  transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.25s,
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.25s;
+}
+
+[data-reveal="pending"] > :nth-child(2) {
+  opacity: 0;
+  transform: translateY(16px);
+}
+
+@media (min-width: 768px) {
+  /* 나란히 놓인 폭에선 원본 쪽(왼쪽)에서 넘어오듯 */
+  [data-reveal="pending"] > :nth-child(2) {
+    transform: translateX(-16px);
+  }
+}
+
+/* ── 움직임 줄이기 설정을 켠 사람에겐 움직임을 끈다 ── */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+  }
+
+  .btn-lift:hover,
+  .btn-lift:hover .lift-arrow {
+    transform: none;
+  }
 }

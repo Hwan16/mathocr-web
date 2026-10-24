@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { trackEvent } from "@/lib/analytics";
 import { FAQS } from "@/lib/faqs";
@@ -10,6 +10,7 @@ import AutoDetectShowcase from "@/components/AutoDetectShowcase";
 import AnswerToolsShowcase, { AnswerPanelPreview, RootTwo } from "@/components/AnswerToolsShowcase";
 import RomanTypeShowcase from "@/components/RomanTypeShowcase";
 import RealSolutionShowcase from "@/components/RealSolutionShowcase";
+import RevealPair from "@/components/RevealPair";
 import AiSolutionPromoBanner from "@/components/AiSolutionPromoBanner";
 import AnnouncementBar from "@/components/AnnouncementBar";
 import Changelog from "@/components/Changelog";
@@ -43,6 +44,21 @@ export default function Home() {
   const [purchaseNotice, setPurchaseNotice] = useState(false);
   // 다운로드 클릭 시 SmartScreen 경고 대처 안내 모달 (다운로드는 그대로 진행)
   const [downloadGuideOpen, setDownloadGuideOpen] = useState(false);
+  const guideVideoRef = useRef<HTMLVideoElement>(null);
+
+  // 사용법 단계 → 영상의 그 장면으로 이동해 재생
+  const playGuideAt = (seconds: number) => {
+    const video = guideVideoRef.current;
+    if (!video) return;
+    if (video.readyState >= 1) {
+      video.currentTime = seconds;
+    } else {
+      video.addEventListener("loadedmetadata", () => { video.currentTime = seconds; }, { once: true });
+    }
+    video.play().catch(() => {});
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    video.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+  };
 
   useEffect(() => {
     const supabase = createClient();
@@ -181,7 +197,7 @@ export default function Home() {
                   <a
                     href="#download"
                     onClick={() => trackEvent("nav_click", { label: "download_hero" })}
-                    className="btn-primary px-8 py-4 text-base rounded-lg text-center inline-flex items-center justify-center gap-2"
+                    className="btn-primary btn-lift px-8 py-4 text-base rounded-lg text-center inline-flex items-center justify-center gap-2"
                   >
                     <iconify-icon icon="solar:download-minimalistic-linear" width="20" />
                     Windows용 다운로드
@@ -190,16 +206,16 @@ export default function Home() {
                   <a
                     href="/auth/signup"
                     onClick={() => trackEvent("cta_click", { label: "sign_up_free_15", location: "hero" })}
-                    className="btn-primary px-8 py-4 text-base rounded-lg text-center inline-flex items-center justify-center gap-2"
+                    className="btn-primary btn-lift px-8 py-4 text-base rounded-lg text-center inline-flex items-center justify-center gap-2"
                   >
                     회원가입하고 {SIGNUP_FREE_CREDITS}문제 무료로 시작
-                    <span aria-hidden>→</span>
+                    <span aria-hidden className="lift-arrow">→</span>
                   </a>
                 )}
                 <a
                   href={isLoggedIn ? "#guide" : "#download"}
                   onClick={() => trackEvent("nav_click", { label: isLoggedIn ? "guide_hero" : "download_hero_secondary" })}
-                  className="btn-outline px-8 py-4 text-base rounded-lg text-center inline-flex items-center justify-center gap-2"
+                  className="btn-outline btn-lift px-8 py-4 text-base rounded-lg text-center inline-flex items-center justify-center gap-2"
                 >
                   {!isLoggedIn && <iconify-icon icon="solar:download-minimalistic-linear" width="20" />}
                   {isLoggedIn ? "사용법 보기" : "Windows용 다운로드"}
@@ -542,7 +558,7 @@ export default function Home() {
                 필기·낙서·채점 자국은 걸러내고 <strong className="text-zinc-900 font-semibold">원래
                 문제의 텍스트와 수식만 골라</strong> 깨끗한 HWP로 복원합니다.
               </p>
-              <div className="grid md:grid-cols-2 gap-5 items-start">
+              <RevealPair className="grid md:grid-cols-2 gap-5 items-start">
                 <figure className="card rounded-xl overflow-hidden">
                   <figcaption className="flex items-center gap-2 px-5 py-3 border-b border-zinc-200 bg-zinc-50 text-sm font-semibold text-zinc-500">
                     <span className="w-2 h-2 rounded-full bg-zinc-300" aria-hidden />
@@ -575,7 +591,7 @@ export default function Home() {
                     />
                   </div>
                 </figure>
-              </div>
+              </RevealPair>
             </div>
 
             {/* 2. 평가원 스타일 박스·보기 */}
@@ -589,7 +605,7 @@ export default function Home() {
               </p>
               {/* 조건 [박스] 쌍 */}
               <h4 className="text-lg font-bold text-zinc-800 mb-4">조건 [박스]</h4>
-              <div className="grid md:grid-cols-2 gap-5 items-start mb-10">
+              <RevealPair className="grid md:grid-cols-2 gap-5 items-start mb-10">
                 <figure className="card rounded-xl overflow-hidden">
                   <figcaption className="flex items-center gap-2 px-5 py-3 border-b border-zinc-200 bg-zinc-50 text-sm font-semibold text-zinc-500">
                     <span className="w-2 h-2 rounded-full bg-zinc-300" aria-hidden />
@@ -618,11 +634,11 @@ export default function Home() {
                     loading="lazy"
                   />
                 </figure>
-              </div>
+              </RevealPair>
 
               {/* <보기> 박스 쌍 */}
               <h4 className="text-lg font-bold text-zinc-800 mb-4">&lt;보기&gt; 박스</h4>
-              <div className="grid md:grid-cols-2 gap-5 items-start">
+              <RevealPair className="grid md:grid-cols-2 gap-5 items-start">
                 <figure className="card rounded-xl overflow-hidden">
                   <figcaption className="flex items-center gap-2 px-5 py-3 border-b border-zinc-200 bg-zinc-50 text-sm font-semibold text-zinc-500">
                     <span className="w-2 h-2 rounded-full bg-zinc-300" aria-hidden />
@@ -651,7 +667,7 @@ export default function Home() {
                     loading="lazy"
                   />
                 </figure>
-              </div>
+              </RevealPair>
             </div>
           </div>
         </div>
@@ -682,6 +698,8 @@ export default function Home() {
               전체 과정 동영상 가이드
             </figcaption>
             <video
+              ref={guideVideoRef}
+              id="guide-video"
               className="w-full aspect-video bg-zinc-100"
               src="/guide/usage-guide.mp4"
               poster="/guide/usage-guide-poster.jpg"
@@ -693,11 +711,13 @@ export default function Home() {
             </video>
           </figure>
 
-          {/* 스텝 1~5 — 1~4는 실제 앱 창 캡처(영상용 재구성 화면 금지). 다시 만들 때: 부모 저장소 tools/guide_steps/compose_step_images.py */}
+          {/* 스텝 1~5 — 1~4는 실제 앱 창 캡처(영상용 재구성 화면 금지). 다시 만들 때: 부모 저장소 tools/guide_steps/compose_step_images.py
+              at = 위 영상에서 그 단계가 시작하는 초. 영상을 바꾸면 같이 고친다(원본 타임라인: 261009_usage_guide_ai/timeline.js의 L·CH) */}
           <div className="space-y-16 lg:space-y-20">
             {[
               {
                 n: 1,
+                at: 5,
                 title: "회원가입 후 프로그램 설치",
                 desc: `홈페이지에서 회원가입하면 무료 크레딧 ${SIGNUP_FREE_CREDITS}개가 지급됩니다. Windows용 설치 파일을 다운로드해 실행하세요.`,
                 img: "step-1.webp",
@@ -707,6 +727,7 @@ export default function Home() {
               },
               {
                 n: 2,
+                at: 10,
                 title: "로그인하고 PDF 또는 이미지 열기",
                 desc: "프로그램을 실행해 가입한 계정으로 로그인합니다. 시험지 PDF나 핸드폰으로 찍은 문제 이미지(JPG/PNG, 최대 10장)를 드래그해서 놓거나, [파일 열기]로 업로드하세요. PDF와 이미지 모두 여러 개를 함께 첨부할 수 있고, 회전된 이미지도 프로그램 안에서 바로 회전시킬 수 있으니 방향 걱정 없이 자유롭게 올리면 됩니다.",
                 img: "step-2.webp",
@@ -716,6 +737,7 @@ export default function Home() {
               },
               {
                 n: 3,
+                at: 16,
                 title: "자동 인식 또는 드래그로 문제 영역 지정",
                 desc: "[✨ 자동 인식] 버튼을 누르면 AI가 문제·그림 박스 초안을 자동으로 그려줍니다(무료). 물론 직접 드래그로 감싸서 만들 수도 있어요. 문제 안에 그래프나 도형이 있으면 [그림] 모드로 그림 영역을, 해설이 있으면 [해설] 모드로 해설 영역을 따로 지정하세요. 우측 목록에 답안도 미리 입력할 수 있으며, 입력한 답안과 해설은 모두 해당 문제에 미주로 연결됩니다.",
                 img: "step-3.webp",
@@ -725,6 +747,7 @@ export default function Home() {
               },
               {
                 n: 4,
+                at: 94,
                 title: "변환하기 버튼 클릭",
                 desc: "시험지 명을 입력하고 [변환하기]를 누르면 AI가 문제별로 수식을 인식합니다. 진행률이 실시간으로 표시되고, 문제 수에 따라 수십 초 안에 완료됩니다.",
                 img: "step-4.webp",
@@ -734,6 +757,7 @@ export default function Home() {
               },
               {
                 n: 5,
+                at: 112,
                 title: "완성된 HWP 확인",
                 desc: "변환이 끝나면 시험지 명으로 저장된 HWP 파일이 열립니다. 수식을 더블클릭해 보세요 — 수식편집기에서 바로 수정할 수 있습니다.",
                 img: "step-5.webp",
@@ -757,6 +781,21 @@ export default function Home() {
                   </div>
                   <h3 className="text-2xl font-bold mb-3">{step.title}</h3>
                   <p className="text-zinc-600 leading-relaxed text-lg">{step.desc}</p>
+                  <a
+                    href="#guide-video"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      trackEvent("guide_video_jump", { step: step.n });
+                      playGuideAt(step.at);
+                    }}
+                    className="mt-5 inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3.5 py-2 text-sm font-medium text-zinc-700 transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                  >
+                    <iconify-icon icon="solar:play-bold" width="12" className="text-[var(--accent)]" />
+                    영상에서 보기
+                    <span className="tabular-nums text-zinc-500">
+                      · {Math.floor(step.at / 60)}:{String(step.at % 60).padStart(2, "0")}
+                    </span>
+                  </a>
                 </div>
                 <figure className="lg:[direction:ltr] card rounded-xl overflow-hidden">
                   <img
@@ -1055,7 +1094,7 @@ export default function Home() {
                   trackEvent("app_download", { version: DOWNLOAD_LABEL });
                   setDownloadGuideOpen(true);
                 }}
-                className="btn-primary inline-flex items-center gap-2.5 px-10 py-4 text-lg rounded-lg"
+                className="btn-primary btn-lift inline-flex items-center gap-2.5 px-10 py-4 text-lg rounded-lg"
               >
                 <iconify-icon icon="solar:download-minimalistic-linear" width="22" />
                 Windows용 다운로드
@@ -1170,14 +1209,14 @@ export default function Home() {
             <a
               href="/auth/signup"
               onClick={() => trackEvent("cta_click", { label: "sign_up", location: "bottom" })}
-              className="bg-white text-[var(--accent)] font-semibold px-8 py-4 rounded-lg hover:bg-violet-50 transition-colors"
+              className="btn-lift bg-white text-[var(--accent)] font-semibold px-8 py-4 rounded-lg hover:bg-violet-50"
             >
               무료 회원가입
             </a>
             <a
               href="#download"
               onClick={() => trackEvent("nav_click", { label: "download_bottom" })}
-              className="border border-white/40 text-white font-medium px-8 py-4 rounded-lg hover:bg-white/10 transition-colors"
+              className="btn-lift border border-white/40 text-white font-medium px-8 py-4 rounded-lg hover:bg-white/10"
             >
               다운로드
             </a>
