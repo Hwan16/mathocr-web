@@ -7,19 +7,25 @@ import { SOCIAL_LINKS } from "@/lib/social";
 
 const SITE_URL = "https://mathocr.ai.kr";
 
+// 한글 이름 표기 — 광고·검색에서 실제로 쓰이는 '매쓰OCR'·'매쓰오씨알'을 'AI'와 붙여
+// 이름이 같은 다른 서비스(MathOCR, 에듀허브)와 구분한다(10-25 검색광고 점검 §5 ②).
+const ALTERNATE_NAMES = ["AI 매쓰OCR", "에이아이 매쓰오씨알"];
+
 const organization = {
   "@context": "https://schema.org",
   "@type": "Organization",
   name: "AI MathOCR",
+  alternateName: ALTERNATE_NAMES,
   url: SITE_URL,
   logo: `${SITE_URL}/mathocr-icon.png`,
-  sameAs: [SOCIAL_LINKS.instagram, SOCIAL_LINKS.youtube],
+  sameAs: [SOCIAL_LINKS.instagram, SOCIAL_LINKS.youtube, SOCIAL_LINKS.threads],
 };
 
 const website = {
   "@context": "https://schema.org",
   "@type": "WebSite",
   name: "AI MathOCR",
+  alternateName: ALTERNATE_NAMES,
   url: SITE_URL,
   inLanguage: "ko-KR",
 };
