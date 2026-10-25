@@ -266,7 +266,15 @@
   },
   {
    "latex": "\\text{if } x > 0",
-   "hwp": "rm \"if \" it x > 0"
+   "hwp": "rm \"if\" it ~ x > 0"
+  },
+  {
+   "latex": "x\\text{는 } 10\\text{ 이하의 자연수}",
+   "hwp": "x rm \"는\" it ~ 10~rm \"이하의 자연수\" it"
+  },
+  {
+   "latex": "\\text{ }",
+   "hwp": "~"
   },
   {
    "latex": "\\textrm{cm}",
@@ -362,15 +370,31 @@
   },
   {
    "latex": "a\\,b",
-   "hwp": "a b"
+   "hwp": "a`b"
   },
   {
    "latex": "a\\;b",
-   "hwp": "a b"
+   "hwp": "a~b"
   },
   {
    "latex": "a\\quad b",
-   "hwp": "a b"
+   "hwp": "a~~ b"
+  },
+  {
+   "latex": "a,\\qquad b",
+   "hwp": "a, ~~~~ b"
+  },
+  {
+   "latex": "x=0,\\ 1,\\ 2",
+   "hwp": "x=0, ~1, ~2"
+  },
+  {
+   "latex": "t=4\\quad\\text{또는}\\quad t=2",
+   "hwp": "t=4~~rm \"또는\" it ~~ t=2"
+  },
+  {
+   "latex": "5\\mathrm{~m}",
+   "hwp": "5 rm { m} it"
   },
   {
    "latex": "\\operatorname{lcm}(a,b)",
@@ -534,7 +558,7 @@
   },
   {
    "latex": "\\begin{cases} x & \\text{if } x > 0 \\\\ -x & \\text{otherwise} \\end{cases}",
-   "hwp": "cases{x & rm \"if \" it x > 0 # -x & rm \"otherwise\" it}"
+   "hwp": "cases{x & rm \"if\" it ~ x > 0 # -x & rm \"otherwise\" it}"
   },
   {
    "latex": "\\begin{vmatrix} a & b \\\\ c & d \\end{vmatrix}",
@@ -626,7 +650,7 @@
   },
   {
    "latex": "\\int_{0}^{1} f(x)\\,dx",
-   "hwp": "int _{0}^{1} f(x) dx"
+   "hwp": "int _{0}^{1} f(x)`dx"
   },
   {
    "latex": "\\left[ F(x) \\right]_{a}^{b}",
@@ -662,11 +686,11 @@
   },
   {
    "latex": "x \\in A ,\\ x \\notin A",
-   "hwp": "x in A , x notin A"
+   "hwp": "x in A , ~x notin A"
   },
   {
    "latex": "A \\subset B ,\\ A \\not\\subset B",
-   "hwp": "A subset B , A not subset B"
+   "hwp": "A subset B , ~A not subset B"
   },
   {
    "latex": "A \\cup B",
@@ -734,7 +758,7 @@
   },
   {
    "latex": "3\\,\\mathrm{cm}^{2}",
-   "hwp": "3 rm {cm}^{2} it"
+   "hwp": "3`rm {cm}^{2} it"
   },
   {
    "latex": "x = \\dfrac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}",
@@ -742,11 +766,11 @@
   },
   {
    "latex": "\\displaystyle \\int_0^\\pi \\sin x \\, dx = 2",
-   "hwp": "int _{0}^{pi} sin x dx = 2"
+   "hwp": "int _{0}^{pi} sin x ` dx = 2"
   },
   {
    "latex": "a_{n+1} = 2a_n + 1 \\quad (n \\ge 1)",
-   "hwp": "a_{n+1} = 2a_{n} + 1 (n geq 1)"
+   "hwp": "a_{n+1} = 2a_{n} + 1 ~~ (n geq 1)"
   },
   {
    "latex": "\\overline{\\mathrm{P}_1\\mathrm{P}_2}^2",

@@ -168,8 +168,8 @@ const SYMBOL_MAP: Record<string, string> = {
   cdots: "cdots", ldots: "...", vdots: "vdots",
   ddots: "ddots", dots: "cdots",
 
-  // 공백
-  quad: " ", qquad: " ",
+  // 공백 — 한글 수식은 보통 공백을 무시하므로 띄어쓰기 기호 ~(한 칸)·`(1/4칸)로 (10-26, 앱과 같음)
+  quad: "~~", qquad: "~~~~",
 };
 
 const DECORATION_MAP: Record<string, string> = {
@@ -442,15 +442,15 @@ export class LatexToHwpConverter {
 
   private convertSpecialChar(ch: string): string {
     const table: Record<string, string> = {
-      ",": " ",
-      ";": " ",
-      ":": " ",
+      ",": "`",
+      ";": "~",
+      ":": "`",
       "!": "",
       "{": "lbrace ",
       "}": "rbrace ",
       "|": "|",
       "\\": " ## ",
-      " ": " ",
+      " ": "~",
       "%": "%",
       "#": "#",
       "&": "&",
@@ -487,11 +487,16 @@ export class LatexToHwpConverter {
       return "sqrt{" + arg + "}";
     }
 
-    // 텍스트 — 단위·설명어는 정자체(rm)로 감싸고 it 으로 되돌린다
+    // 텍스트 — 단위·설명어는 정자체(rm)로 감싸고 it 으로 되돌린다.
+    // 따옴표 안 끝머리 공백은 한글이 지운다("는 " + 10 → "는10") — 앞뒤 공백은 따옴표 밖 ~로 옮긴다.
     if (cmd === "text" || cmd === "textrm" || cmd === "mbox" || cmd === "hbox") {
       const arg = this.parseBracedArg();
       if (!arg) return "";
-      return 'rm "' + arg + '" it ';
+      const core = pyStrip(arg);
+      if (!core) return "~";
+      const lead = /\s/.test(arg[0]) ? "~" : "";
+      const trail = /\s/.test(arg[arg.length - 1]) ? "~ " : "";
+      return lead + 'rm "' + core + '" it ' + trail;
     }
 
     if (cmd === "textit" || cmd === "textbf") {

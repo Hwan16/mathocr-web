@@ -34,7 +34,7 @@ test("ChatGPT 답변: \\( \\)·\\[ \\]·$ 구분자에서 수식만 골라 변�
   assert.equal(math.length, 3);
   assert.equal(math[0].hwp, "x = {-b +- sqrt{b^{2}-4ac}} over {2a}");
   assert.equal(math[0].display, false);
-  assert.equal(math[1].hwp, "int _{0}^{1} x^{2} dx = {1} over {3}");
+  assert.equal(math[1].hwp, "int _{0}^{1} x^{2}`dx = {1} over {3}"); // \, → `(1/4칸, 10-26)
   assert.equal(math[1].display, true);
   assert.equal(math[2].hwp, "a ≠ b");
   assert.ok(items.some((i) => i.kind === "text" && i.text.includes("근의 공식은")));
