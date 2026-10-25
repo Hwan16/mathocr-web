@@ -8,16 +8,18 @@ export default function TrackedLink({
   label,
   location,
   className,
+  download,
   children,
 }: {
   href: string;
   label: string;
   location: string;
   className?: string;
+  download?: string; // 파일 내려받기 링크면 저장될 파일 이름 (GA4는 .hwp 다운로드를 자동으로 세지 않음)
   children: React.ReactNode;
 }) {
   return (
-    <a href={href} onClick={() => trackEvent("cta_click", { label, location })} className={className}>
+    <a href={href} download={download} onClick={() => trackEvent("cta_click", { label, location })} className={className}>
       {children}
     </a>
   );

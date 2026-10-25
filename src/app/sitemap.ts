@@ -15,8 +15,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     {
       url: `${SITE_URL}/guides`,
-      lastModified: "2026-10-14",
+      lastModified: "2026-10-25",
       changeFrequency: "weekly",
+      priority: 0.7,
+    },
+    {
+      url: `${SITE_URL}/help/wrong-answer-note`,
+      lastModified: "2026-10-25",
+      changeFrequency: "monthly",
       priority: 0.7,
     },
     {

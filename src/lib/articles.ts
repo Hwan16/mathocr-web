@@ -27,6 +27,17 @@ export type Article = {
 
 export const ARTICLES: Article[] = [
   {
+    href: "/help/wrong-answer-note",
+    published: "2026-10-25",
+    ogImage: "/articles/wrong-note-og.jpg",
+    category: "exam",
+    title: "수학 오답노트 양식(한글) — 틀린 문제마다 개념·풀이·틀린 이유를 한 장에",
+    summary: "문제 · 핵심 개념 · 문제 풀이 · 왜 틀렸나를 한 칸에 정리하는 한글 양식(24×33cm·A4, 가입 없이 무료)과, 시험지를 한 번 변환해 학생마다 골라 붙이는 법.",
+    date: "2026-10-25",
+    thumb: { img: "/articles/wrong-note-thumb.webp", alt: "오답 노트 양식에 사인법칙 문제와 풀이를 채운 예시" },
+    thumbTone: "violet",
+  },
+  {
     href: "/help/math-exam-to-hwp",
     published: "2026-10-14",
     ogImage: "/articles/exam-3ways-og.jpg",
