@@ -15,6 +15,7 @@ import AiSolutionPromoBanner from "@/components/AiSolutionPromoBanner";
 import AnnouncementBar from "@/components/AnnouncementBar";
 import Changelog from "@/components/Changelog";
 import DownloadGuideModal from "@/components/DownloadGuideModal";
+import SendToPcButton from "@/components/SendToPcButton";
 // 다운로드 링크 단일 출처 — 릴리스 시 lib/download.ts만 갱신 (홈·/start·마이페이지 공유)
 import { DOWNLOAD_URL, DOWNLOAD_LABEL } from "@/lib/download";
 import { SOCIAL_LINKS } from "@/lib/social";
@@ -193,11 +194,15 @@ export default function Home() {
               </p>
 
               <div className="flex flex-col 2xl:flex-row gap-3">
+                {/* 폰은 설치할 수 없으니 다운로드 대신 'PC로 주소 보내 두기' (M1, docs/MOBILE_TO_PC_PLAN_2026-10-28.md) */}
+                {isLoggedIn && (
+                  <SendToPcButton location="hero" path="/start" className="md:hidden" />
+                )}
                 {isLoggedIn ? (
                   <a
                     href="#download"
                     onClick={() => trackEvent("nav_click", { label: "download_hero" })}
-                    className="btn-primary btn-lift px-8 py-4 text-base rounded-lg text-center inline-flex items-center justify-center gap-2"
+                    className="btn-primary btn-lift px-8 py-4 text-base rounded-lg text-center hidden md:inline-flex items-center justify-center gap-2"
                   >
                     <iconify-icon icon="solar:download-minimalistic-linear" width="20" />
                     Windows용 다운로드
@@ -212,15 +217,28 @@ export default function Home() {
                     <span aria-hidden className="lift-arrow">→</span>
                   </a>
                 )}
+                {!isLoggedIn && (
+                  <SendToPcButton location="hero" className="md:hidden" />
+                )}
                 <a
                   href={isLoggedIn ? "#guide" : "#download"}
                   onClick={() => trackEvent("nav_click", { label: isLoggedIn ? "guide_hero" : "download_hero_secondary" })}
-                  className="btn-outline btn-lift px-8 py-4 text-base rounded-lg text-center inline-flex items-center justify-center gap-2"
+                  className={`btn-outline btn-lift px-8 py-4 text-base rounded-lg text-center items-center justify-center gap-2 ${
+                    isLoggedIn ? "inline-flex" : "hidden md:inline-flex"
+                  }`}
                 >
                   {!isLoggedIn && <iconify-icon icon="solar:download-minimalistic-linear" width="20" />}
                   {isLoggedIn ? "사용법 보기" : "Windows용 다운로드"}
                 </a>
               </div>
+
+              {/* 폰 전용 기대치 한 줄 (M2) — 폰에서 할 일은 가입이 아니라 '주소 챙기기' */}
+              <p className="md:hidden mt-4 flex gap-2 text-sm text-zinc-600 leading-relaxed">
+                <iconify-icon icon="solar:monitor-linear" width="18" className="shrink-0 mt-0.5 text-zinc-500" />
+                <span>
+                  PC에서 쓰는 프로그램이에요. 이 주소를 카톡으로 보내 두면, 컴퓨터 앞에서 바로 열 수 있어요.
+                </span>
+              </p>
 
               <p className="text-sm text-zinc-500 mt-5 leading-relaxed">
                 <strong className="text-[var(--accent)] font-bold">
@@ -1131,10 +1149,15 @@ export default function Home() {
                   AI MathOCR은 한글(HWP)과 연동되는 Windows 데스크톱 프로그램이라
                   모바일에서는 설치할 수 없습니다.
                 </p>
-                <div className="bg-zinc-50 border border-zinc-200 rounded-lg p-4 text-sm text-zinc-700 leading-relaxed">
+                <div className="bg-zinc-50 border border-zinc-200 rounded-lg p-4 text-sm text-zinc-700 leading-relaxed mb-5">
                   PC에서 <strong className="font-semibold text-[var(--accent)]">mathocr.ai.kr</strong>에
                   접속한 뒤 이 페이지에서 다운로드하세요.
                 </div>
+                <SendToPcButton
+                  location="download"
+                  path={isLoggedIn ? "/start" : "/"}
+                  hint="카톡 '나와의 채팅'이나 메일로 주소를 보내 두면 PC에서 바로 열 수 있어요"
+                />
               </div>
             </div>
           </div>

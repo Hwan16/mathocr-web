@@ -11,6 +11,7 @@ import ResendConfirmationMail, {
   startResendCooldown,
 } from "@/components/ResendConfirmationMail";
 import { getStoredUtm } from "@/lib/utm";
+import SendToPcButton from "@/components/SendToPcButton";
 // 동의받은 약관/방침의 버전(시행일) — lib/consent.ts 단일 출처 (서버와 자동 일치)
 import { CONSENT_VERSION } from "@/lib/consent";
 
@@ -340,6 +341,14 @@ function SignupForm() {
               <strong className="text-zinc-900">프로그램 설치 안내</strong>로
               바로 이어집니다.
             </p>
+            {/* 폰 가입자: 인증·설치를 PC에서 이어 하도록 (M3, docs/MOBILE_TO_PC_PLAN_2026-10-28.md) */}
+            <div className="md:hidden my-5 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
+              <p className="text-sm text-zinc-700 leading-relaxed mb-3">
+                인증 메일은 PC에서 열어도 돼요. PC 프로그램에도 같은 계정으로
+                로그인해요.
+              </p>
+              <SendToPcButton location="signup_done" path="/start" />
+            </div>
             <p className="text-xs text-zinc-400 leading-relaxed mb-4">
               메일이 안 보이면 스팸함을 확인해주세요. 이미 가입된 이메일이라면
               메일이 오지 않을 수 있어요 — 바로 로그인해 보세요.

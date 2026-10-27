@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 
 // 아이콘 자체 번들 (LA-10) — jsDelivr CDN 스크립트 + api.iconify.design 런타임
-// 조회를 제거하고, 사용하는 solar 아이콘 6종의 데이터를 저장소에 내장한다.
+// 조회를 제거하고, 사용하는 solar 아이콘 7종의 데이터를 저장소에 내장한다.
 // 새 아이콘을 추가하면 src/lib/solar-icons.json에도 추가해야 한다 (누락 시
 // 아이콘이 빈 칸으로 렌더링됨 — 외부 API 폴백은 CSP가 차단).
 import solarIcons from "@/lib/solar-icons.json";
