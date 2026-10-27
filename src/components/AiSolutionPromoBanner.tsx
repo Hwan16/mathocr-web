@@ -12,7 +12,8 @@ import { trackEvent } from "@/lib/analytics";
 // 2026-10-25: 오른쪽의 큰 '+1' 숫자를 뺐다(사용자 — "+1만 강조돼 본질이 안 보인다", 가격은 왼쪽 제목·칩이 이미 말함).
 //   대신 '해설지 없음' 문제 카드 → 실제 풀이가 적힌 '정답 및 해설' 카드로 무엇을 받는지 보여 준다. 폰에서도 보인다.
 //   같은 날 반복 띠 두 줄도 뺐다(사용자 — "난잡하다"). 띠가 하던 말("문제마다"·"모의고사 해설처럼")은
-//   큰 화면에선 해설 카드의 해당 줄을 가리키는 주석으로, 작은 화면에선 카드 아래 한 줄로 둔다.
+//   큰 화면에선 주석으로("문제마다" → 시험지 카드의 문제, "모의고사 해설처럼" → 해설 카드의 풀이 줄), 작은 화면에선 카드 아래 한 줄로 둔다.
+//   2026-10-28: "문제마다" 선이 해설 카드에 붙어 있던 것을 시험지 카드로 옮겼다(사용자 — "위에 있는 시험지로 연결").
 
 // 카드 속 수식은 한글 수식처럼 세리프 이탤릭(변수만)
 const v = (s: string) => <i className="font-serif">{s}</i>;
@@ -96,11 +97,13 @@ export default function AiSolutionPromoBanner() {
                 💡 해설 생성 →
               </div>
 
-              {/* 주석(1024 이상) — 좌표는 위 해설 카드(왼쪽 198·위 72·폭 262·3도 회전)의 '18. 정답'·풀이 줄 높이에 맞춘 값 */}
+              {/* 주석(1024 이상) — '문제마다'는 위 시험지 카드(왼쪽 0·위 0·폭 250·-4도 회전)의 문제 첫 줄 높이(오른쪽 가장자리 x≈249)에,
+                  '모의고사 해설처럼'은 아래 해설 카드(왼쪽 198·위 72·폭 262·3도 회전)의 풀이 줄 높이에 맞춘 값.
+                  시험지 쪽 선은 해설 카드 윗변(y≈65~79) 위쪽 빈 곳을 지나 라벨 열(x=506)까지 간다 */}
               <div className="hidden lg:block">
-                <span className="absolute left-[462px] top-[124px] h-1.5 w-1.5 rounded-full bg-[#D9F99D]" />
-                <span className="absolute left-[468px] top-[126.5px] h-px w-[30px] bg-[#D9F99D]/60" />
-                <span className="absolute left-[506px] top-[116px] whitespace-nowrap text-[16px] font-bold text-[#D9F99D]">문제마다</span>
+                <span className="absolute left-[249.5px] top-[45px] h-1.5 w-1.5 rounded-full bg-[#D9F99D]" />
+                <span className="absolute left-[255.5px] top-[47.5px] h-px w-[242.5px] bg-[#D9F99D]/60" />
+                <span className="absolute left-[506px] top-[37px] whitespace-nowrap text-[16px] font-bold text-[#D9F99D]">문제마다</span>
 
                 <span className="absolute left-[459px] top-[189px] h-1.5 w-1.5 rounded-full bg-[#D9F99D]" />
                 <span className="absolute left-[465px] top-[191.5px] h-px w-[33px] bg-[#D9F99D]/60" />
