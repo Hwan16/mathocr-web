@@ -47,9 +47,14 @@ export default function SendToPcButton({
     if (typeof navigator.share === "function") {
       trackEvent("mobile_share_click", { location });
       try {
+        // 카톡은 주소(미리보기 카드)와 text를 말풍선 두 개로 나눠 보낸다 →
+        // text는 그 자체로 끝맺는 한 문장으로 쓴다(10-28 사용자 실측: ' · '로 이은 조각 문구가 어색).
         await navigator.share({
-          title: "AI MathOCR — PC에서 열기",
-          text: "PC에서 열어 설치하기 · 수학문제 PDF·사진을 한글(HWP)로",
+          title: "AI MathOCR",
+          text:
+            path === "/start"
+              ? "PC에서 열면 프로그램 설치 안내로 바로 이어져요."
+              : "PC에서 열면 수학문제 PDF·사진을 한글(HWP) 파일로 바로 변환할 수 있어요.",
           url,
         });
         return;
