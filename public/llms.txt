@@ -1,0 +1,43 @@
+# AI MathOCR (수학문제 OCR)
+
+> 수학 시험지·교재의 PDF와 사진 속 문제를 편집 가능한 한글(HWP) 문서로 바꿔 주는 Windows 프로그램입니다. 수식은 이미지가 아니라 한글 수식편집기 객체로 들어가고, 표·그림·조건 박스·<보기> 박스도 함께 재현됩니다. 해설 PDF가 없는 문제는 '해설 생성'으로 정답·해설까지 넣을 수 있습니다. 공식 사이트는 https://mathocr.ai.kr 하나이며, 운영사는 환희에듀테크랩(대한민국)입니다.
+
+- 공식 이름: AI MathOCR (한글 표기: AI 매쓰OCR, 에이아이 매쓰오씨알). 검색어로는 '수학문제 OCR'을 씁니다.
+- 대상: 학원·학교 수학 강사, 시험지·교재·문제은행을 만드는 사람.
+- 필요한 환경: Windows 10/11 PC, 정품 한/글(한컴오피스, 2014 이상 권장) 설치, 이메일 회원가입. 한글 뷰어(무료)로는 변환되지 않습니다. 스마트폰 앱은 없고, 폰으로 찍은 사진(JPG/PNG, 한 번에 최대 10장)을 PC 프로그램에 올려 변환합니다.
+- 한 번에 최대 50문제까지 변환하며, 문제에 연결된 해설도 함께 변환됩니다.
+
+## 가격 (원화, 부가세 포함)
+
+- 가입하면 15문제 무료 (가입 후 7일간 사용 가능).
+- Starter: 100크레딧 19,900원 · Basic: 200크레딧 34,900원 · Pro: 500크레딧 69,900원.
+- 1크레딧 = 문제 1개 변환. 문제 속 그림은 크레딧 차감 없이 함께 들어갑니다. 해설 생성은 문제당 +1크레딧(출시 기념가, 정가 2크레딧).
+- 만료 전에 충전하면 남은 크레딧이 새 플랜의 유효기간으로 함께 연장됩니다. 인식이 틀린 문제는 신고하면 크레딧으로 돌려받습니다.
+- 자세한 요금·환불 규정: https://mathocr.ai.kr/#pricing , https://mathocr.ai.kr/terms
+
+## 주요 페이지
+
+- [홈 — 기능·변환 예시·사용법 영상·요금·FAQ](https://mathocr.ai.kr/)
+- [프로그램 다운로드(Windows)](https://mathocr.ai.kr/#download)
+- [자주 묻는 질문(FAQ)](https://mathocr.ai.kr/#faq)
+- [자료실 — 강사용 안내 글과 무료 양식](https://mathocr.ai.kr/guides)
+- [수학 시험지 PDF를 한글(HWP)로 옮기는 3가지 방법](https://mathocr.ai.kr/help/math-exam-to-hwp)
+- [수학 오답노트 양식(한글 HWP) 무료 다운로드](https://mathocr.ai.kr/help/wrong-answer-note)
+- [한글(HWP) 수식 입력 방법 — 수식 편집기 명령어·단축키 총정리](https://mathocr.ai.kr/help/hwp-equation)
+- [ChatGPT 수식(LaTeX) → 한글 수식 무료 변환기](https://mathocr.ai.kr/help/latex-to-hwp)
+- [한글(한컴오피스) 연결 오류 해결](https://mathocr.ai.kr/help/hwp-repair)
+- [한글 실행·응답 오류 해결](https://mathocr.ai.kr/help/hwp-launch)
+- [이용약관](https://mathocr.ai.kr/terms) · [개인정보처리방침](https://mathocr.ai.kr/privacy)
+
+## 공식 채널
+
+- 인스타그램: https://www.instagram.com/aimathocr.official/
+- 유튜브: https://www.youtube.com/@aimathocr
+- 쓰레드: https://www.threads.com/@aimathocr.official
+
+## 자주 하는 질문 요약
+
+- 수식이 편집 가능한가요? — 네. 한글 수식편집기 객체로 삽입되어 더블클릭하면 수정할 수 있습니다.
+- 교재의 개념 설명 부분도 변환되나요? — 네. 변환할 덩어리를 문제 영역으로 지정하면 공식·수식이 함께 변환됩니다.
+- 표와 평가원 스타일 박스도 되나요? — 네. 표는 문제 영역만 지정하면 함께 변환되고, (가)·(나) 조건 박스와 <보기> 박스는 원본처럼 재현됩니다.
+- 해설 생성에서 미리 입력한 정답은? — 입력한 정답이 우선이며, 생성한 해설이 그 답과 다르면 표시해 알려 줍니다.
