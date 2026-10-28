@@ -36,6 +36,8 @@ function SignupForm() {
   // 코드에 유효기간이 지정된 경우(일수) — 가입 시 만료일이 최소 now()+n일로 연장됨
   const [promoValidityDays, setPromoValidityDays] = useState<number | null>(null);
   const [error, setError] = useState("");
+  // 이미 가입된 이메일 — 오류 문구 아래에 로그인·비밀번호 찾기 길을 같이 보여준다
+  const [alreadyRegistered, setAlreadyRegistered] = useState(false);
   // 지메일 점(.) 실시간 판정 — 서버(api/auth/signup)와 같은 규칙을 화면에서 미리 알린다.
   // 지메일 계열만 대상. 회사·학교 메일은 점이 의미를 가지므로 건드리지 않는다.
   const dottedGmail = (() => {
@@ -155,6 +157,7 @@ function SignupForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setAlreadyRegistered(false);
 
     // 지메일 점(.) — 서버가 400으로 막지만, 헛클릭 없이 즉시 안내한다.
     if (dottedGmail) {
@@ -221,8 +224,12 @@ function SignupForm() {
 
       if (!response.ok) {
         const message = result.error ?? "회원가입 중 오류가 발생했습니다.";
-        if (message.includes("already registered")) {
-          setError("이미 가입된 이메일입니다.");
+        if (
+          result.code === "already_registered" ||
+          message.includes("already registered")
+        ) {
+          setAlreadyRegistered(true);
+          setError("이미 가입된 이메일입니다. 로그인해 주세요.");
         } else {
           setError(message);
         }
@@ -601,7 +608,27 @@ function SignupForm() {
             </div>
 
             {error && (
-              <p className="text-red-600 text-sm">{error}</p>
+              <p className="text-red-600 text-sm">
+                {error}
+                {alreadyRegistered && (
+                  <>
+                    {" "}
+                    <a
+                      href="/auth/login"
+                      className="text-[var(--accent)] underline"
+                    >
+                      로그인
+                    </a>
+                    {" · "}
+                    <a
+                      href="/auth/reset-password"
+                      className="text-[var(--accent)] underline"
+                    >
+                      비밀번호 찾기
+                    </a>
+                  </>
+                )}
+              </p>
             )}
 
             <button

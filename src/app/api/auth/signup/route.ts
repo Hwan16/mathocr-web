@@ -21,6 +21,9 @@ const SIGNUP_IP_WINDOW_MS = 60 * 60 * 1000; // 1시간
 
 const PROFILE_RETRY_DELAYS_MS = [100, 200, 400, 800, 1200];
 
+const ALREADY_REGISTERED_MESSAGE =
+  "이미 가입된 이메일입니다. 로그인해 주세요.";
+
 type SignupBody = {
   email?: string;
   password?: string;
@@ -294,7 +297,26 @@ export async function POST(request: NextRequest) {
   });
 
   if (error) {
+    // Confirm email이 꺼진 환경에서는 기존 이메일이 이 오류로 온다
+    if (/already registered/i.test(error.message)) {
+      return NextResponse.json(
+        { error: ALREADY_REGISTERED_MESSAGE, code: "already_registered" },
+        { status: 409 }
+      );
+    }
     return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+
+  // 이미 인증까지 마친 이메일: Confirm email이 켜진 환경(현재 프로덕션)에서
+  // Supabase는 계정 존재를 숨기려고 오류 대신 identities가 빈 가짜 사용자를
+  // 돌려주고 메일도 보내지 않는다. 그대로 두면 "인증 메일을 보냈습니다"로
+  // 안내되므로 여기서 막는다 (2026-10-28 사용자 결정 — 가입 여부 노출 감수).
+  // 인증 전 계정은 identities가 있고 Supabase가 인증 메일을 다시 보내므로 통과시킨다.
+  if (data.user && data.user.identities?.length === 0) {
+    return NextResponse.json(
+      { error: ALREADY_REGISTERED_MESSAGE, code: "already_registered" },
+      { status: 409 }
+    );
   }
 
   const userId = data.user?.id;
