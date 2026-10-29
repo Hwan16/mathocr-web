@@ -55,7 +55,7 @@ const CARDS: GuideCard[] = ARTICLES.map((a) => ({
 
 export default function GuidesPage() {
   return (
-    <div className="min-h-screen bg-zinc-50">
+    <div className="guide-theme min-h-screen bg-white">
       <style>{`
 .guide-thumb math{font-size:1.6em}
 .guide-thumb math,.guide-thumb math *{font-family:"Cambria Math","STIX Two Math","Latin Modern Math",math}
@@ -67,12 +67,17 @@ export default function GuidesPage() {
       />
       <ArticleTopBar location="guides" />
       <ArticleHeader location="guides" />
-      <div className="max-w-[1240px] mx-auto px-4 py-10 md:py-14 xl:grid xl:grid-cols-[minmax(0,1fr)_250px] xl:gap-10">
-        <main className="min-w-0">
-          <h1 className="text-2xl md:text-3xl font-bold">자료실</h1>
-          <p className="text-zinc-500 text-sm mt-2 mb-8">
+      {/* 남색 띠 — 자료실 이름과 소개 */}
+      <section className="bg-[var(--ink)] text-white">
+        <div className="max-w-[1240px] mx-auto px-4 py-12 md:py-16">
+          <h1 className="text-[32px] md:text-[44px] font-bold tracking-tight leading-tight">자료실</h1>
+          <p className="text-blue-100/85 text-[15px] md:text-[17px] mt-3 max-w-[36em] leading-relaxed break-keep">
             한글 수식 입력부터 수학 시험지 제작까지, 수학 선생님에게 필요한 팁과 무료 도구를 모았습니다.
           </p>
+        </div>
+      </section>
+      <div className="max-w-[1240px] mx-auto px-4 py-10 md:py-14 xl:grid xl:grid-cols-[minmax(0,1fr)_250px] xl:gap-12">
+        <main className="min-w-0">
           <GuideList cards={CARDS} categories={ARTICLE_CATEGORIES} />
           <PromoInline location="guides" />
         </main>

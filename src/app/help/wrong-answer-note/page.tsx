@@ -3,6 +3,7 @@ import { AI_SOLUTION_RULE, SIGNUP_FREE_CREDITS, SIGNUP_FREE_VALIDITY_DAYS } from
 import { articleSeoMetadata } from "@/lib/articles";
 import TrackedLink from "@/components/TrackedLink";
 import ArticleShell from "@/components/article/ArticleShell";
+import { PromoInline } from "@/components/article/PromoCards";
 
 // ⚠️ 이 글의 사실관계 근거(2026-10-25, 검증 일꾼 대조 반영):
 //  - 양식: 마케팅/261025_자료실/양식/make_template_v5.py 로 만든 .hwp 4종(24×33cm·A4 × 개인용·반 공용).
@@ -23,7 +24,6 @@ const HREF = "/help/wrong-answer-note";
 const LOC = "wrong_note";
 
 const SOLUTION_PRICE = AI_SOLUTION_RULE.current;
-const solutionPrice = `문제당 +${SOLUTION_PRICE}크레딧${AI_SOLUTION_RULE.promoActive ? `(${AI_SOLUTION_RULE.promoNote})` : ""}`;
 const FREE_WITH_SOLUTION = Math.floor(SIGNUP_FREE_CREDITS / (1 + SOLUTION_PRICE));
 
 export const metadata: Metadata = {
@@ -104,12 +104,20 @@ const faqStructuredData = {
   })),
 };
 
+function DownloadIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 20 20" aria-hidden="true" className="shrink-0">
+      <path d="M10 3v9m0 0-3.5-3.5M10 12l3.5-3.5M4 14.5V16h12v-1.5" stroke="currentColor" strokeWidth="1.7" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function DownloadButtons({ location }: { location: string }) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {DOWNLOAD_GROUPS.map((g) => (
         <div key={g.size}>
-          <p className="text-[12.5px] text-zinc-500 mb-2">
+          <p className="text-[13.5px] text-zinc-600 mb-2.5">
             <strong className="text-zinc-900 font-semibold">{g.size}</strong> · {g.note}
           </p>
           <div className="grid sm:grid-cols-2 gap-2.5">
@@ -120,13 +128,13 @@ function DownloadButtons({ location }: { location: string }) {
                 download={d.file}
                 label={d.label}
                 location={location}
-                className="group rounded-lg border border-zinc-300 hover:border-[var(--accent)] bg-white px-4 py-2.5 flex items-center gap-3 transition-colors"
+                className="group rounded-lg border border-[var(--accent-border)] bg-white hover:bg-[var(--accent)] hover:border-[var(--accent)] px-4 py-3 flex items-center gap-3 transition-colors"
               >
-                <span className="shrink-0 w-9 h-9 rounded-md bg-[var(--accent-soft)] text-[var(--accent)] text-[11px] font-bold flex items-center justify-center">
-                  HWP
+                <span className="shrink-0 w-9 h-9 rounded-md bg-[var(--accent-soft)] text-[var(--accent)] group-hover:bg-white/15 group-hover:text-white flex items-center justify-center transition-colors">
+                  <DownloadIcon />
                 </span>
-                <span className="text-sm font-semibold text-zinc-900 group-hover:text-[var(--accent)]">
-                  오답 노트 양식 · {d.title} <span className="font-normal text-zinc-500">({g.size})</span>
+                <span className="text-[14.5px] font-semibold text-zinc-900 group-hover:text-white transition-colors">
+                  {d.title} 양식 <span className="font-normal text-zinc-500 group-hover:text-blue-100">· {g.size} .hwp</span>
                 </span>
               </TrackedLink>
             ))}
@@ -139,24 +147,60 @@ function DownloadButtons({ location }: { location: string }) {
 
 function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
   return (
-    <li className="flex gap-3">
-      <span className="shrink-0 w-7 h-7 rounded-full bg-zinc-900 text-white text-[13px] font-semibold flex items-center justify-center mt-0.5">
+    <li className="flex gap-4">
+      <span className="shrink-0 w-8 h-8 rounded-full bg-[var(--accent)] text-white text-[14px] font-bold flex items-center justify-center mt-0.5">
         {n}
       </span>
       <div className="min-w-0">
-        <p className="text-[15px] font-semibold text-zinc-900">{title}</p>
-        <div className="prose-p mt-1">{children}</div>
+        <h3 className="text-[18px] font-bold text-zinc-900 tracking-tight">{title}</h3>
+        <div className="prose-p mt-1.5">{children}</div>
       </div>
     </li>
   );
 }
 
+/** 본문 구역 — 상자 대신 구분선과 여백으로 나눈다. */
+function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
+  return (
+    <section id={id} className="scroll-mt-6 mt-16 pt-14 border-t border-zinc-200">
+      <h2 className="text-[24px] md:text-[28px] font-bold text-zinc-900 tracking-tight leading-snug mb-6 break-keep">{title}</h2>
+      {children}
+    </section>
+  );
+}
+
+const LINK = "font-semibold text-[var(--accent)] underline underline-offset-4 decoration-[var(--accent-border)] hover:decoration-[var(--accent)]";
+
+const COST_ROWS: { t: string; v: string; note?: string; free?: boolean }[] = [
+  { t: "문제 변환", v: "문제 1개 1크레딧" },
+  {
+    t: "해설 생성",
+    v: `문제당 +${SOLUTION_PRICE}크레딧`,
+    note: AI_SOLUTION_RULE.promoActive ? AI_SOLUTION_RULE.promoNote : undefined,
+  },
+  { t: "해설지에서 옮기는 해설", v: "1개 1크레딧" },
+  { t: "문제 속 그림", v: "무료", free: true },
+  { t: "변환에 실패한 문제·만들지 못한 해설", v: "자동 반환", free: true },
+];
+
 export default function WrongAnswerNotePage() {
   return (
-    <ArticleShell href={HREF} location={LOC} toc={TOC}>
+    <ArticleShell
+      href={HREF}
+      location={LOC}
+      toc={TOC}
+      hero={{
+        lead: "틀린 문제를 푼 과정과 틀린 이유까지 한 장에 붙여 두면, 다음에 같은 유형을 만났을 때 꺼내 볼 수 있습니다. 그렇게 정리하는 한글 양식을 무료로 공유하고, 학생 시험지로 빠르게 채우는 방법까지 정리했습니다.",
+        // 본문 '양식 구성'의 첫 예시와 겹치지 않게 두 번째 예시를 쓴다
+        img: "/articles/wrong-note-example-2.webp",
+        alt: "조건 (가)(나) 박스가 있는 수열 문제와 풀이를 오답 노트 양식에 채운 예시",
+        w: 1100,
+        h: 956,
+      }}
+    >
       <style>{`
-.prose-p{font-size:14.5px;line-height:1.85;color:#3f3f46}
-.ui{font-size:0.92em;background:#f4f4f5;border:1px solid #e4e4e7;border-radius:4px;padding:1px 6px;color:#18181b;white-space:nowrap}
+.prose-p{font-size:16.5px;line-height:1.85;color:#27272a;word-break:keep-all}
+.ui{font-size:0.88em;background:#f4f4f5;border:1px solid #e4e4e7;border-radius:4px;padding:1px 6px;color:#18181b;white-space:nowrap}
 `}</style>
       <script
         type="application/ld+json"
@@ -164,22 +208,10 @@ export default function WrongAnswerNotePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqStructuredData) }}
       />
       <article>
-        {/* Header */}
-        <div className="mb-8">
-          <p className="text-[12px] font-semibold text-[var(--accent)] mb-2">시험지 제작 · 2026-10-25</p>
-          <h1 className="text-2xl md:text-[32px] md:leading-tight font-bold">
-            수학 오답노트 양식(한글) — 틀린 문제마다 개념·풀이·틀린 이유를 한 장에
-          </h1>
-          <p className="text-zinc-500 text-[15px] mt-3 leading-relaxed">
-            틀린 문제를 푼 과정과 틀린 이유까지 한 장에 붙여 두면, 다음에 같은 유형을 만났을 때 꺼내 볼 수 있습니다. 그렇게
-            정리하는 한글 양식을 무료로 공유하고, 학생 시험지로 빠르게 채우는 방법까지 정리했습니다.
-          </p>
-        </div>
-
-        {/* 한눈에 보기 */}
-        <section id="summary" className="card rounded-xl p-6 md:p-8 shadow-sm mb-6">
-          <h2 className="text-lg font-semibold text-zinc-900 mb-4">한눈에 보기</h2>
-          <ul className="space-y-2 text-[14px] text-zinc-700 leading-relaxed mb-6">
+        {/* 한눈에 보기 — 글 안에서 유일한 바탕색 상자(바로 받기) */}
+        <section id="summary" className="scroll-mt-6 rounded-2xl bg-[var(--accent-soft)] border border-[var(--accent-border)] p-6 md:p-8">
+          <h2 className="text-[20px] font-bold text-zinc-900 tracking-tight mb-4">한눈에 보기</h2>
+          <ul className="space-y-2.5 text-[15.5px] text-zinc-800 leading-relaxed mb-7 break-keep">
             {[
               <>
                 틀린 문제 하나 = 문제 칸 하나. <strong className="text-zinc-900">왼쪽에 문제</strong>, 오른쪽에{" "}
@@ -188,20 +220,18 @@ export default function WrongAnswerNotePage() {
               <>단원·유형, 내 답, 다시 풀기(O·△·X) 칸까지 — 한글(.hwp), 가입 없이 바로 내려받기</>,
               <>문제와 풀이는 시험지 사진에서 옮기고, 핵심 개념과 틀린 이유는 선생님이나 학생이 채웁니다</>,
             ].map((t, i) => (
-              <li key={i} className="flex gap-2">
-                <span className="text-[var(--accent)] shrink-0">✓</span>
+              <li key={i} className="flex gap-2.5">
+                <span className="text-[var(--accent)] font-bold shrink-0">✓</span>
                 <span>{t}</span>
               </li>
             ))}
           </ul>
           <DownloadButtons location={`${LOC}_summary`} />
-          <p className="text-[12px] text-zinc-400 mt-3">한/글 2014 이상에서 열립니다. 개인용은 학생 한 명용, 반 공용은 수업 자료용입니다.</p>
+          <p className="text-[12.5px] text-zinc-500 mt-4">한/글 2014 이상에서 열립니다. 개인용은 학생 한 명용, 반 공용은 수업 자료용입니다.</p>
         </section>
 
-        {/* 왜 오래 걸리나 */}
-        <section id="why" className="card rounded-xl p-6 md:p-8 shadow-sm mb-6">
-          <h2 className="text-lg font-semibold text-zinc-900 mb-4">오답 정리가 오래 걸리는 이유</h2>
-          <ol className="space-y-3">
+        <Section id="why" title="오답 정리가 오래 걸리는 이유">
+          <ol className="space-y-6">
             {[
               {
                 t: "문제를 다시 쳐야 합니다",
@@ -216,118 +246,120 @@ export default function WrongAnswerNotePage() {
                 d: "반 전체에 한 장으로 끝나지 않고, 학생 수만큼 조합이 생깁니다.",
               },
             ].map((r, i) => (
-              <li key={r.t} className="flex gap-3">
-                <span className="shrink-0 w-6 h-6 rounded-full bg-zinc-100 text-zinc-600 text-[12px] font-semibold flex items-center justify-center mt-0.5">
-                  {i + 1}
-                </span>
-                <span className="text-[14px] leading-relaxed">
-                  <strong className="text-zinc-900">{r.t}</strong>
-                  <span className="block text-zinc-500">{r.d}</span>
+              <li key={r.t} className="flex gap-4">
+                <span className="shrink-0 text-[26px] leading-none font-bold text-[var(--accent)] tabular-nums w-7">{i + 1}</span>
+                <span className="min-w-0">
+                  <strong className="block text-[17px] text-zinc-900">{r.t}</strong>
+                  <span className="block prose-p mt-1">{r.d}</span>
                 </span>
               </li>
             ))}
           </ol>
-          <p className="prose-p mt-5">
+          <p className="prose-p mt-8">
             양식은 &lsquo;무엇을 어떻게 정리할지&rsquo;를 정해 주고, 아래{" "}
-            <a href="#fast" className="text-[var(--accent)] font-medium hover:underline">방법 2</a>는 시험지를 한 번만 옮겨 두고
-            학생마다 골라 붙이는 방식이라 세 가지 모두에 드는 손을 덜어 줍니다.
+            <a href="#fast" className={LINK}>
+              방법 2
+            </a>
+            는 시험지를 한 번만 옮겨 두고 학생마다 골라 붙이는 방식이라 세 가지 모두에 드는 손을 덜어 줍니다.
           </p>
-        </section>
+        </Section>
 
-        {/* 양식 구성 */}
-        <section id="template" className="card rounded-xl p-6 md:p-8 shadow-sm mb-6">
-          <h2 className="text-lg font-semibold text-zinc-900 mb-2">양식 구성 — 문제 칸 하나에 네 칸</h2>
-          <p className="prose-p mb-5">한 쪽에 문제 칸 두 개, 맨 위에는 시험명·이름·점수·틀린 문항을 적는 표가 있습니다.</p>
+        <Section id="template" title="양식 구성 — 문제 칸 하나에 네 칸">
+          <p className="prose-p mb-6">한 쪽에 문제 칸 두 개, 맨 위에는 시험명·이름·점수·틀린 문항을 적는 표가 있습니다.</p>
 
-          <figure className="rounded-xl border border-zinc-200 overflow-hidden mb-6">
+          <figure className="mb-8">
             <img
               src="/articles/wrong-note-example.webp"
               alt="오답 노트 양식에 고2 대수 기말 4번(사인법칙)을 채운 예시 — 왼쪽 문제, 오른쪽 핵심 개념·문제 풀이·왜 틀렸나"
               width={1100}
               height={1030}
-              className="block w-full h-auto"
+              className="block w-full h-auto rounded-lg border border-zinc-200"
             />
-            <figcaption className="text-[12px] text-zinc-500 px-4 py-2.5 border-t border-zinc-200 bg-zinc-50">
+            <figcaption className="text-[13px] text-zinc-500 mt-3 leading-relaxed break-keep">
               실제로 채운 예시. 문제와 &lsquo;문제 풀이&rsquo;는 AI MathOCR 변환 결과(해설 생성)를 붙여 넣었고, 나머지 칸은 선생님이나
               학생이 쓰는 칸이라 예시 문장을 넣었습니다.
             </figcaption>
           </figure>
 
-          <div className="grid sm:grid-cols-2 gap-3">
-            {[
-              { t: "문제", d: "틀린 문제를 그대로. 위에 단원·유형, 아래에 다시 풀기(날짜와 O·△·X) 칸이 있습니다." },
-              { t: "핵심 개념", d: "이 문제를 푸는 데 쓴 개념·공식 한두 줄. 같은 유형을 다시 만났을 때 꺼낼 도구입니다." },
-              { t: "문제 풀이", d: "정답과 풀이 과정. 정답만 있으면 어디서 막혔는지 다시 볼 수 없습니다." },
-              { t: "왜 틀렸나", d: "내 답을 적고 계산 실수 · 개념 부족 · 조건 놓침 · 문제 오독 · 시간 부족 · 풀이 방향 못 잡음 중 체크, 한 줄 메모." },
-            ].map((c) => (
-              <div key={c.t} className="rounded-lg border border-zinc-200 p-4">
-                <p className="text-sm font-semibold text-zinc-900">{c.t}</p>
-                <p className="text-[13.5px] text-zinc-600 leading-relaxed mt-1">{c.d}</p>
-              </div>
-            ))}
+          <div className="overflow-hidden rounded-lg border border-zinc-200">
+            <table className="w-full text-left text-[15px]">
+              <thead className="bg-[var(--accent-soft)] text-zinc-900">
+                <tr>
+                  <th scope="col" className="px-4 py-3 font-semibold w-[7.5em]">칸</th>
+                  <th scope="col" className="px-4 py-3 font-semibold">무엇을 적나</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-200">
+                {[
+                  { t: "문제", d: "틀린 문제를 그대로. 위에 단원·유형, 아래에 다시 풀기(날짜와 O·△·X) 칸이 있습니다." },
+                  { t: "핵심 개념", d: "이 문제를 푸는 데 쓴 개념·공식 한두 줄. 같은 유형을 다시 만났을 때 꺼낼 도구입니다." },
+                  { t: "문제 풀이", d: "정답과 풀이 과정. 정답만 있으면 어디서 막혔는지 다시 볼 수 없습니다." },
+                  { t: "왜 틀렸나", d: "내 답을 적고 계산 실수 · 개념 부족 · 조건 놓침 · 문제 오독 · 시간 부족 · 풀이 방향 못 잡음 중 체크, 한 줄 메모." },
+                ].map((c) => (
+                  <tr key={c.t} className="align-top">
+                    <th scope="row" className="px-4 py-3.5 font-semibold text-zinc-900 whitespace-nowrap">{c.t}</th>
+                    <td className="px-4 py-3.5 text-zinc-700 leading-relaxed break-keep">{c.d}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-          <p className="prose-p mt-5">
+          <p className="prose-p mt-6">
             선생님이 네 칸을 다 채워 나눠 줘도 되고, 문제와 풀이까지만 채운 뒤 &lsquo;핵심 개념&rsquo;과 &lsquo;왜 틀렸나&rsquo;는
             학생이 직접 쓰게 해도 됩니다.
           </p>
-        </section>
+        </Section>
 
-        {/* 방법 1 */}
-        <section id="manual" className="card rounded-xl p-6 md:p-8 shadow-sm mb-6">
-          <p className="text-[12px] font-semibold text-zinc-400 mb-1">방법 1</p>
-          <h2 className="text-xl font-semibold text-zinc-900 mb-4">직접 채우기</h2>
-          <ul className="space-y-3 text-[14px] text-zinc-700 leading-relaxed">
-            <li className="flex gap-2">
-              <span className="text-zinc-400 shrink-0">•</span>
+        <Section id="manual" title="방법 1. 직접 채우기">
+          <ul className="space-y-4 prose-p">
+            <li className="flex gap-3">
+              <span className="text-[var(--accent)] shrink-0 font-bold">·</span>
               <span>
                 <strong className="text-zinc-900">문제 칸</strong> — 한/글에서 <span className="ui">Ctrl+N, M</span>으로 수식 편집기를
                 열어 문제를 칩니다. 시험지를 캡처해 그림으로 붙이면 빠르지만, 숫자 하나 고칠 수 없고 학생 필기도 함께
                 들어갑니다.
               </span>
             </li>
-            <li className="flex gap-2">
-              <span className="text-zinc-400 shrink-0">•</span>
+            <li className="flex gap-3">
+              <span className="text-[var(--accent)] shrink-0 font-bold">·</span>
               <span>
                 <strong className="text-zinc-900">문제 풀이 칸</strong> — 풀이를 직접 씁니다. 수식 명령어가 기억나지 않으면{" "}
-                <TrackedLink href="/help/hwp-equation" label="article_link" location={`${LOC}_manual`} className="font-medium text-[var(--accent)] hover:underline">
+                <TrackedLink href="/help/hwp-equation" label="article_link" location={`${LOC}_manual`} className={LINK}>
                   한글 수식 명령어 사전
                 </TrackedLink>
                 에서 복사해 쓰세요.
               </span>
             </li>
-            <li className="flex gap-2">
-              <span className="text-zinc-400 shrink-0">•</span>
+            <li className="flex gap-3">
+              <span className="text-[var(--accent)] shrink-0 font-bold">·</span>
               <span>
                 <strong className="text-zinc-900">문제 칸이 모자라면</strong> — 문제 칸 표를 통째로 복사해 아래 빈 줄에 붙여 넣습니다.
               </span>
             </li>
           </ul>
-        </section>
+        </Section>
 
-        {/* 방법 2 */}
-        <section id="fast" className="card rounded-xl p-6 md:p-8 shadow-sm mb-6">
-          <p className="text-[12px] font-semibold text-zinc-400 mb-1">방법 2</p>
-          <h2 className="text-xl font-semibold text-zinc-900 mb-2">시험지 사진으로 빠르게 채우기</h2>
+        <Section id="fast" title="방법 2. 시험지 사진으로 빠르게 채우기">
           <p className="prose-p mb-2">
             AI MathOCR로 시험지를 한글 파일로 옮기고, 해설지가 없으면 풀이 초안까지 만든 뒤 학생마다 틀린 번호만 골라 붙이는
             방법입니다. 시험 문제는 반 전체가 같으니 <strong className="text-zinc-900">변환은 한 번이면 됩니다.</strong>
           </p>
-          <p className="text-[13px] text-zinc-500 mb-6">
+          <p className="text-[14px] text-zinc-500 mb-10 break-keep">
             AI MathOCR은 Windows에 설치하는 프로그램이고, PC에 정품 한/글(2014 이상 권장)이 있어야 합니다.
           </p>
 
-          <ol className="space-y-7">
+          <ol className="space-y-10">
             <Step n={1} title="시험지 사진(또는 PDF)을 엽니다">
               휴대폰으로 찍은 사진(JPG·PNG, 한 번에 10장까지)이나 스캔 PDF를 엽니다. 학생이 쓴 풀이와 채점 표시가 있어도
               프로그램이 인쇄된 문제만 옮기도록 되어 있습니다. 사진이 흐리면 잘못 읽을 수 있으니 결과는 한 번 훑어보세요.
-              <figure className="mt-3 rounded-xl border border-zinc-200 overflow-hidden">
+              <figure className="mt-4 rounded-xl border border-zinc-200 overflow-hidden">
                 <div className="grid sm:grid-cols-2">
                   <div className="bg-zinc-100 p-3 flex flex-col">
-                    <span className="text-[11px] font-semibold text-zinc-500 mb-2">원본 — 학생 필기가 남은 시험지 사진</span>
+                    <span className="text-[12px] font-semibold text-zinc-500 mb-2">원본 — 학생 필기가 남은 시험지 사진</span>
                     <img src="/showcase/pencil-before.webp" alt="학생 풀이와 채점 표시가 남아 있는 수학 시험지 사진" width={613} height={216} loading="lazy" className="w-full h-auto rounded-md border border-zinc-200 bg-white" />
                   </div>
                   <div className="bg-white p-3 flex flex-col border-t sm:border-t-0 sm:border-l border-zinc-200">
-                    <span className="text-[11px] font-semibold text-[var(--accent)] mb-2">변환 결과 — 한글 문서</span>
+                    <span className="text-[12px] font-semibold text-[var(--accent)] mb-2">변환 결과 — 한글 문서</span>
                     <img src="/showcase/pencil-after.webp" alt="필기는 빠지고 문제와 수식만 편집 가능한 한글 수식으로 들어간 결과" width={617} height={363} loading="lazy" className="w-full h-auto rounded-md border border-zinc-200" />
                   </div>
                 </div>
@@ -337,7 +369,7 @@ export default function WrongAnswerNotePage() {
               <span className="ui">✨ 자동 인식</span>을 누르면 문제마다 박스가 그려집니다. 자동 인식은 크레딧이 차감되지 않지만,
               크레딧이 남아 있어야 시작되고 보유 크레딧 수만큼만 박스를 그립니다. 반 전체 자료라면 박스를 그대로 두고 시험지
               전체를 변환하세요.
-              <span className="block mt-2 text-[13px] text-zinc-500">
+              <span className="block mt-3 text-[14.5px] text-zinc-500 leading-relaxed">
                 학생 한 명의 몇 문제만 필요하면 맞힌 문제 박스를 지워도 됩니다. 이때 그 문제 안의 그림 박스도 함께 지우세요. 남은
                 박스 순서대로 번호가 1, 2, 3…으로 다시 매겨지니 원래 번호는 양식 맨 위 &lsquo;틀린 문항&rsquo;에 적어 둡니다.
               </span>
@@ -349,51 +381,78 @@ export default function WrongAnswerNotePage() {
                 풀이를 씁니다. 예를 들어 중3을 고르면 사인법칙 같은 고등학교 내용은 쓰지 않습니다. 비워 두면 문제를 보고 학년을
                 추정합니다.
               </span>
-              <span className="block mt-2">
+              <span className="block mt-3">
                 <strong className="text-zinc-900">해설지가 있으면</strong> — 해설 부분도 박스로 잡습니다. 문제 순서대로 그리면 N번째
                 해설이 N번 문제에 붙습니다(목록의 &lsquo;해N&rsquo; 표시로 확인).
               </span>
-              <span className="block mt-2">
+              <span className="block mt-3">
                 그다음 <span className="ui">변환하기</span>를 누르면 문제와, 문서 끝에 [정답 및 해설]이 든 한글 파일이 만들어집니다.
               </span>
             </Step>
             <Step n={4} title="학생마다 틀린 번호를 골라 붙이고, 검토합니다">
               변환된 파일에서 그 학생이 틀린 번호의 문제를 복사해 양식 왼쪽 칸에, 파일 끝 [정답 및 해설]에서 같은 번호의 해설을
               복사해 &lsquo;문제 풀이&rsquo; 칸에 붙여 넣습니다.
-              <span className="block mt-2">
+              <span className="block mt-3">
                 풀이는 한 번 읽어 보세요. 해설은 한글 수식으로 들어가서 고칠 곳은 더블클릭해 바로 고칠 수 있습니다. 그다음 핵심
                 개념과 틀린 이유를 채웁니다.
               </span>
             </Step>
           </ol>
 
-          <figure className="mt-7 rounded-xl border border-zinc-200 overflow-hidden">
+          <figure className="mt-10">
             <img
               src="/articles/wrong-note-example-2.webp"
               alt="조건 (가)(나) 박스가 있는 수열 문제와 긴 풀이가 오답 노트 양식 칸에 들어간 예시"
               width={1100}
               height={956}
               loading="lazy"
-              className="block w-full h-auto"
+              className="block w-full h-auto rounded-lg border border-zinc-200"
             />
-            <figcaption className="text-[12px] text-zinc-500 px-4 py-2.5 border-t border-zinc-200 bg-zinc-50">
+            <figcaption className="text-[13px] text-zinc-500 mt-3 leading-relaxed break-keep">
               조건 박스가 있는 문제와 긴 풀이도 칸이 늘어나며 들어갑니다. 풀이는 해설 생성 결과를 그대로 붙여 넣고, 수식 사이
               빈 줄 하나만 지운 상태입니다.
             </figcaption>
           </figure>
 
-          <div className="mt-6 rounded-lg bg-zinc-50 border border-zinc-200 px-4 py-3 text-[13.5px] text-zinc-600 leading-relaxed">
-            <strong className="text-zinc-900">비용</strong> — 문제 1개 1크레딧, 해설 생성 {solutionPrice}, 해설지에서 옮기는 해설은 1개
-            1크레딧. 1크레딧은 요금제에 따라 약 140~199원입니다. 문제 속 그림은 무료이고, 변환에 실패한 문제와 만들지 못한 해설은
-            크레딧을 자동으로 돌려드립니다. 가입하면 {SIGNUP_FREE_CREDITS}크레딧({SIGNUP_FREE_VALIDITY_DAYS}일) — 문제만이면{" "}
-            {SIGNUP_FREE_CREDITS}문제, 해설 생성까지 하면 {FREE_WITH_SOLUTION}문제 분량입니다.
+          {/* 비용 — 줄글 대신 표(2026-10-30). 숫자는 lib/plans.ts 에서 온다 */}
+          <h3 className="text-[19px] font-bold text-zinc-900 tracking-tight mt-12 mb-4">비용</h3>
+          <div className="overflow-hidden rounded-lg border border-zinc-200">
+            <table className="w-full text-left text-[15px]">
+              <thead className="bg-[var(--accent-soft)] text-zinc-900">
+                <tr>
+                  <th scope="col" className="px-4 py-3 font-semibold">하는 일</th>
+                  <th scope="col" className="px-4 py-3 font-semibold text-right">크레딧</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-200">
+                {COST_ROWS.map((r) => (
+                  <tr key={r.t}>
+                    <th scope="row" className="px-4 py-3 font-medium text-zinc-800 break-keep">{r.t}</th>
+                    <td className={`px-4 py-3 text-right font-semibold break-keep ${r.free ? "text-emerald-700" : "text-zinc-900"}`}>
+                      {r.v}
+                      {r.note && <span className="block text-[12px] font-medium text-[var(--accent)]">{r.note}</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="bg-[var(--ink)] text-white px-4 py-3.5 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <span className="text-[15px] font-bold">
+                가입하면 {SIGNUP_FREE_CREDITS}크레딧 무료
+                <span className="font-normal text-blue-200/80"> ({SIGNUP_FREE_VALIDITY_DAYS}일)</span>
+              </span>
+              <span className="text-[13.5px] text-blue-100/85">
+                문제만이면 {SIGNUP_FREE_CREDITS}문제 · 해설 생성까지 하면 {FREE_WITH_SOLUTION}문제 분량
+              </span>
+            </div>
           </div>
-        </section>
+          <p className="text-[13px] text-zinc-500 mt-3">1크레딧은 요금제에 따라 약 140~199원입니다.</p>
+        </Section>
 
-        {/* 쓰는 요령 */}
-        <section id="tips" className="card rounded-xl p-6 md:p-8 shadow-sm mb-6">
-          <h2 className="text-lg font-semibold text-zinc-900 mb-4">쓰는 요령</h2>
-          <div className="space-y-3">
+        <PromoInline location={LOC} />
+
+        <Section id="tips" title="쓰는 요령">
+          <dl className="grid sm:grid-cols-2 gap-x-8 gap-y-8">
             {[
               {
                 t: "'왜 틀렸나'는 학생에게",
@@ -412,44 +471,44 @@ export default function WrongAnswerNotePage() {
                 d: "교과서 정의를 길게 옮기기보다 이 문제에 쓴 공식 하나를 적어 두는 쪽이 다시 보기 쉽습니다.",
               },
             ].map((r) => (
-              <div key={r.t} className="rounded-lg border border-zinc-200 p-4">
-                <p className="text-[14px] font-semibold text-zinc-900">{r.t}</p>
-                <p className="text-[13.5px] text-zinc-600 leading-relaxed mt-1">{r.d}</p>
+              <div key={r.t} className="border-t-2 border-[var(--accent)] pt-3">
+                <dt className="text-[16.5px] font-bold text-zinc-900 break-keep">{r.t}</dt>
+                <dd className="text-[15px] text-zinc-600 leading-relaxed mt-1.5 break-keep">{r.d}</dd>
               </div>
             ))}
-          </div>
-        </section>
+          </dl>
+        </Section>
 
-        {/* 자주 묻는 질문 */}
-        <section id="faq" className="card rounded-xl p-6 md:p-8 shadow-sm mb-6">
-          <h2 className="text-lg font-semibold text-zinc-900 mb-3">자주 묻는 질문</h2>
-          <div className="divide-y divide-zinc-100">
+        <Section id="faq" title="자주 묻는 질문">
+          <div className="divide-y divide-zinc-200 border-y border-zinc-200">
             {FAQ.map((f) => (
-              <details key={f.q} className="group py-3">
-                <summary className="cursor-pointer list-none flex items-start justify-between gap-3 text-sm font-medium text-zinc-900">
-                  <h3 className="font-medium">{f.q}</h3>
-                  <span className="text-zinc-400 transition-transform group-open:rotate-45 leading-none text-lg">+</span>
+              <details key={f.q} className="group py-4">
+                <summary className="cursor-pointer list-none flex items-start justify-between gap-3">
+                  <h3 className="text-[16px] font-semibold text-zinc-900 break-keep">{f.q}</h3>
+                  <span className="text-zinc-400 transition-transform group-open:rotate-45 leading-none text-xl">+</span>
                 </summary>
-                <p className="text-sm text-zinc-600 leading-relaxed mt-2">{f.a}</p>
+                <p className="text-[15px] text-zinc-600 leading-relaxed mt-2.5 break-keep">{f.a}</p>
               </details>
             ))}
           </div>
-        </section>
+        </Section>
 
-        {/* 마무리 */}
-        <section id="bulk" className="card rounded-xl p-6 md:p-8 shadow-sm border-2 border-[var(--accent)]/20">
-          <h2 className="text-lg font-semibold text-zinc-900 mb-3">양식 내려받기</h2>
-          <p className="prose-p mb-5">
+        {/* 마무리 — 남색 띠 하나로 끝낸다 */}
+        <section id="bulk" className="scroll-mt-6 mt-16 rounded-2xl bg-[var(--ink)] text-white p-6 md:p-9">
+          <h2 className="text-[22px] md:text-[26px] font-bold tracking-tight mb-3">양식 내려받기</h2>
+          <p className="text-[15.5px] text-blue-100/85 leading-relaxed mb-6 break-keep">
             오답 정리에서 시간이 가장 많이 드는 건 문제를 다시 치고 풀이를 쓰는 일입니다. 그 둘의 초안은 AI MathOCR이 만들고,
             선생님은 읽고 고친 뒤 개념과 틀린 이유를 채우시면 되도록 이 양식을 만들었습니다.
           </p>
-          <DownloadButtons location={`${LOC}_bottom`} />
+          <div className="rounded-xl bg-white text-zinc-900 p-5">
+            <DownloadButtons location={`${LOC}_bottom`} />
+          </div>
           <div className="mt-5 flex flex-col sm:flex-row gap-3">
             <TrackedLink
               href="/auth/signup"
               label="sign_up_free_15"
               location={`${LOC}_bottom`}
-              className="btn-primary text-sm px-5 py-2.5 rounded-lg text-center"
+              className="text-[15px] font-bold px-5 py-3 rounded-lg text-center bg-white text-[var(--ink)] hover:bg-blue-50 transition-colors"
             >
               시험지로 {SIGNUP_FREE_CREDITS}문제 무료 변환해 보기
             </TrackedLink>
@@ -457,7 +516,7 @@ export default function WrongAnswerNotePage() {
               href="/#guide"
               label="guide_video"
               location={`${LOC}_bottom`}
-              className="text-sm px-5 py-2.5 rounded-lg text-center border border-zinc-300 text-zinc-700 hover:bg-zinc-100 transition-colors"
+              className="text-[15px] px-5 py-3 rounded-lg text-center border border-white/30 text-white hover:bg-white/10 transition-colors"
             >
               사용법 영상 보기
             </TrackedLink>

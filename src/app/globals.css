@@ -86,6 +86,19 @@ html {
   transform: translateX(3px);
 }
 
+/* ── 자료실 테마(목록·글) — 잉크 남색. 홈·앱은 보라 그대로(2026-10-30 사용자 결정).
+   이 안에서는 var(--accent)·btn-primary 가 남색으로 바뀐다. 로고의 보라는 각자 고정색으로 둔다. */
+.guide-theme {
+  --accent: #1e40af; /* blue-800 */
+  --accent-hover: #1e3a8a; /* blue-900 */
+  --accent-soft: #eff6ff; /* blue-50 */
+  --accent-border: #bfdbfe; /* blue-200 */
+  --ink: #172554; /* blue-950 — 대표 이미지 띠 */
+}
+.guide-theme ::selection {
+  background: #bfdbfe;
+}
+
 /* ── 카드 ── */
 .card {
   background: #fff;

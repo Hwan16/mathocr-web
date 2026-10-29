@@ -51,9 +51,12 @@ export default function GuideList({
 
   const shown = active === "all" ? cards : cards.filter((c) => c.category === active);
 
+  const featured = active === "all" ? (shown[0] ?? null) : null;
+  const rest = featured ? shown.slice(1) : shown;
+
   return (
     <div>
-      <div className="flex flex-wrap gap-1.5 mb-6" role="tablist" aria-label="자료 분류">
+      <div className="flex flex-wrap gap-1.5 mb-8" role="tablist" aria-label="자료 분류">
         {[{ id: "all", label: "전체" }, ...categories].map((c) => {
           const on = active === c.id;
           const count = c.id === "all" ? cards.length : cards.filter((x) => x.category === c.id).length;
@@ -64,54 +67,85 @@ export default function GuideList({
               role="tab"
               aria-selected={on}
               onClick={() => pick(c.id)}
-              className={`text-[13px] px-3 py-1.5 rounded-full border transition-colors ${
-                on ? "bg-zinc-900 text-white border-zinc-900" : "bg-white text-zinc-600 border-zinc-200 hover:border-zinc-400"
+              className={`text-[13px] px-3.5 py-1.5 rounded-full border transition-colors ${
+                on
+                  ? "bg-[var(--ink)] text-white border-[var(--ink)]"
+                  : "bg-white text-zinc-600 border-zinc-200 hover:border-zinc-400"
               }`}
             >
-              {c.label} <span className={on ? "text-zinc-400" : "text-zinc-400"}>{count}</span>
+              {c.label} <span className={on ? "text-blue-200/70" : "text-zinc-400"}>{count}</span>
             </button>
           );
         })}
       </div>
 
-      <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {shown.map((c) => (
+      {/* '전체'일 때 가장 최근 글 하나는 크게 — 목록이 같은 크기 카드만 반복되지 않게 */}
+      {featured && (
+        <a
+          href={featured.href}
+          onClick={() => trackEvent("nav_click", { label: `guide_card:${featured.href}` })}
+          className="group grid md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] gap-5 md:gap-8 items-center mb-12 pb-12 border-b border-zinc-200"
+        >
+          <Thumb card={featured} className="aspect-[16/9] rounded-xl" />
+          <div className="min-w-0">
+            <p className="text-[12.5px] font-semibold text-[var(--accent)] mb-2">
+              {featured.categoryLabel} <span className="text-zinc-300 font-normal mx-1">·</span>
+              <span className="text-zinc-400 font-normal">새 글</span>
+            </p>
+            <p className="text-[22px] md:text-[26px] font-bold text-zinc-900 leading-snug tracking-tight break-keep group-hover:underline underline-offset-4">
+              {featured.title}
+            </p>
+            <p className="text-[15px] text-zinc-600 leading-relaxed mt-3 break-keep">{featured.summary}</p>
+            <p className="text-[12.5px] text-zinc-400 mt-4">{featured.date.replace(/-/g, ". ")}.</p>
+          </div>
+        </a>
+      )}
+
+      <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-10">
+        {rest.map((c) => (
           <li key={c.href}>
             <a
               href={c.href}
               onClick={() => trackEvent("nav_click", { label: `guide_card:${c.href}` })}
-              className="group block h-full rounded-xl border border-zinc-200 bg-white overflow-hidden hover:border-zinc-300 hover:shadow-sm transition"
+              className="group block"
             >
-              {c.thumbImg ? (
-                <img
-                  src={c.thumbImg.src}
-                  alt={c.thumbImg.alt}
-                  width={720}
-                  height={405}
-                  loading="lazy"
-                  className="block w-full h-36 object-cover bg-white border-b border-zinc-100"
-                />
-              ) : (
-              <div className={`h-36 flex items-center justify-center px-5 ${TONE[c.tone]}`} aria-hidden="true">
-                {c.thumbHtml ? (
-                  <span className="guide-thumb" dangerouslySetInnerHTML={{ __html: c.thumbHtml }} />
-                ) : (
-                  <span className="text-[15px] font-semibold tracking-tight text-center font-mono">{c.thumbText}</span>
-                )}
-              </div>
-              )}
-              <div className="p-4">
-                <p className="text-[11px] font-semibold text-[var(--accent)] mb-1.5 tracking-wide">
-                  {c.categoryLabel.toUpperCase()}
-                </p>
-                <p className="text-[15px] font-semibold text-zinc-900 leading-snug group-hover:underline">{c.title}</p>
-                <p className="text-[13px] text-zinc-500 leading-relaxed mt-1.5">{c.summary}</p>
-                <p className="text-[12px] text-zinc-400 mt-3">{c.date.replace(/-/g, ". ")}.</p>
-              </div>
+              <Thumb card={c} className="aspect-[16/9] rounded-lg" />
+              <p className="text-[12px] font-semibold text-[var(--accent)] mt-4 mb-1.5">{c.categoryLabel}</p>
+              <p className="text-[16.5px] font-bold text-zinc-900 leading-snug tracking-tight break-keep group-hover:underline underline-offset-4">
+                {c.title}
+              </p>
+              <p className="text-[13.5px] text-zinc-500 leading-relaxed mt-2 break-keep line-clamp-2">{c.summary}</p>
+              <p className="text-[12px] text-zinc-400 mt-2.5">{c.date.replace(/-/g, ". ")}.</p>
             </a>
           </li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+/** 대표 그림 — 이미지가 없으면 대표 수식이나 짧은 글자를 색 바탕에 그린다. */
+function Thumb({ card: c, className }: { card: GuideCard; className: string }) {
+  const frame = `block w-full overflow-hidden border border-zinc-200 ${className}`;
+  if (c.thumbImg) {
+    return (
+      <img
+        src={c.thumbImg.src}
+        alt={c.thumbImg.alt}
+        width={720}
+        height={405}
+        loading="lazy"
+        className={`${frame} object-cover bg-white transition-transform`}
+      />
+    );
+  }
+  return (
+    <div className={`${frame} flex items-center justify-center px-5 ${TONE[c.tone]}`} aria-hidden="true">
+      {c.thumbHtml ? (
+        <span className="guide-thumb" dangerouslySetInnerHTML={{ __html: c.thumbHtml }} />
+      ) : (
+        <span className="text-[15px] font-semibold tracking-tight text-center font-mono">{c.thumbText}</span>
+      )}
     </div>
   );
 }
