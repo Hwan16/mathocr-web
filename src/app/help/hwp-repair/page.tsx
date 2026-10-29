@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { articleSeoMetadata } from "@/lib/articles";
-import ArticleJsonLd from "@/components/article/ArticleJsonLd";
+import ArticleShell from "@/components/article/ArticleShell";
+import { LINK, Section, Step, SummaryBox, Warn } from "@/components/article/Prose";
 
 export const metadata: Metadata = {
   title: "한글(한컴오피스) 연결 오류 해결 가이드",
@@ -114,109 +115,67 @@ const STEPS: {
 
 export default function HwpRepairGuidePage() {
   return (
-    <div className="min-h-screen px-4 py-16 md:py-20 bg-zinc-50">
-      <ArticleJsonLd href="/help/hwp-repair" />
-      <div className="w-full max-w-3xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-10">
-          <a href="/" className="inline-flex flex-col items-center gap-3">
-            <img src="/mathocr-icon.png" alt="AI MathOCR" width={48} height={48} />
-            <span className="text-2xl font-bold tracking-tight">
-              AI Math<span className="text-[var(--accent)]">OCR</span>
-            </span>
-          </a>
-          <h1 className="text-2xl md:text-3xl font-bold mt-5">
-            한글(한컴오피스) 연결 오류 해결 가이드
-          </h1>
-          <p className="text-zinc-500 text-sm mt-3">
-            5~10분이면 해결됩니다 · 문서와 파일은 지워지지 않습니다
-          </p>
-        </div>
-
+    // 이미 쓰는 분이 오류를 겪고 오는 글 — 오른쪽 기능 카드는 빼고 해결 단계에만 집중.
+    // 띠는 글자만(복구 창 그림은 1단계에 바로 나온다)
+    <ArticleShell
+      href="/help/hwp-repair"
+      location="help_hwp_repair"
+      toc={[]}
+      promo={false}
+      hero={{
+        lead: "5~10분이면 해결됩니다 · 문서와 파일은 지워지지 않습니다",
+      }}
+    >
+      <article>
         {/* 어떤 오류일 때 이 가이드를 따라하나 */}
-        <div className="card rounded-xl p-6 md:p-8 shadow-sm mb-6">
-          <h2 className="text-lg font-semibold text-zinc-900 mb-3">
-            이런 오류가 떴다면 이 가이드를 따라 하세요
-          </h2>
-          <div className="rounded-lg bg-zinc-100 border border-zinc-200 px-4 py-3 text-sm text-zinc-700 space-y-1 mb-4">
+        <SummaryBox title="이런 오류가 떴다면 이 가이드를 따라 하세요">
+          <div className="rounded-lg bg-white border border-zinc-200 px-4 py-3 text-[15px] text-zinc-800 space-y-1 mb-5 break-keep">
             <p>&ldquo;한글(한컴오피스) 설치가 손상되어 있어 앱과 연결할 수 없습니다&rdquo;</p>
             <p>&ldquo;라이브러리가 등록되지 않았습니다&rdquo;</p>
           </div>
-          <p className="text-sm text-zinc-600 leading-relaxed">
-            MathOCR은 PC에 설치된 한/글을 이용해 HWP 문서를 만듭니다. 그런데 Windows에
-            저장된 한글 연결 정보가 손상되면, <strong className="text-zinc-900">한글
-            프로그램 자체는 멀쩡히 실행되더라도</strong> 변환은 실패합니다. 아래의
+          <p className="prose-p">
+            MathOCR은 PC에 설치된 한/글을 이용해 HWP 문서를 만듭니다. 그런데 Windows에 저장된 한글 연결 정보가 손상되면,{" "}
+            <strong className="text-zinc-900">한글 프로그램 자체는 멀쩡히 실행되더라도</strong> 변환은 실패합니다. 아래의
             &lsquo;복구 설치&rsquo;로 연결 정보를 되살리면 해결됩니다.
           </p>
-          <div className="mt-4 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800 leading-relaxed">
-            <strong>먼저 확인:</strong> 변환에는 정식 한/글(한컴오피스)이 필요합니다. 무료
-            &lsquo;한글 뷰어&rsquo;만 설치된 경우에는 이 가이드로 해결되지 않으며, 정식
-            한글(2014 이상 권장)을 설치해야 합니다.
-          </div>
-        </div>
+          <p className="mt-4 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-[15px] text-amber-900 leading-relaxed break-keep">
+            <strong>먼저 확인:</strong> 변환에는 정식 한/글(한컴오피스)이 필요합니다. 무료 &lsquo;한글 뷰어&rsquo;만 설치된
+            경우에는 이 가이드로 해결되지 않으며, 정식 한글(2014 이상 권장)을 설치해야 합니다.
+          </p>
+        </SummaryBox>
 
         {/* 단계별 절차 */}
-        <div className="space-y-6">
-          {STEPS.map((step, i) => (
-            <div key={i} className="card rounded-xl p-6 md:p-8 shadow-sm">
-              <div className="flex items-start gap-4">
-                <div className="shrink-0 w-8 h-8 rounded-full bg-[var(--accent)] text-white flex items-center justify-center text-sm font-bold">
-                  {i + 1}
-                </div>
-                <div className="min-w-0">
-                  <h3 className="text-base md:text-lg font-semibold text-zinc-900 mb-2">
-                    {step.title}
-                  </h3>
-                  <p className="text-sm text-zinc-600 leading-relaxed">{step.body}</p>
-                  {step.warning && (
-                    <div className="mt-3 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 leading-relaxed">
-                      ⚠️ {step.warning}
-                    </div>
-                  )}
-                </div>
-              </div>
-              {step.image && (
-                <img
-                  src={step.image}
-                  alt={step.imageAlt}
-                  className="mt-5 w-full rounded-lg border border-zinc-200"
-                />
-              )}
-            </div>
-          ))}
-        </div>
+        <Section title="복구 설치 순서">
+          <ol className="space-y-12">
+            {STEPS.map((step, i) => (
+              <Step key={i} n={i + 1} title={step.title}>
+                {step.body}
+                {step.warning && <Warn>{step.warning}</Warn>}
+                {step.image && (
+                  <img src={step.image} alt={step.imageAlt} loading="lazy" className="mt-5 w-full rounded-lg border border-zinc-200" />
+                )}
+              </Step>
+            ))}
+          </ol>
+        </Section>
 
         {/* 그래도 안 될 때 */}
-        <div className="card rounded-xl p-6 md:p-8 shadow-sm mt-6">
-          <h2 className="text-lg font-semibold text-zinc-900 mb-3">그래도 안 되나요?</h2>
-          <ul className="text-sm text-zinc-600 leading-relaxed space-y-2 list-disc pl-5">
+        <Section title="그래도 안 되나요?">
+          <ul className="prose-p space-y-3 list-disc pl-5 marker:text-[var(--accent)]">
             <li>
-              한컴오피스를 <strong className="text-zinc-900">제거한 뒤 다시
-              설치</strong>해 보세요. 프로그램만 다시 설치되는 것이라 작성해 둔 문서는
-              지워지지 않습니다.
+              한컴오피스를 <strong className="text-zinc-900">제거한 뒤 다시 설치</strong>해 보세요. 프로그램만 다시
+              설치되는 것이라 작성해 둔 문서는 지워지지 않습니다.
             </li>
             <li>
               그래도 같은 오류가 반복되면{" "}
-              <a
-                href="mailto:aimathocr.official@gmail.com"
-                className="text-[var(--accent)] font-medium hover:underline"
-              >
+              <a href="mailto:aimathocr.official@gmail.com" className={LINK}>
                 aimathocr.official@gmail.com
               </a>
               으로 오류 화면을 캡처해서 보내 주세요. 확인 후 도와드리겠습니다.
             </li>
           </ul>
-        </div>
-
-        <div className="mt-8 text-center">
-          <a
-            href="/"
-            className="text-sm text-zinc-500 hover:text-zinc-900 transition-colors"
-          >
-            홈으로 돌아가기
-          </a>
-        </div>
-      </div>
-    </div>
+        </Section>
+      </article>
+    </ArticleShell>
   );
 }

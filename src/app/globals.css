@@ -98,6 +98,13 @@ html {
 .guide-theme ::selection {
   background: #bfdbfe;
 }
+/* 자료실 글 본문 글자 — 한글 한 줄 30~40자 폭(본문 720px)에 맞춘 크기·줄 간격 */
+.guide-theme .prose-p {
+  font-size: 16.5px;
+  line-height: 1.85;
+  color: #27272a; /* zinc-800 */
+  word-break: keep-all;
+}
 
 /* ── 카드 ── */
 .card {

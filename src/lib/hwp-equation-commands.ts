@@ -31,7 +31,7 @@ export const EQUATION_CATEGORIES: EquationCategory[] = [
       { name: "가운데 점", hwp: "a cdot b", tex: "a \\cdot b", kw: "· 곱 점" },
       { name: "플러스마이너스", hwp: "+- , -+", tex: "\\pm ,\\ \\mp", kw: "± ∓ 복부호" },
       { name: "같지 않다", hwp: "a != b", tex: "a \\neq b", kw: "≠ 부등" },
-      { name: "크거나 같다·작거나 같다", hwp: "a <= b , a >= b", tex: "a \\leq b ,\\ a \\geq b", kw: "≤ ≥ 부등호 이상 이하" },
+      { name: "크거나 같다·작거나 같다", hwp: "a leq b , a geq b", tex: "a \\leq b ,\\ a \\geq b", kw: "≤ ≥ 부등호 이상 이하" },
       { name: "근삿값", hwp: "pi approx 3.14", tex: "\\pi \\approx 3.14", kw: "≈ 약" },
       { name: "공백 한 칸", hwp: "a ~ b", tex: "a \\ b", kw: "띄어쓰기 빈칸 물결" },
     ],

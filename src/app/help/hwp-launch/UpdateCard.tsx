@@ -9,6 +9,7 @@
 // launch_installer, installer.iss [Run] WizardSilent). 버전 숫자는 download.ts에서
 // 자동으로 따라오므로 릴리스 때 이 파일을 고칠 필요가 없다.
 // 다운로드 버튼은 홈·/start·마이페이지와 같은 방식(집계 + 보안 경고 안내 모달).
+// 모양은 자료실 글의 요약 상자와 같게(2026-10-30, components/article/Prose.tsx SummaryBox).
 
 import { useState } from "react";
 import { trackEvent } from "@/lib/analytics";
@@ -19,17 +20,17 @@ export default function UpdateCard() {
   const [guideOpen, setGuideOpen] = useState(false);
 
   return (
-    <div className="card rounded-xl p-6 md:p-8 shadow-sm mb-6">
-      <h2 className="text-lg font-semibold text-zinc-900 mb-3">
+    <div className="mt-10 rounded-2xl bg-[var(--accent-soft)] border border-[var(--accent-border)] p-6 md:p-8">
+      <h2 className="text-[20px] font-bold text-zinc-900 tracking-tight mb-3 break-keep">
         먼저 앱을 최신 버전으로 업데이트해 주세요
       </h2>
-      <p className="text-sm text-zinc-600 leading-relaxed">
+      <p className="prose-p">
         한글 오류를 해결하는 기능은 새 버전에서 계속 보강되고 있어요. 아래 그림은{" "}
         <strong className="text-zinc-900">최신 버전 기준</strong>입니다. 오류 창에{" "}
         <strong className="text-zinc-900">[다시 만들기]</strong> 버튼이 없거나 그림과 다르게
         보이면 예전 버전이니, 먼저 업데이트해 주세요.
       </p>
-      <ul className="mt-4 text-sm text-zinc-600 leading-relaxed space-y-2 list-disc pl-5">
+      <ul className="mt-4 prose-p space-y-2 list-disc pl-5 marker:text-[var(--accent)]">
         <li>
           <strong className="text-zinc-900">앱에서 바로:</strong> 앱을 켰을 때 왼쪽 아래에{" "}
           <strong className="text-zinc-900">&lsquo;새 버전&rsquo;</strong> 안내가 뜨면{" "}
@@ -52,15 +53,15 @@ export default function UpdateCard() {
             // 코드서명 미적용 상태라 브라우저 보안 경고가 뜬다 — 유지 절차 안내 모달
             setGuideOpen(true);
           }}
-          className="btn-primary hidden md:inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold"
+          className="btn-primary hidden md:inline-flex items-center gap-2 px-5 py-3 rounded-lg text-[15px] font-semibold"
         >
           최신 버전 받기
           <span className="opacity-75 font-normal">{DOWNLOAD_LABEL}</span>
         </a>
-        <p className="md:hidden text-sm text-zinc-700 font-medium">
+        <p className="md:hidden text-[15px] text-zinc-800 font-medium">
           설치 파일은 PC에서 이 페이지를 열어 받아 주세요.
         </p>
-        <p className="text-xs text-zinc-500">
+        <p className="text-[13px] text-zinc-500">
           지금 쓰는 버전은 앱을 켠 첫 화면의 창 맨 위(예: AI MathOCR {DOWNLOAD_VERSION})에서
           확인할 수 있어요.
         </p>

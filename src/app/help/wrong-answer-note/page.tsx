@@ -4,6 +4,7 @@ import { articleSeoMetadata } from "@/lib/articles";
 import TrackedLink from "@/components/TrackedLink";
 import ArticleShell from "@/components/article/ArticleShell";
 import { PromoInline } from "@/components/article/PromoCards";
+import { LINK, Section, Step } from "@/components/article/Prose";
 
 // ⚠️ 이 글의 사실관계 근거(2026-10-25, 검증 일꾼 대조 반영):
 //  - 양식: 마케팅/261025_자료실/양식/make_template_v5.py 로 만든 .hwp 4종(24×33cm·A4 × 개인용·반 공용).
@@ -145,32 +146,6 @@ function DownloadButtons({ location }: { location: string }) {
   );
 }
 
-function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
-  return (
-    <li className="flex gap-4">
-      <span className="shrink-0 w-8 h-8 rounded-full bg-[var(--accent)] text-white text-[14px] font-bold flex items-center justify-center mt-0.5">
-        {n}
-      </span>
-      <div className="min-w-0">
-        <h3 className="text-[18px] font-bold text-zinc-900 tracking-tight">{title}</h3>
-        <div className="prose-p mt-1.5">{children}</div>
-      </div>
-    </li>
-  );
-}
-
-/** 본문 구역 — 상자 대신 구분선과 여백으로 나눈다. */
-function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
-  return (
-    <section id={id} className="scroll-mt-6 mt-16 pt-14 border-t border-zinc-200">
-      <h2 className="text-[24px] md:text-[28px] font-bold text-zinc-900 tracking-tight leading-snug mb-6 break-keep">{title}</h2>
-      {children}
-    </section>
-  );
-}
-
-const LINK = "font-semibold text-[var(--accent)] underline underline-offset-4 decoration-[var(--accent-border)] hover:decoration-[var(--accent)]";
-
 const COST_ROWS: { t: string; v: string; note?: string; free?: boolean }[] = [
   { t: "문제 변환", v: "문제 1개 1크레딧" },
   {
@@ -191,15 +166,10 @@ export default function WrongAnswerNotePage() {
       toc={TOC}
       hero={{
         lead: "틀린 문제를 푼 과정과 틀린 이유까지 한 장에 붙여 두면, 다음에 같은 유형을 만났을 때 꺼내 볼 수 있습니다. 그렇게 정리하는 한글 양식을 무료로 공유하고, 학생 시험지로 빠르게 채우는 방법까지 정리했습니다.",
-        // 본문 '양식 구성'의 첫 예시와 겹치지 않게 두 번째 예시를 쓴다
-        img: "/articles/wrong-note-example-2.webp",
-        alt: "조건 (가)(나) 박스가 있는 수열 문제와 풀이를 오답 노트 양식에 채운 예시",
-        w: 1100,
-        h: 956,
+        img: { src: "/articles/wrong-note-example-2.webp", alt: "조건 (가)(나) 박스가 있는 수열 문제와 풀이를 오답 노트 양식에 채운 예시", w: 1100, h: 956 },
       }}
     >
       <style>{`
-.prose-p{font-size:16.5px;line-height:1.85;color:#27272a;word-break:keep-all}
 .ui{font-size:0.88em;background:#f4f4f5;border:1px solid #e4e4e7;border-radius:4px;padding:1px 6px;color:#18181b;white-space:nowrap}
 `}</style>
       <script

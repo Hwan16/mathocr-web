@@ -70,11 +70,10 @@ export function ArticleHeader({ location }: { location: string }) {
 }
 
 export type ArticleHero = {
-  lead: string; // 제목 아래 한두 문장
-  img: string; // 오른쪽(폰은 아래)에 걸치는 실물 그림 — 위쪽이 보이게 잘린다
-  alt: string;
-  w: number;
-  h: number;
+  title?: string; // 제목(h1)을 articles.ts 제목과 다르게 둘 때 — 이미 검색에 잡힌 h1 을 지킨다
+  lead: React.ReactNode; // 제목 아래 한두 문장
+  // 오른쪽(폰은 아래)에 걸치는 실물 그림 — 위쪽이 보이게 잘린다. 없으면 글자만 있는 낮은 띠(도구가 주인공인 글)
+  img?: { src: string; alt: string; w: number; h: number };
 };
 
 /** 글 맨 위 남색 띠 — 경로·분류·제목·요약 + 실물 그림이 띠 아래로 걸쳐 잘린다. */
@@ -82,8 +81,12 @@ function HeroBand({ href, hero }: { href: string; hero: ArticleHero }) {
   const article = getArticle(href);
   return (
     <section className="bg-[var(--ink)] text-white overflow-hidden">
-      <div className="max-w-[1240px] mx-auto px-4 pt-8 md:pt-12 grid md:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] gap-8 md:gap-12 items-end">
-        <div className="pb-2 md:pb-14 min-w-0">
+      <div
+        className={`max-w-[1240px] mx-auto px-4 pt-8 md:pt-12 ${
+          hero.img ? "grid md:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] gap-8 md:gap-12 items-end" : "pb-10 md:pb-12"
+        }`}
+      >
+        <div className={`min-w-0 ${hero.img ? "pb-2 md:pb-14" : "max-w-[760px]"}`}>
           <nav aria-label="경로" className="text-[12.5px] text-blue-200/80 mb-6">
             <a href="/guides" className="hover:text-white">
               자료실
@@ -94,7 +97,7 @@ function HeroBand({ href, hero }: { href: string; hero: ArticleHero }) {
             </a>
           </nav>
           <h1 className="text-[26px] leading-[1.3] md:text-[38px] md:leading-[1.25] font-bold tracking-tight break-keep">
-            {article.title}
+            {hero.title ?? article.title}
           </h1>
           <p className="text-blue-100/85 text-[15px] md:text-[16.5px] leading-relaxed mt-4 max-w-[34em] break-keep">
             {hero.lead}
@@ -103,15 +106,17 @@ function HeroBand({ href, hero }: { href: string; hero: ArticleHero }) {
             {categoryLabel(article.category)} · {article.date.replace(/-/g, ". ")}.
           </p>
         </div>
-        <div className="min-w-0 h-[150px] md:h-[360px] overflow-hidden">
-          <img
-            src={hero.img}
-            alt={hero.alt}
-            width={hero.w}
-            height={hero.h}
-            className="block w-full h-auto rounded-t-lg bg-white shadow-[0_24px_60px_-12px_rgba(0,0,0,0.55)]"
-          />
-        </div>
+        {hero.img && (
+          <div className="min-w-0 h-[150px] md:h-[360px] overflow-hidden">
+            <img
+              src={hero.img.src}
+              alt={hero.img.alt}
+              width={hero.img.w}
+              height={hero.img.h}
+              className="block w-full h-auto rounded-t-lg bg-white shadow-[0_24px_60px_-12px_rgba(0,0,0,0.55)]"
+            />
+          </div>
+        )}
       </div>
     </section>
   );
@@ -122,14 +127,17 @@ export default function ArticleShell({
   location,
   toc,
   hero,
+  promo = true,
   children,
 }: {
   href: string; // lib/articles.ts 의 글 주소 — 분류·구조화 데이터를 여기서 찾는다
   location: string;
   toc: { href: string; label: string }[];
   hero?: ArticleHero; // 주면 제목을 띠에서 그린다(글 본문에 h1 을 따로 두지 않는다)
+  promo?: boolean; // false: 오른쪽 기능 카드 없이(앱 오류 도움말처럼 이미 쓰는 분이 보는 글)
   children: React.ReactNode;
 }) {
+  const hasToc = toc.length > 0;
   const article = getArticle(href);
   const category = article.category;
   return (
@@ -142,9 +150,11 @@ export default function ArticleShell({
         className={`max-w-[1240px] mx-auto px-4 ${hero ? "py-10 md:py-14" : "py-8 md:py-10"} xl:grid xl:grid-cols-[190px_minmax(0,720px)_250px] xl:gap-8 xl:justify-center`}
       >
         <aside className="hidden xl:block">
-          <div className="sticky top-6">
-            <ArticleToc items={toc} />
-          </div>
+          {hasToc && (
+            <div className="sticky top-6">
+              <ArticleToc items={toc} />
+            </div>
+          )}
         </aside>
         <div className="w-full max-w-3xl mx-auto xl:max-w-none xl:mx-0 min-w-0">
           {!hero && (
@@ -166,9 +176,11 @@ export default function ArticleShell({
           </div>
         </div>
         <aside className="hidden xl:block">
-          <div className="sticky top-6">
-            <PromoRail location={location} />
-          </div>
+          {promo && (
+            <div className="sticky top-6">
+              <PromoRail location={location} />
+            </div>
+          )}
         </aside>
       </div>
     </div>
