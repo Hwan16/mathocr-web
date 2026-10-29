@@ -99,7 +99,7 @@ function HeroBand({ href, hero }: { href: string; hero: ArticleHero }) {
           <h1 className="text-[26px] leading-[1.3] md:text-[38px] md:leading-[1.25] font-bold tracking-tight break-keep">
             {hero.title ?? article.title}
           </h1>
-          <p className="text-blue-100/85 text-[15px] md:text-[16.5px] leading-relaxed mt-4 max-w-[34em] break-keep">
+          <p className="text-blue-100/85 text-[15px] md:text-[16.5px] leading-relaxed mt-4 max-w-[34em] break-keep text-pretty">
             {hero.lead}
           </p>
           <p className="text-[12.5px] text-blue-200/70 mt-5">

@@ -71,7 +71,7 @@ export default function GuidesPage() {
       <section className="bg-[var(--ink)] text-white">
         <div className="max-w-[1240px] mx-auto px-4 py-12 md:py-16">
           <h1 className="text-[32px] md:text-[44px] font-bold tracking-tight leading-tight">자료실</h1>
-          <p className="text-blue-100/85 text-[15px] md:text-[17px] mt-3 max-w-[36em] leading-relaxed break-keep">
+          <p className="text-blue-100/85 text-[15px] md:text-[17px] mt-3 leading-relaxed break-keep text-balance">
             한글 수식 입력부터 수학 시험지 제작까지, 수학 선생님에게 필요한 팁과 무료 도구를 모았습니다.
           </p>
         </div>
