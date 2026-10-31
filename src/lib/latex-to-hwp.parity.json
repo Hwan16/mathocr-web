@@ -553,6 +553,218 @@
    "hwp": "rm \"a<-b\" it < -1"
   },
   {
+   "latex": "f'(x)=0",
+   "hwp": "f`'(x)=0"
+  },
+  {
+   "latex": "f''(x)",
+   "hwp": "f`''(x)"
+  },
+  {
+   "latex": "f^{\\prime}(x)=0",
+   "hwp": "f`'(x)=0"
+  },
+  {
+   "latex": "f^\\prime(x)",
+   "hwp": "f`'(x)"
+  },
+  {
+   "latex": "f^{\\prime\\prime}(x)",
+   "hwp": "f`''(x)"
+  },
+  {
+   "latex": "f^{ \\prime }_{1}(x)",
+   "hwp": "f`'_{1}(x)"
+  },
+  {
+   "latex": "f^{'}(x)",
+   "hwp": "f`'(x)"
+  },
+  {
+   "latex": "f\\prime(x)",
+   "hwp": "f`'(x)"
+  },
+  {
+   "latex": "f′(x)",
+   "hwp": "f`'(x)"
+  },
+  {
+   "latex": "f″(x)",
+   "hwp": "f`''(x)"
+  },
+  {
+   "latex": "f^{′}(x)",
+   "hwp": "f`'(x)"
+  },
+  {
+   "latex": "\\theta^{\\prime}",
+   "hwp": "theta`'"
+  },
+  {
+   "latex": "\\frac{LL^{\\prime}}{2}",
+   "hwp": "{LL`'} over {2}"
+  },
+  {
+   "latex": "\\text{it's}+f'",
+   "hwp": "rm \"it's\" it +f`'"
+  },
+  {
+   "latex": "\\overset{\\frown}{\\mathrm{AB}}",
+   "hwp": "arch{rm {AB} it }"
+  },
+  {
+   "latex": "\\overset{\\frown}{AB}",
+   "hwp": "arch{AB}"
+  },
+  {
+   "latex": "\\overparen{AB}",
+   "hwp": "arch{AB}"
+  },
+  {
+   "latex": "\\overarc{AB}",
+   "hwp": "arch{AB}"
+  },
+  {
+   "latex": "\\overleftrightarrow{AB}",
+   "hwp": "dyad{AB}"
+  },
+  {
+   "latex": "\\widehat{AB}",
+   "hwp": "hat{AB}"
+  },
+  {
+   "latex": "\\widetilde{AB}",
+   "hwp": "tilde{AB}"
+  },
+  {
+   "latex": "\\overset{a}{=}",
+   "hwp": "{=}^{a}"
+  },
+  {
+   "latex": "\\stackrel{a}{=}",
+   "hwp": "{=}^{a}"
+  },
+  {
+   "latex": "\\underset{n}{x}",
+   "hwp": "{x}_{n}"
+  },
+  {
+   "latex": "\\xrightarrow{a}",
+   "hwp": "{rightarrow}^{a}"
+  },
+  {
+   "latex": "\\Big( x \\Big)",
+   "hwp": "( x )"
+  },
+  {
+   "latex": "\\bigl[ x \\bigr]",
+   "hwp": "[ x ]"
+  },
+  {
+   "latex": "\\lvert x \\rvert",
+   "hwp": "| x |"
+  },
+  {
+   "latex": "\\lVert x \\rVert",
+   "hwp": "|| x ||"
+  },
+  {
+   "latex": "\\| x \\|",
+   "hwp": "|| x ||"
+  },
+  {
+   "latex": "\\left\\| x \\right\\|",
+   "hwp": "left|| x right||"
+  },
+  {
+   "latex": "\\left\\lVert x \\right\\rVert",
+   "hwp": "left|| x right||"
+  },
+  {
+   "latex": "\\left\\lvert x \\right\\rvert",
+   "hwp": "left| x right|"
+  },
+  {
+   "latex": "\\boxed{a}",
+   "hwp": "box{a}"
+  },
+  {
+   "latex": "\\square",
+   "hwp": "□"
+  },
+  {
+   "latex": "\\Box",
+   "hwp": "□"
+  },
+  {
+   "latex": "\\cfrac{a}{b}",
+   "hwp": "{a} over {b}"
+  },
+  {
+   "latex": "a \\equiv b \\pmod{n}",
+   "hwp": "a equiv b ~( rm {mod} it ~n)"
+  },
+  {
+   "latex": "a \\bmod b",
+   "hwp": "a rm {mod} it b"
+  },
+  {
+   "latex": "A^{\\complement}",
+   "hwp": "A^{C}"
+  },
+  {
+   "latex": "A \\setminus B",
+   "hwp": "A ∖ B"
+  },
+  {
+   "latex": "30\\degree",
+   "hwp": "30 DEG"
+  },
+  {
+   "latex": "a \\colon b",
+   "hwp": "a : b"
+  },
+  {
+   "latex": "\\forall x",
+   "hwp": "∀ x"
+  },
+  {
+   "latex": "∀x",
+   "hwp": "∀ x"
+  },
+  {
+   "latex": "p \\land q \\lor r",
+   "hwp": "p wedge q vee r"
+  },
+  {
+   "latex": "p \\wedge q \\vee r",
+   "hwp": "p wedge q vee r"
+  },
+  {
+   "latex": "a \\& b",
+   "hwp": "a \"&\" b"
+  },
+  {
+   "latex": "a \\# b",
+   "hwp": "a \"#\" b"
+  },
+  {
+   "latex": "a\\_b",
+   "hwp": "a\"_\"b"
+  },
+  {
+   "latex": "\\mathbin{+}",
+   "hwp": "+"
+  },
+  {
+   "latex": "x \\tag{1}",
+   "hwp": "x ~~(1)"
+  },
+  {
+   "latex": "x \\hspace{1em} y",
+   "hwp": "x ~ y"
+  },
+  {
    "latex": "\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}",
    "hwp": "left( matrix{a & b # c & d} right)"
   },
@@ -662,7 +874,7 @@
   },
   {
    "latex": "\\overparen{AB}",
-   "hwp": "overparen{AB}"
+   "hwp": "arch{AB}"
   },
   {
    "latex": "60^{\\circ}",

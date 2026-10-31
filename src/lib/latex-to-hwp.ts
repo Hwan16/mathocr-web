@@ -24,6 +24,29 @@ function separateLtMinus(text: string): string {
   return parts.join('"');
 }
 
+// 한/글 수식의 `는 1/4칸 띄어쓰기라 \prime을 `로 내면 프라임이 사라진다(2026-10-31 회원 신고). 프라임은 '다.
+// f'처럼 붙이면 글자에 겹쳐 보여 ` 한 칸을 앞에 두고, f^{\prime}은 f'로 풀어 쓴다.
+const PRIME_SUP_RE = /\^\s*\{\s*((?:(?:\\prime(?![a-zA-Z])|[′″'])\s*)+)\}/g;
+const PRIME_SUP_BARE_RE = /\^\s*\\prime(?![a-zA-Z])/g;
+const PRIME_RUN_RE = /(?<![`'])'+/g;
+
+function unfoldPrimeSuperscript(text: string): string {
+  return text
+    .replace(PRIME_SUP_RE, (_m, body: string) => {
+      const count = (re: RegExp) => (body.match(re) ?? []).length;
+      return "'".repeat(count(/\\prime/g) + count(/′/g) + count(/'/g) + 2 * count(/″/g));
+    })
+    .replace(PRIME_SUP_BARE_RE, "'");
+}
+
+function spaceBeforePrime(text: string): string {
+  const parts = text.split('"');
+  for (let i = 0; i < parts.length; i += 2) {
+    parts[i] = parts[i].replace(PRIME_RUN_RE, (m) => "`" + m);
+  }
+  return parts.join('"');
+}
+
 const LATEX_CMD_RE = /\\[a-zA-Z]+/;
 const HANGUL_RE = /[가-힣]/;
 
@@ -146,18 +169,39 @@ const SYMBOL_MAP: Record<string, string> = {
   emptyset: "emptyset", varnothing: "emptyset",
 
   // 논리
-  forall: "forall", exists: "exists",
+  // 한글 수식엔 forall 명령이 없어 글자로 찍힌다 — 기호를 그대로 넣는다(10-31 실제 렌더)
+  forall: "∀", exists: "exists",
   neg: "neg", lnot: "neg",
-  land: "and", lor: "or",
-  vee: "or", wedge: "and",
+  land: "wedge", lor: "vee",
+  vee: "vee", wedge: "wedge",
 
   // 기타
   infty: "inf", infinity: "inf",
   partial: "partial",
   nabla: "nabla",
-  prime: "`",
+  prime: "'",
   triangle: "TRIANGLE",
-  square: "",
+  // 예전엔 ""로 지워 □가 소리 없이 사라졌다(10-31 점검)
+  square: "□", Box: "□", blacksquare: "■",
+  frown: "⌒",
+  colon: ":",
+  degree: " DEG",
+  complement: "C", // A^{\complement} → 교과서 표기 A^C
+  setminus: "∖",
+  ncong: "≇", subsetneq: "⊊", supsetneq: "⊋",
+  rightleftharpoons: "⇌", hookrightarrow: "rightarrow", gets: "leftarrow",
+  measuredangle: "angle", bigtriangleup: "TRIANGLE",
+  bmod: " rm {mod} it ", mod: " rm {mod} it ",
+  lvert: "|", rvert: "|", lVert: "||", rVert: "||",
+  lt: "<", gt: ">",
+  lbrace: "lbrace ", rbrace: "rbrace ", lbrack: "[", rbrack: "]",
+  dotsc: "cdots", dotsb: "cdots", dotsm: "cdots", dotso: "cdots",
+  nonumber: "", notag: "",
+  // 괄호 크기 지정 — 한글에선 글자로 찍히므로 지우고 괄호만 남긴다
+  big: "", Big: "", bigg: "", Bigg: "",
+  bigl: "", Bigl: "", biggl: "", Biggl: "",
+  bigr: "", Bigr: "", biggr: "", Biggr: "",
+  bigm: "", Bigm: "", biggm: "", Biggm: "",
   perp: "bot",
   parallel: "parallel",
   therefore: "therefore",
@@ -182,11 +226,14 @@ const DECORATION_MAP: Record<string, string> = {
   vec: "vec",
   overrightarrow: "vec",
   overleftarrow: "vec",
-  overleftrightarrow: "vec",
+  overleftrightarrow: "dyad", // 양쪽 화살표(직선 AB)
   vector: "vec",
   bar: "bar",
-  widehat: "widehat",
-  widetilde: "widetilde",
+  // 한글 수식엔 widehat·widetilde가 없다 — hat·tilde가 글자 폭만큼 늘어난다(10-31 실제 렌더)
+  widehat: "hat",
+  widetilde: "tilde",
+  // 호 — overparen·overset{frown}은 한글이 못 읽어 AB까지 통째로 사라진다
+  overparen: "arch", overarc: "arch", wideparen: "arch",
   overbrace: "overbrace",
   underbrace: "underbrace",
 };
@@ -228,7 +275,7 @@ const UNICODE_MAP: Record<string, string> = {
   "∪": " cup ",
   "∩": " cap ",
   "∅": " emptyset ",
-  "∀": " forall ",
+  "∀": " ∀ ",
   "∃": " exists ",
   "∂": " partial ",
   "∇": " nabla ",
@@ -242,8 +289,8 @@ const UNICODE_MAP: Record<string, string> = {
   "±": " +- ",
   "·": " cdot ",
   "…": " cdots ",
-  "′": "`",
-  "″": "``",
+  "′": "'",
+  "″": "''",
 };
 
 const has = (m: Record<string, string>, k: string) => Object.prototype.hasOwnProperty.call(m, k);
@@ -271,6 +318,7 @@ export class LatexToHwpConverter {
       s = s.slice(1, -1);
     }
     s = s.replace(/\\(?:displaystyle|textstyle|scriptstyle|scriptscriptstyle)\s*/g, "");
+    s = unfoldPrimeSuperscript(s);
     s = pyStrip(s.replace(/\s+/g, " "));
     return s;
   }
@@ -278,6 +326,7 @@ export class LatexToHwpConverter {
   private postprocess(input: string): string {
     let result = input.replace(/\s*<>\s*/g, " ≠ ");
     result = separateLtMinus(result);
+    result = spaceBeforePrime(result);
     result = result.replace(/(?<=[A-Za-z0-9가-힣}\)])\s+mid\s+(?=[A-Za-z0-9가-힣{(])/g, " | ");
     result = result.replace(/(?<=[A-Za-z0-9가-힣}\)])mid(?=\s*[A-Za-z0-9가-힣{(])/g, " | ");
     result = ensureSpaceAfterComma(result);
@@ -448,22 +497,50 @@ export class LatexToHwpConverter {
       "!": "",
       "{": "lbrace ",
       "}": "rbrace ",
-      "|": "|",
+      "|": "||", // \| 노름 — 한 줄이면 절댓값이 된다
       "\\": " ## ",
       " ": "~",
       "%": "%",
-      "#": "#",
-      "&": "&",
+      // 한글 수식에서 #은 줄바꿈, &은 칸 나눔, _는 아래첨자라 글자로 찍으려면 따옴표가 필요하다
+      "#": '"#"',
+      "&": '"&"',
+      _: '"_"',
     };
     return has(table, ch) ? table[ch] : ch;
   }
 
   private convertCommand(cmd: string): string {
     // 분수
-    if (cmd === "frac" || cmd === "dfrac" || cmd === "tfrac") {
+    if (cmd === "frac" || cmd === "dfrac" || cmd === "tfrac" || cmd === "cfrac") {
       const num = this.parseBracedArg();
       const den = this.parseBracedArg();
       return "{" + num + "} over {" + den + "}";
+    }
+
+    // 위·아래에 얹기 — 한글엔 대응 명령이 없고 buildrel은 깨진다(10-31 실제 렌더). 사라지지 않게 첨자로 낸다. 호만 arch
+    if (cmd === "overset" || cmd === "stackrel") {
+      const top = this.parseBracedArg();
+      const base = this.parseBracedArg();
+      if (pyStrip(top) === "⌒") return "arch{" + base + "}";
+      return "{" + base + "}^{" + top + "}";
+    }
+    if (cmd === "underset") {
+      const bottom = this.parseBracedArg();
+      const base = this.parseBracedArg();
+      return "{" + base + "}_{" + bottom + "}";
+    }
+    if (cmd === "xrightarrow" || cmd === "xleftarrow") {
+      const arrow = cmd === "xrightarrow" ? "rightarrow" : "leftarrow";
+      return "{" + arrow + "}^{" + this.parseBracedArg() + "}";
+    }
+
+    // 네모 칸·나머지·번호·간격
+    if (cmd === "boxed" || cmd === "fbox") return "box{" + this.parseBracedArg() + "}";
+    if (cmd === "pmod") return "~( rm {mod} it ~" + this.parseBracedArg() + ")";
+    if (cmd === "tag") return "~~(" + this.parseBracedArg() + ")";
+    if (cmd === "hspace") {
+      this.parseBracedArg();
+      return "~";
     }
 
     // 이항계수
@@ -513,7 +590,10 @@ export class LatexToHwpConverter {
 
     // 나머지 수학 폰트 — 내용만 통과
     if (
-      ["mathit", "mathbf", "mathsf", "mathtt", "mathcal", "mathbb", "mathfrak", "boldsymbol"].includes(cmd)
+      [
+        "mathit", "mathbf", "mathsf", "mathtt", "mathcal", "mathbb", "mathfrak", "boldsymbol",
+        "mathbin", "mathrel", "mathop", "mathord", "mathopen", "mathclose", "mathpunct", "mathinner",
+      ].includes(cmd)
     ) {
       return this.parseBracedArg();
     }
@@ -554,7 +634,7 @@ export class LatexToHwpConverter {
       const nextCh = this.peek();
       if (!isAlpha(nextCh)) {
         this.advance();
-        const special: Record<string, string> = { "{": " lbrace", "}": " rbrace", "|": "|" };
+        const special: Record<string, string> = { "{": " lbrace", "}": " rbrace", "|": "||" };
         return has(special, nextCh) ? special[nextCh] : nextCh;
       }
       let cmd = "";
@@ -563,6 +643,7 @@ export class LatexToHwpConverter {
         lbrace: " lbrace", rbrace: " rbrace",
         langle: " langle", rangle: " rangle",
         vert: "|", Vert: "||",
+        lvert: "|", rvert: "|", lVert: "||", rVert: "||",
         lfloor: " lfloor", rfloor: " rfloor",
         lceil: " lceil", rceil: " rceil",
       };
