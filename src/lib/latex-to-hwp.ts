@@ -47,6 +47,11 @@ function spaceBeforePrime(text: string): string {
   return parts.join('"');
 }
 
+// \text 안에선 전체를 따옴표로 감싸므로 \& \# \_의 따옴표를 벗긴다(겹치면 따옴표 밖으로 새어 나간다)
+function unquoteSpecials(text: string): string {
+  return text.replace(/"([#&_])"/g, "$1");
+}
+
 const LATEX_CMD_RE = /\\[a-zA-Z]+/;
 const HANGUL_RE = /[가-힣]/;
 
@@ -192,7 +197,7 @@ const SYMBOL_MAP: Record<string, string> = {
   rightleftharpoons: "⇌", hookrightarrow: "rightarrow", gets: "leftarrow",
   measuredangle: "angle", bigtriangleup: "TRIANGLE",
   bmod: " rm {mod} it ", mod: " rm {mod} it ",
-  lvert: "|", rvert: "|", lVert: "||", rVert: "||",
+  lvert: "|", rvert: "|", lVert: "||", rVert: "||", Vert: "||",
   lt: "<", gt: ">",
   lbrace: "lbrace ", rbrace: "rbrace ", lbrack: "[", rbrack: "]",
   dotsc: "cdots", dotsb: "cdots", dotsm: "cdots", dotso: "cdots",
@@ -357,6 +362,20 @@ export class LatexToHwpConverter {
 
   // ── 핵심 파싱 ──
 
+  // `[...]` 선택 인수가 있으면 읽어 변환 결과를 돌려준다(없으면 빈 문자열)
+  private parseOptionalArg(): string {
+    this.skipSpaces();
+    if (this.peek() !== "[") return "";
+    this.advance();
+    const arg = this.parseExpr("]");
+    if (this.peek() === "]") this.advance();
+    return arg;
+  }
+
+  private skipStar(): void {
+    if (this.peek() === "*") this.advance();
+  }
+
   private parseExpr(stopChars = ""): string {
     const parts: string[] = [];
     while (!this.atEnd()) {
@@ -371,7 +390,8 @@ export class LatexToHwpConverter {
           const firstChar = cmdResult[0];
           if (isAlnum(lastChar) && isAlpha(firstChar)) parts.push(" ");
         }
-        parts.push(cmdResult);
+        // 빈 결과(\bigr 등)를 넣으면 다음 명령이 앞 토큰을 못 봐 "xrbrace"처럼 붙는다
+        if (cmdResult) parts.push(cmdResult);
       } else if (ch === "{") {
         this.advance();
         const inner = this.parseExpr("}");
@@ -512,6 +532,7 @@ export class LatexToHwpConverter {
   private convertCommand(cmd: string): string {
     // 분수
     if (cmd === "frac" || cmd === "dfrac" || cmd === "tfrac" || cmd === "cfrac") {
+      if (cmd === "cfrac") this.parseOptionalArg(); // \cfrac[l]{a}{b}의 정렬 지정은 한글에 없다
       const num = this.parseBracedArg();
       const den = this.parseBracedArg();
       return "{" + num + "} over {" + den + "}";
@@ -531,14 +552,20 @@ export class LatexToHwpConverter {
     }
     if (cmd === "xrightarrow" || cmd === "xleftarrow") {
       const arrow = cmd === "xrightarrow" ? "rightarrow" : "leftarrow";
-      return "{" + arrow + "}^{" + this.parseBracedArg() + "}";
+      const below = this.parseOptionalArg();
+      const above = this.parseBracedArg();
+      return "{" + arrow + "}" + (below ? "_{" + below + "}" : "") + (above ? "^{" + above + "}" : "");
     }
 
     // 네모 칸·나머지·번호·간격
     if (cmd === "boxed" || cmd === "fbox") return "box{" + this.parseBracedArg() + "}";
     if (cmd === "pmod") return "~( rm {mod} it ~" + this.parseBracedArg() + ")";
-    if (cmd === "tag") return "~~(" + this.parseBracedArg() + ")";
+    if (cmd === "tag") {
+      this.skipStar();
+      return "~~(" + this.parseBracedArg() + ")";
+    }
     if (cmd === "hspace") {
+      this.skipStar();
       this.parseBracedArg();
       return "~";
     }
@@ -567,7 +594,7 @@ export class LatexToHwpConverter {
     // 텍스트 — 단위·설명어는 정자체(rm)로 감싸고 it 으로 되돌린다.
     // 따옴표 안 끝머리 공백은 한글이 지운다("는 " + 10 → "는10") — 앞뒤 공백은 따옴표 밖 ~로 옮긴다.
     if (cmd === "text" || cmd === "textrm" || cmd === "mbox" || cmd === "hbox") {
-      const arg = this.parseBracedArg();
+      const arg = unquoteSpecials(this.parseBracedArg());
       if (!arg) return "";
       const core = pyStrip(arg);
       if (!core) return "~";
@@ -577,7 +604,7 @@ export class LatexToHwpConverter {
     }
 
     if (cmd === "textit" || cmd === "textbf") {
-      const arg = this.parseBracedArg();
+      const arg = unquoteSpecials(this.parseBracedArg());
       return '"' + arg + '"';
     }
 

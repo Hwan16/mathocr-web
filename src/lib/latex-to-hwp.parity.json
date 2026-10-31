@@ -753,6 +753,114 @@
    "hwp": "a\"_\"b"
   },
   {
+   "latex": "\\text{A\\&B}",
+   "hwp": "rm \"A&B\" it"
+  },
+  {
+   "latex": "\\text{a\\_b}",
+   "hwp": "rm \"a_b\" it"
+  },
+  {
+   "latex": "\\text{\\#1}",
+   "hwp": "rm \"#1\" it"
+  },
+  {
+   "latex": "\\textbf{A\\&B}",
+   "hwp": "\"A&B\""
+  },
+  {
+   "latex": "\\bigl\\{x\\bigr\\}",
+   "hwp": "lbrace x rbrace"
+  },
+  {
+   "latex": "\\Bigl\\lbrace x\\Bigr\\rbrace",
+   "hwp": "lbrace x rbrace"
+  },
+  {
+   "latex": "x\\!\\alpha",
+   "hwp": "x alpha"
+  },
+  {
+   "latex": "\\xrightarrow[n\\to\\infty]{}",
+   "hwp": "{rightarrow}_{n rightarrow inf}"
+  },
+  {
+   "latex": "\\xrightarrow[b]{a}",
+   "hwp": "{rightarrow}_{b}^{a}"
+  },
+  {
+   "latex": "\\cfrac[l]{1}{1+x}",
+   "hwp": "{1} over {1+x}"
+  },
+  {
+   "latex": "x \\tag*{1}",
+   "hwp": "x ~~(1)"
+  },
+  {
+   "latex": "x \\hspace*{1em} y",
+   "hwp": "x ~ y"
+  },
+  {
+   "latex": "\\begin{cases} \\text{a\\&b} & x \\\\ y & z \\end{cases}",
+   "hwp": "cases{rm \"a&b\" it & x # y & z}"
+  },
+  {
+   "latex": "\\bigl\\{a,b\\bigr\\}",
+   "hwp": "lbrace a, b rbrace"
+  },
+  {
+   "latex": "x\\big\\rangle",
+   "hwp": "x rangle"
+  },
+  {
+   "latex": "\\begin{cases} f^{\\prime}(x) & x>0 \\\\ g'(x) & x<0 \\end{cases}",
+   "hwp": "cases{f`'(x) & x>0 # g`'(x) & x<0}"
+  },
+  {
+   "latex": "x_{n}'",
+   "hwp": "x_{n}`'"
+  },
+  {
+   "latex": "\\sin^{\\prime}x",
+   "hwp": "sin`'x"
+  },
+  {
+   "latex": "\\mathrm{A}^{\\prime}",
+   "hwp": "rm {A} it `'"
+  },
+  {
+   "latex": "\\stackrel{\\frown}{AB}",
+   "hwp": "arch{AB}"
+  },
+  {
+   "latex": "\\wideparen{AB}",
+   "hwp": "arch{AB}"
+  },
+  {
+   "latex": "\\fbox{a}",
+   "hwp": "box{a}"
+  },
+  {
+   "latex": "a \\lt b \\gt c",
+   "hwp": "a < b > c"
+  },
+  {
+   "latex": "x \\gets 1",
+   "hwp": "x leftarrow 1"
+  },
+  {
+   "latex": "\\blacksquare",
+   "hwp": "■"
+  },
+  {
+   "latex": "\\xleftarrow{a}",
+   "hwp": "{leftarrow}^{a}"
+  },
+  {
+   "latex": "\\Vert x \\Vert",
+   "hwp": "|| x ||"
+  },
+  {
    "latex": "\\mathbin{+}",
    "hwp": "+"
   },
