@@ -227,6 +227,8 @@ export default function ReportPage() {
             <span className="font-medium text-zinc-800">[신고 보내기]</span>로
             어떤 부분이 잘못됐는지 알려주세요. 프로그램 오류로 확인되면
             보상으로 50크레딧(50문제분)을 지급해드립니다.
+            <br />
+            설치·결제·사용법 등 그 밖의 문의는 오른쪽 아래 채팅 버튼으로 남겨 주세요.
           </p>
 
           {loggedIn === false ? (

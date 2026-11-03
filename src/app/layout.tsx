@@ -5,6 +5,7 @@ import StructuredData from "./structured-data";
 import UtmTracker from "@/components/UtmTracker";
 import MetaPixel from "@/components/MetaPixel";
 import NaverWcs from "@/components/NaverWcs";
+import ChannelTalk from "@/components/ChannelTalk";
 import IconifyProvider from "@/components/IconifyProvider";
 import { SIGNUP_FREE_CREDITS } from "@/lib/plans";
 import { INTERNAL_VISITOR_KEY, internalVisitorBootstrap } from "@/lib/internal-visitor";
@@ -142,6 +143,8 @@ export default function RootLayout({
           </>
         )}
         <NaverWcs />
+        {/* 채널톡 채팅 상담 — NEXT_PUBLIC_CHANNEL_PLUGIN_KEY 설정 시에만 활성 */}
+        <ChannelTalk />
       </body>
       {/* GA4: 실제 배포(production)에서만 로드 — 로컬/개발 접속은 추적하지 않음 */}
       {process.env.NODE_ENV === "production" && (

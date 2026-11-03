@@ -29,6 +29,9 @@ import type { NextConfig } from "next";
 //    항목 — 실측 근거가 확보돼 추가한다. 빠진 채 enforce로 승격하면 전환 전송만
 //    조용히 차단돼 광고 성과가 0으로 보인다(화면은 멀쩡해서 발견이 늦다).
 //    img-src에도 병기 — 구형 브라우저에서 픽셀 폴백 가능성 대비.
+//  - 채널톡 채팅 버튼 — 공식 허용 목록 developers.channel.io/docs/content-security-policy
+//    기준. 공식 목록의 default-src 는 우리가 따로 지정한 font·frame 에 적용되지 않아
+//    그 둘에도 병기한다. 목록이 바뀔 수 있다고 안내돼 있으니 위반 보고를 볼 것.
 // 로컬 개발(next dev)에서만 완화한다 — 운영 빌드에는 절대 들어가지 않는다.
 //   · 'unsafe-eval': React 개발 모드가 콜스택 복원 등에 eval 을 쓴다(운영 모드는 안 씀)
 //   · ws://localhost: 핫 리로드(HMR) 웹소켓
@@ -38,14 +41,14 @@ const devScriptSrc = isDev ? " 'unsafe-eval'" : "";
 const devConnectSrc = isDev ? " ws://localhost:* http://localhost:*" : "";
 
 const CSP_ENFORCED = [
-  "default-src 'self'",
+  "default-src 'self' https://*.channel.io https://*.channel.app https://*.cdninstagram.com",
   // ssl.pstatic.net — 네이버 wcslog.js 가 **실행 중에 2차로** 불러오는 모듈
   // (gfp-nac-module/synchronizer.js). 우리 코드에는 이 주소가 없어 번들 정적
   // 분석으로는 안 잡히고, Report-Only 관찰에서도 놓쳤다가 2026-08-12 enforce 승격
   // 직후 프로덕션에서 실제 차단으로 발견했다.
   // ⚠️ 교훈: 서드파티 추적 스크립트는 자기가 또 다른 스크립트를 부른다.
   //    CSP 를 손댈 때는 배포 후 반드시 실제 브라우저로 재확인할 것.
-  `script-src 'self' 'unsafe-inline'${devScriptSrc} https://www.googletagmanager.com https://connect.facebook.net https://pay.nicepay.co.kr https://wcs.naver.net https://ssl.pstatic.net`,
+  `script-src 'self' 'unsafe-inline'${devScriptSrc} https://www.googletagmanager.com https://connect.facebook.net https://pay.nicepay.co.kr https://wcs.naver.net https://ssl.pstatic.net https://*.channel.io https://*.sentry-cdn.com`,
   "style-src 'self' 'unsafe-inline'",
   // analytics.google.com(GA4 수집 지역 변형)·www.google.com/co.kr(구글 애즈 전환
   // 링커 핑)은 프로덕션 Report-Only 실관찰(2026-07-18)에서 확인돼 추가 — 빠지면
@@ -55,12 +58,12 @@ const CSP_ENFORCED = [
   // 빠진 채 켜면 관리자 화면에서 신고 이미지만 안 보인다.
   // ssl.pstatic.net 병기 — 네이버 모듈이 픽셀 이미지 방식도 쓸 수 있다(정적 CDN이라
   // 데이터를 받는 엔드포인트가 아니므로 허용 위험이 사실상 없다).
-  "img-src 'self' data: blob: https://*.supabase.co https://www.facebook.com https://www.googletagmanager.com https://*.google-analytics.com https://www.google.com https://www.google.co.kr https://wcs.naver.net https://wcs.naver.com https://ssl.pstatic.net",
-  "font-src 'self' data:",
+  "img-src 'self' data: blob: https://*.supabase.co https://www.facebook.com https://www.googletagmanager.com https://*.google-analytics.com https://www.google.com https://www.google.co.kr https://wcs.naver.net https://wcs.naver.com https://ssl.pstatic.net https://*.channel.io https://*.cdninstagram.com",
+  "font-src 'self' data: https://*.channel.io https://*.channel.app",
   // nam.veta.naver.com — 위 gfp-nac-module(synchronizer.js)이 보내는 식별 동기화
   // 요청(/nac/2, fetch). 2026-10-13 프로덕션 콘솔에서 차단 확인(주 전송 wcs.naver.com/b
   // 는 정상이었음). 네이버 광고 클릭↔전환 매칭 보조용이라 허용한다.
-  `connect-src 'self'${devConnectSrc} https://*.supabase.co wss://*.supabase.co https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://www.googletagmanager.com https://stats.g.doubleclick.net https://www.google.com https://www.google.co.kr https://www.facebook.com https://connect.facebook.net https://wcs.naver.net https://wcs.naver.com https://nam.veta.naver.com`,
+  `connect-src 'self'${devConnectSrc} https://*.supabase.co wss://*.supabase.co https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://www.googletagmanager.com https://stats.g.doubleclick.net https://www.google.com https://www.google.co.kr https://www.facebook.com https://connect.facebook.net https://wcs.naver.net https://wcs.naver.com https://nam.veta.naver.com https://*.channel.io https://*.channel.app https://*.sentry.io wss://*.channel.io wss://*.front-ws.channel.io`,
   // www.facebook.com — 메타 픽셀이 iframe·form POST 폴백 경로를 쓴다.
   // 2026-08-12 프로덕션 실측: enforce 승격 시 위반하는 유일한 항목이 이 둘이었다.
   //
@@ -71,7 +74,7 @@ const CSP_ENFORCED = [
   // 나중에 메타 광고를 재개할 때 CSP를 다시 손댈 필요도 없어진다.
   // ※ 메타를 완전히 끊으려면 픽셀 ID(NEXT_PUBLIC_META_PIXEL_ID) 제거 + 방침의
   //    국외 이전 고지 개정까지 함께 해야 한다(별건).
-  "frame-src 'self' https://*.nicepay.co.kr https://www.facebook.com",
+  "frame-src 'self' https://*.nicepay.co.kr https://www.facebook.com https://*.channel.io https://*.channel.app",
   "form-action 'self' https://*.nicepay.co.kr https://www.facebook.com",
   // 클릭재킹 차단 — 기존에는 Report-Only 가 frame-ancestors 를 무시해서 별도 헤더로
   // 강제했지만, 이제 이 CSP 자체가 강제 모드라 여기로 합친다.

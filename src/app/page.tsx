@@ -154,15 +154,6 @@ export default function Home() {
       </header>
       </div>
 
-      {/* ── 변환 실패 신고: 우하단 플로팅 버튼 (스크롤 따라다님, PC 전용이라 모바일 숨김) ── */}
-      <a
-        href="/report"
-        onClick={() => trackEvent("nav_click", { label: "report_floating" })}
-        className="fixed bottom-6 right-6 z-50 hidden md:inline-flex items-center gap-2 px-5 py-3.5 rounded-full bg-red-600 text-white text-sm font-semibold shadow-lg shadow-red-600/30 hover:bg-red-700 transition-colors"
-      >
-        <span aria-hidden>⚠</span> 변환이 안됐나요?
-      </a>
-
       {/* ── Hero ── */}
       <section className="border-b border-zinc-200 bg-gradient-to-b from-[var(--accent-soft)] to-white">
         <div className="max-w-screen-2xl mx-auto px-6 lg:px-12 pt-16 pb-20 lg:pt-24 lg:pb-28">
