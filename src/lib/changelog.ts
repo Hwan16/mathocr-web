@@ -55,15 +55,6 @@ export const CHANGELOG: ChangelogEntry[] = [
     ],
   },
   {
-    version: "v2.6.0",
-    tag: "improve",
-    title: "🧰 더 간단한 설치",
-    items: [
-      "설치 파일을 열면 '설치하는 중' 창 하나로 끝나고, 끝나면 프로그램이 바로 켜집니다.",
-      "처음 설치하면 사용 방법을 짧은 움직이는 화면으로 안내합니다.",
-    ],
-  },
-  {
     version: "v2.4.2 ~ v2.5.6",
     tag: "stable",
     title: "오류 수정",
