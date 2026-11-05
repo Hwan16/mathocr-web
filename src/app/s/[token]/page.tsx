@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isExpired, isShareToken } from "@/lib/file-box";
 import { formatMonthDay } from "@/lib/file-box-types";
+import Wordmark from "@/components/Wordmark";
 
 // 카카오톡 '받기 링크'(D-054) — 받은 사람이 로그인 없이 한글 파일을 받는 화면.
 // 보낸 사람 정보(이메일 등)는 보여 주지 않는다. 검색엔진에 올리지 않는다.
@@ -30,10 +31,8 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
     <main className="min-h-screen bg-zinc-50 flex flex-col items-center px-4 py-10">
       <a href="/" className="flex items-center gap-2 mb-8">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/mathocr-icon.png" alt="" width={32} height={32} />
-        <span className="text-base font-bold tracking-tight">
-          AI Math<span className="text-[var(--accent)]">OCR</span>
-        </span>
+        <img src="/mathocr-icon.png" alt="AI MathOCR" width={32} height={32} />
+        <Wordmark decorative className="h-[12px] shrink-0 w-auto text-zinc-900" />
       </a>
       <div className="card w-full max-w-md rounded-xl p-6 sm:p-7">
         {file ? (

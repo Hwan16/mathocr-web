@@ -16,6 +16,7 @@ import {
   type StoredFile,
 } from "@/lib/file-box-types";
 import FirstProblem from "./FirstProblem";
+import Wordmark from "@/components/Wordmark";
 
 // 내 파일함(D-054) — 시안 docs/mockups/my-files.html 을 옮긴 것.
 // 목록(위: 보관 중, 아래: 만료된 파일) + 오른쪽 첫 문제 미리보기(폰은 전체 화면).
@@ -609,9 +610,7 @@ export default function FileBox({ email }: { email: string }) {
           <a href="/" className="flex items-center gap-2.5 shrink-0">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/mathocr-icon.png" alt="AI MathOCR" width={36} height={36} />
-            <span className="text-lg font-bold tracking-tight whitespace-nowrap">
-              AI Math<span className="text-[var(--accent)]">OCR</span>
-            </span>
+            <Wordmark decorative className="h-[13px] shrink-0 w-auto text-zinc-900" />
           </a>
           <div className="flex items-center gap-4 sm:gap-5 text-sm min-w-0">
             <a href="/dashboard" className="hidden sm:inline whitespace-nowrap text-zinc-600 hover:text-zinc-900">
