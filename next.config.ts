@@ -33,8 +33,8 @@ import type { NextConfig } from "next";
 //    기준. 공식 목록의 default-src 는 우리가 따로 지정한 font·frame 에 적용되지 않아
 //    그 둘에도 병기한다. 목록이 바뀔 수 있다고 안내돼 있으니 위반 보고를 볼 것.
 //  - 카카오톡 공유(내 파일함, D-054) — SDK 스크립트 t1.kakaocdn.net(SRI 고정, lib/kakao-share.ts).
-//    공유 창은 새 창(sharer.kakao.com)·카톡 앱 호출이라 frame/connect 허용이 필요 없다.
-//    배포 후 실제 브라우저로 공유 창이 뜨는지 재확인할 것(위 교훈).
+//    PC 공유는 새 창으로 sharer.kakao.com 에 폼을 보내므로 form-action 에 허용해야 한다(아래, 11-06 실사이트
+//    위반으로 확인 — 빠지면 공유 창이 빈 화면). frame/connect 허용은 필요 없다.
 // 로컬 개발(next dev)에서만 완화한다 — 운영 빌드에는 절대 들어가지 않는다.
 //   · 'unsafe-eval': React 개발 모드가 콜스택 복원 등에 eval 을 쓴다(운영 모드는 안 씀)
 //   · ws://localhost: 핫 리로드(HMR) 웹소켓
@@ -78,7 +78,9 @@ const CSP_ENFORCED = [
   // ※ 메타를 완전히 끊으려면 픽셀 ID(NEXT_PUBLIC_META_PIXEL_ID) 제거 + 방침의
   //    국외 이전 고지 개정까지 함께 해야 한다(별건).
   "frame-src 'self' https://*.nicepay.co.kr https://www.facebook.com https://*.channel.io https://*.channel.app",
-  "form-action 'self' https://*.nicepay.co.kr https://www.facebook.com",
+  // sharer.kakao.com — 카카오톡 공유(PC)는 새 창을 연 뒤 그 창으로 폼을 보낸다. 빠지면 창이 빈 화면으로 남는다
+  // (2026-11-06 실사이트에서 form-action 위반 확인)
+  "form-action 'self' https://*.nicepay.co.kr https://www.facebook.com https://sharer.kakao.com",
   // 클릭재킹 차단 — 기존에는 Report-Only 가 frame-ancestors 를 무시해서 별도 헤더로
   // 강제했지만, 이제 이 CSP 자체가 강제 모드라 여기로 합친다.
   "frame-ancestors 'none'",
