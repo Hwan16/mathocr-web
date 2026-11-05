@@ -34,7 +34,10 @@ import type { NextConfig } from "next";
 //    그 둘에도 병기한다. 목록이 바뀔 수 있다고 안내돼 있으니 위반 보고를 볼 것.
 //  - 카카오톡 공유(내 파일함, D-054) — SDK 스크립트 t1.kakaocdn.net(SRI 고정, lib/kakao-share.ts).
 //    PC 공유는 새 창으로 sharer.kakao.com 에 폼을 보내므로 form-action 에 허용해야 한다(아래, 11-06 실사이트
-//    위반으로 확인 — 빠지면 공유 창이 빈 화면). frame/connect 허용은 필요 없다.
+//    위반으로 확인 — 빠지면 공유 창이 빈 화면). 카카오에 로그인 안 된 PC면 그 폼이 accounts.kakao.com
+//    로그인으로 넘어가는데, form-action 은 넘어가는 곳에도 걸리므로 accounts.kakao.com 도 허용한다.
+//    휴대폰 공유는 먼저 kapi.kakao.com 에 메시지 확인을 요청(fetch)한 뒤 카카오톡 앱을 연다 → connect-src 에
+//    kapi.kakao.com 이 없으면 sharer.kakao.com '요청 실패(4002)'로 끝난다(11-06 휴대폰에서 확인·재현).
 // 로컬 개발(next dev)에서만 완화한다 — 운영 빌드에는 절대 들어가지 않는다.
 //   · 'unsafe-eval': React 개발 모드가 콜스택 복원 등에 eval 을 쓴다(운영 모드는 안 씀)
 //   · ws://localhost: 핫 리로드(HMR) 웹소켓
@@ -66,7 +69,7 @@ const CSP_ENFORCED = [
   // nam.veta.naver.com — 위 gfp-nac-module(synchronizer.js)이 보내는 식별 동기화
   // 요청(/nac/2, fetch). 2026-10-13 프로덕션 콘솔에서 차단 확인(주 전송 wcs.naver.com/b
   // 는 정상이었음). 네이버 광고 클릭↔전환 매칭 보조용이라 허용한다.
-  `connect-src 'self'${devConnectSrc} https://*.supabase.co wss://*.supabase.co https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://www.googletagmanager.com https://stats.g.doubleclick.net https://www.google.com https://www.google.co.kr https://www.facebook.com https://connect.facebook.net https://wcs.naver.net https://wcs.naver.com https://nam.veta.naver.com https://*.channel.io https://*.channel.app https://*.sentry.io wss://*.channel.io wss://*.front-ws.channel.io`,
+  `connect-src 'self'${devConnectSrc} https://*.supabase.co wss://*.supabase.co https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://www.googletagmanager.com https://stats.g.doubleclick.net https://www.google.com https://www.google.co.kr https://www.facebook.com https://connect.facebook.net https://wcs.naver.net https://wcs.naver.com https://nam.veta.naver.com https://*.channel.io https://*.channel.app https://*.sentry.io wss://*.channel.io wss://*.front-ws.channel.io https://kapi.kakao.com`,
   // www.facebook.com — 메타 픽셀이 iframe·form POST 폴백 경로를 쓴다.
   // 2026-08-12 프로덕션 실측: enforce 승격 시 위반하는 유일한 항목이 이 둘이었다.
   //
@@ -79,8 +82,8 @@ const CSP_ENFORCED = [
   //    국외 이전 고지 개정까지 함께 해야 한다(별건).
   "frame-src 'self' https://*.nicepay.co.kr https://www.facebook.com https://*.channel.io https://*.channel.app",
   // sharer.kakao.com — 카카오톡 공유(PC)는 새 창을 연 뒤 그 창으로 폼을 보낸다. 빠지면 창이 빈 화면으로 남는다
-  // (2026-11-06 실사이트에서 form-action 위반 확인)
-  "form-action 'self' https://*.nicepay.co.kr https://www.facebook.com https://sharer.kakao.com",
+  // (2026-11-06 실사이트에서 form-action 위반 확인). accounts.kakao.com — 카카오 미로그인 PC에서 그 폼이 로그인으로 넘어감
+  "form-action 'self' https://*.nicepay.co.kr https://www.facebook.com https://sharer.kakao.com https://accounts.kakao.com",
   // 클릭재킹 차단 — 기존에는 Report-Only 가 frame-ancestors 를 무시해서 별도 헤더로
   // 강제했지만, 이제 이 CSP 자체가 강제 모드라 여기로 합친다.
   "frame-ancestors 'none'",
