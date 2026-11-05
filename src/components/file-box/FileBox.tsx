@@ -49,11 +49,6 @@ const TrashIcon = () => (
     <path d="M9 7V4h6v3" />
   </svg>
 );
-const KakaoIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-    <path fill="currentColor" d="M12 3.5c-5.25 0-9.5 3.33-9.5 7.44 0 2.66 1.78 5 4.46 6.31l-.9 3.32c-.08.3.26.53.52.36l3.95-2.6c.48.05.97.08 1.47.08 5.25 0 9.5-3.33 9.5-7.47S17.25 3.5 12 3.5z" />
-  </svg>
-);
 const Spinner = () => (
   <svg className="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
     <path d="M12 3a9 9 0 1 0 9 9" />
@@ -565,9 +560,10 @@ export default function FileBox({ email }: { email: string }) {
               <button type="button" className="btn-primary flex-1 rounded-lg px-4 py-2.5 text-sm inline-flex items-center justify-center gap-1.5" onClick={() => downloadOne(f)}>
                 {downloadButtonInner(f)}
               </button>
-              <button type="button" className="kakao-btn rounded-lg px-3 py-2.5 text-sm inline-flex items-center gap-1.5" onClick={() => shareKakao(f)} aria-label="카카오톡으로 보내기">
-                <KakaoIcon />
-                카카오톡
+              {/* 카카오톡 공식 로고 그대로(사용자 요청 11-06) — 글자 없이 로고 버튼 */}
+              <button type="button" className="kakao-logo-btn shrink-0 rounded-lg" onClick={() => shareKakao(f)} aria-label="카카오톡으로 보내기" title="카카오톡으로 보내기">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/kakaotalk.png" alt="" width={40} height={40} className="block h-10 w-10" />
               </button>
               <button type="button" className="btn-outline rounded-lg px-3 py-2.5 text-sm text-zinc-600" onClick={() => setPendingDelete([f.id])} aria-label="삭제" title="삭제">
                 <TrashIcon />
@@ -842,9 +838,9 @@ export default function FileBox({ email }: { email: string }) {
             <button type="button" className="btn-primary flex-1 rounded-lg px-4 py-3 text-sm inline-flex items-center justify-center gap-1.5" onClick={() => downloadOne(selected)}>
               {downloadButtonInner(selected)}
             </button>
-            <button type="button" className="kakao-btn rounded-lg px-3 py-3 text-sm inline-flex items-center gap-1.5" onClick={() => shareKakao(selected)} aria-label="카카오톡으로 보내기">
-              <KakaoIcon />
-              카카오톡
+            <button type="button" className="kakao-logo-btn shrink-0 rounded-lg" onClick={() => shareKakao(selected)} aria-label="카카오톡으로 보내기" title="카카오톡으로 보내기">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/kakaotalk.png" alt="" width={44} height={44} className="block h-11 w-11" />
             </button>
             <button type="button" className="btn-outline rounded-lg px-3.5 py-3 text-sm text-zinc-600" onClick={() => setPendingDelete([selected.id])} aria-label="삭제">
               <TrashIcon />
