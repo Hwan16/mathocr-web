@@ -7,6 +7,7 @@ import { trackEvent } from "@/lib/analytics";
 import { metaPixelTrack } from "@/lib/meta-pixel";
 import { naverWcsTrans } from "@/lib/naver-wcs";
 import ResendConfirmationMail from "@/components/ResendConfirmationMail";
+import Wordmark from "@/components/Wordmark";
 
 const SAVED_EMAIL_KEY = "mathocr_saved_email";
 
@@ -190,9 +191,7 @@ function LoginForm() {
       <div className="text-center mb-8">
         <a href="/" className="inline-flex flex-col items-center gap-3">
           <img src="/mathocr-icon.png" alt="AI MathOCR" width={56} height={56} />
-          <span className="text-2xl font-bold tracking-tight">
-            AI Math<span className="text-[var(--accent)]">OCR</span>
-          </span>
+          <Wordmark decorative className="h-[17px] w-auto text-zinc-900" />
         </a>
         <p className="text-zinc-500 text-sm mt-2">계정에 로그인하세요</p>
       </div>

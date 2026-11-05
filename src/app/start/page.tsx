@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 import { trackEvent } from "@/lib/analytics";
 import { DOWNLOAD_URL, DOWNLOAD_LABEL } from "@/lib/download";
 import DownloadGuideModal from "@/components/DownloadGuideModal";
+import Wordmark from "@/components/Wordmark";
 
 const START_URL = "https://mathocr.ai.kr/start";
 
@@ -130,9 +131,7 @@ export default function StartPage() {
         <div className="max-w-3xl mx-auto px-6 h-16 flex items-center justify-between">
           <a href="/" className="flex items-center gap-2">
             <img src="/mathocr-icon.png" alt="" width={28} height={28} />
-            <span className="font-bold tracking-tight">
-              AI Math<span className="text-[var(--accent)]">OCR</span>
-            </span>
+            <Wordmark className="h-[12px] w-auto text-zinc-900" />
           </a>
           <a
             href="/dashboard"

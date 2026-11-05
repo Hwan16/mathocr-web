@@ -14,6 +14,7 @@ import { getStoredUtm } from "@/lib/utm";
 import SendToPcButton from "@/components/SendToPcButton";
 // 동의받은 약관/방침의 버전(시행일) — lib/consent.ts 단일 출처 (서버와 자동 일치)
 import { CONSENT_VERSION } from "@/lib/consent";
+import Wordmark from "@/components/Wordmark";
 
 export default function SignupPage() {
   // useSearchParams는 Suspense 경계가 필요하다 (Next.js 규칙)
@@ -282,9 +283,7 @@ function SignupForm() {
         <div className="text-center mb-8">
           <a href="/" className="inline-flex flex-col items-center gap-3">
             <img src="/mathocr-icon.png" alt="AI MathOCR" width={56} height={56} />
-            <span className="text-2xl font-bold tracking-tight">
-              AI Math<span className="text-[var(--accent)]">OCR</span>
-            </span>
+            <Wordmark decorative className="h-[17px] w-auto text-zinc-900" />
           </a>
           <p className="text-zinc-500 text-sm mt-2">새 계정을 만드세요</p>
         </div>

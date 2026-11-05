@@ -11,6 +11,7 @@ import {
 } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import Wordmark from "@/components/Wordmark";
 
 type Tab =
   | "users"
@@ -281,9 +282,7 @@ export default function AdminPage() {
           <div className="flex items-center gap-4">
             <a href="/" className="flex items-center gap-2.5">
               <img src="/mathocr-icon.png" alt="AI MathOCR" width={36} height={36} />
-              <span className="text-lg font-bold tracking-tight">
-                AI Math<span className="text-[var(--accent)]">OCR</span>
-              </span>
+              <Wordmark decorative className="h-[13px] w-auto text-zinc-900" />
             </a>
             <span className="text-xs text-zinc-600 bg-zinc-100 px-2 py-0.5 rounded">
               관리자

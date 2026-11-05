@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { trackEvent } from "@/lib/analytics";
+import Wordmark from "@/components/Wordmark";
 
 type SubmitState = "idle" | "submitting" | "success" | "error";
 
@@ -155,9 +156,7 @@ export default function ReportPage() {
         <div className="max-w-screen-lg mx-auto px-6 h-16 flex items-center justify-between">
           <a href="/" className="flex items-center gap-2.5">
             <img src="/mathocr-icon.png" alt="AI MathOCR" width={36} height={36} />
-            <span className="text-lg font-bold tracking-tight">
-              AI Math<span className="text-[var(--accent)]">OCR</span>
-            </span>
+            <Wordmark decorative className="h-[13px] w-auto text-zinc-900" />
           </a>
           <a href="/" className="text-sm text-zinc-500 hover:text-zinc-900 transition-colors">
             ← 홈으로

@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 import { PLANS, creditsAsProblems } from "@/lib/plans";
 import { buildOrderId, getPlan } from "@/lib/payments";
 import { trackEvent } from "@/lib/analytics";
+import Wordmark from "@/components/Wordmark";
 
 // PG 선택 — 기본은 나이스페이(포스타트). 토스 심사 통과 후 되돌리려면
 // NEXT_PUBLIC_PG_PROVIDER=toss 로 전환한다(토스 경로 보존).
@@ -158,9 +159,7 @@ function ChargeInner() {
       <div className="max-w-3xl mx-auto px-6 py-12">
         <a href="/" className="inline-flex items-center gap-2 mb-10">
           <img src="/mathocr-icon.png" alt="" width={22} height={22} />
-          <span className="font-bold text-zinc-900">
-            AI Math<span className="text-[var(--accent)]">OCR</span>
-          </span>
+          <Wordmark className="h-[12px] w-auto text-zinc-900" />
         </a>
 
         <h1 className="text-2xl lg:text-3xl font-bold tracking-tight mb-2">

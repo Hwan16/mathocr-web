@@ -1,6 +1,7 @@
 "use client";
 
 import { SIGNUP_FREE_CREDITS, SIGNUP_FREE_VALIDITY_DAYS } from "@/lib/plans";
+import Wordmark from "@/components/Wordmark";
 
 export default function TermsPage() {
   return (
@@ -10,9 +11,7 @@ export default function TermsPage() {
         <div className="text-center mb-10">
           <a href="/" className="inline-flex flex-col items-center gap-3">
             <img src="/mathocr-icon.png" alt="AI MathOCR" width={48} height={48} />
-            <span className="text-2xl font-bold tracking-tight">
-              AI Math<span className="text-[var(--accent)]">OCR</span>
-            </span>
+            <Wordmark decorative className="h-[17px] w-auto text-zinc-900" />
           </a>
           <h1 className="text-2xl font-bold mt-4">서비스 이용약관</h1>
           <p className="text-zinc-500 text-sm mt-2">

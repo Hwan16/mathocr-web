@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import Wordmark from "@/components/Wordmark";
 
 export default function UpdatePasswordPage() {
   const [password, setPassword] = useState("");
@@ -109,9 +110,7 @@ export default function UpdatePasswordPage() {
         <div className="text-center mb-10">
           <a href="/" className="inline-flex flex-col items-center gap-3">
             <img src="/mathocr-icon.png" alt="AI MathOCR" width={56} height={56} />
-            <span className="text-2xl font-bold tracking-tight">
-              AI Math<span className="text-[var(--accent)]">OCR</span>
-            </span>
+            <Wordmark decorative className="h-[17px] w-auto text-zinc-900" />
           </a>
           <p className="text-zinc-500 text-sm mt-2">새 비밀번호 설정</p>
         </div>

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Wordmark from "@/components/Wordmark";
 
 export const metadata: Metadata = {
   title: "개인정보처리방침",
@@ -14,9 +15,7 @@ export default function PrivacyPage() {
         <div className="text-center mb-10">
           <a href="/" className="inline-flex flex-col items-center gap-3">
             <img src="/mathocr-icon.png" alt="AI MathOCR" width={48} height={48} />
-            <span className="text-2xl font-bold tracking-tight">
-              AI Math<span className="text-[var(--accent)]">OCR</span>
-            </span>
+            <Wordmark decorative className="h-[17px] w-auto text-zinc-900" />
           </a>
           <h1 className="text-2xl font-bold mt-4">개인정보처리방침</h1>
           <p className="text-zinc-500 text-sm mt-2">

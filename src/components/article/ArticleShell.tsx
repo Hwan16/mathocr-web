@@ -4,6 +4,7 @@ import TrackedLink from "@/components/TrackedLink";
 import ArticleToc from "./ArticleToc";
 import { PromoRail } from "./PromoCards";
 import ArticleJsonLd from "./ArticleJsonLd";
+import Wordmark from "@/components/Wordmark";
 
 // 자료실 글 공통 틀 — 맨 위 얇은 띠(따라 내려오지 않음) · 사이트 메뉴 · (있으면) 남색 대표 이미지 띠 ·
 // PC(xl 이상)에서는 왼쪽 목차 / 가운데 본문 / 오른쪽 기능 카드(둘 다 스크롤을 따라 내려옴).
@@ -37,10 +38,7 @@ export function ArticleHeader({ location }: { location: string }) {
       <div className="max-w-[1240px] mx-auto px-4 h-14 flex items-center gap-4">
         <a href="/" className="flex items-center gap-2 shrink-0">
           <img src="/mathocr-icon.png" alt="AI MathOCR" width={28} height={28} />
-          <span className="font-bold tracking-tight">
-            {/* 로고 보라는 테마와 상관없이 고정 */}
-            AI Math<span className="text-[#7c3aed]">OCR</span>
-          </span>
+          <Wordmark decorative className="h-[12px] w-auto text-zinc-900" />
         </a>
         <nav className="flex items-center gap-4 text-sm text-zinc-600 ml-2 overflow-x-auto">
           <a href="/guides" className="font-semibold text-zinc-900 whitespace-nowrap">

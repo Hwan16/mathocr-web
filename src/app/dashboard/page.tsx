@@ -8,6 +8,7 @@ import ExpiryConsentBanner from "@/components/ExpiryConsentBanner";
 import DownloadGuideModal from "@/components/DownloadGuideModal";
 import { trackEvent } from "@/lib/analytics";
 import { DOWNLOAD_URL, DOWNLOAD_LABEL } from "@/lib/download";
+import Wordmark from "@/components/Wordmark";
 
 interface Profile {
   credits: number;
@@ -157,9 +158,7 @@ export default function DashboardPage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
           <a href="/" className="flex items-center gap-2.5 shrink-0">
             <img src="/mathocr-icon.png" alt="AI MathOCR" width={36} height={36} />
-            <span className="text-lg font-bold tracking-tight whitespace-nowrap">
-              AI Math<span className="text-[var(--accent)]">OCR</span>
-            </span>
+            <Wordmark decorative className="h-[13px] shrink-0 w-auto text-zinc-900" />
           </a>
           <div className="flex items-center gap-3 sm:gap-4 min-w-0">
             {/* 모바일에선 로고와 겹치므로 숨기고 제목 아래에 따로 표시 */}
