@@ -30,7 +30,7 @@ export default function Wordmark({ className = "", decorative = false }: Props) 
       viewBox="0 0 724 100"
       width={724}
       height={100}
-      className={className}
+      className={`shrink-0 ${className}`}
       fillRule="evenodd"
       {...(decorative ? { "aria-hidden": true } : { role: "img", "aria-label": "AI MathOCR" })}
     >
