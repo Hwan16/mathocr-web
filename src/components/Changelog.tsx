@@ -47,7 +47,7 @@ export default function Changelog() {
         <ol>
           {CHANGELOG.map((entry, i) => (
             <li
-              key={entry.version}
+              key={`${entry.version}-${entry.title}`}
               hidden={!expanded && i >= CHANGELOG_PREVIEW_COUNT}
               className="px-5 py-4 border-b border-zinc-100"
             >
