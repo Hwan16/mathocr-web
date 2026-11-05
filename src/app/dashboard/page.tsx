@@ -393,20 +393,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* 약관 개정 사전 공지 (약관 제10조의 서비스 내 공지, 공지 2026-10-16) —
-            2026-08 개정 때와 같은 자리·같은 한 줄 형식. 10-17 시행분은 시행 완료로 문구에서
-            뺐고, 10-23 시행분(카드 결제 환불 방법)만 남았다. 10-23이 지나면 삭제. */}
-        <p className="mb-10 text-sm text-zinc-600">
-          2026년 10월 23일부터 서비스 이용약관이 일부 개정됩니다(카드 결제 환불 방법
-          반영) —{" "}
-          <a
-            href="/terms"
-            className="text-[var(--accent)] underline underline-offset-2 hover:opacity-80 transition-opacity"
-          >
-            자세히 보기
-          </a>
-        </p>
-
         {/* Promo Code */}
         <PromoRedeemCard onRedeemed={loadData} />
 
