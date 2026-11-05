@@ -49,6 +49,12 @@ const TrashIcon = () => (
     <path d="M9 7V4h6v3" />
   </svg>
 );
+// 카카오 말풍선(카카오 로그인 버튼 가이드 모양) — 노란 바탕 위 검정
+const KakaoIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+    <path fill="#000" d="M12 3.5c-5.25 0-9.5 3.33-9.5 7.44 0 2.66 1.78 5 4.46 6.31l-.9 3.32c-.08.3.26.53.52.36l3.95-2.6c.48.05.97.08 1.47.08 5.25 0 9.5-3.33 9.5-7.47S17.25 3.5 12 3.5z" />
+  </svg>
+);
 const Spinner = () => (
   <svg className="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
     <path d="M12 3a9 9 0 1 0 9 9" />
@@ -560,10 +566,10 @@ export default function FileBox({ email }: { email: string }) {
               <button type="button" className="btn-primary flex-1 rounded-lg px-4 py-2.5 text-sm inline-flex items-center justify-center gap-1.5" onClick={() => downloadOne(f)}>
                 {downloadButtonInner(f)}
               </button>
-              {/* 카카오톡 공식 로고 그대로(사용자 요청 11-06) — 글자 없이 로고 버튼 */}
-              <button type="button" className="kakao-logo-btn shrink-0 rounded-lg" onClick={() => shareKakao(f)} aria-label="카카오톡으로 보내기" title="카카오톡으로 보내기">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/kakaotalk.png" alt="" width={40} height={40} className="block h-10 w-10" />
+              {/* 카카오 노랑 + 말풍선 + 글자(카카오 로그인 버튼 느낌, 사용자 요청 11-06) */}
+              <button type="button" className="kakao-btn shrink-0 rounded-lg px-4 py-2.5 text-sm inline-flex items-center justify-center gap-1.5" onClick={() => shareKakao(f)} aria-label="카카오톡으로 보내기" title="카카오톡으로 보내기">
+                <KakaoIcon />
+                카카오톡
               </button>
               <button type="button" className="btn-outline rounded-lg px-3 py-2.5 text-sm text-zinc-600" onClick={() => setPendingDelete([f.id])} aria-label="삭제" title="삭제">
                 <TrashIcon />
@@ -833,17 +839,16 @@ export default function FileBox({ email }: { email: string }) {
           </button>
         </div>
         <div className="flex-1 overflow-y-auto">{selected && renderPreview(selected, true)}</div>
+        {/* 오른쪽 아래는 채널톡 상담 버튼 자리(폰: 폭 약 45px·오른쪽 15px, 태블릿은 더 큼) — 비워 두고 그 왼쪽에 버튼을 둔다.
+            삭제는 여기서 빼고 목록의 체크 → [삭제]로만(사용자 요청 11-06) */}
         {selected && (
-          <div className="border-t border-zinc-200 px-4 py-3 flex gap-2">
-            <button type="button" className="btn-primary flex-1 rounded-lg px-4 py-3 text-sm inline-flex items-center justify-center gap-1.5" onClick={() => downloadOne(selected)}>
+          <div className="border-t border-zinc-200 pl-4 pr-[76px] md:pr-[104px] py-3 flex gap-2">
+            <button type="button" className="btn-primary flex-1 min-w-0 rounded-lg px-3 py-3 text-sm inline-flex items-center justify-center gap-1.5 whitespace-nowrap" onClick={() => downloadOne(selected)}>
               {downloadButtonInner(selected)}
             </button>
-            <button type="button" className="kakao-logo-btn shrink-0 rounded-lg" onClick={() => shareKakao(selected)} aria-label="카카오톡으로 보내기" title="카카오톡으로 보내기">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/kakaotalk.png" alt="" width={44} height={44} className="block h-11 w-11" />
-            </button>
-            <button type="button" className="btn-outline rounded-lg px-3.5 py-3 text-sm text-zinc-600" onClick={() => setPendingDelete([selected.id])} aria-label="삭제">
-              <TrashIcon />
+            <button type="button" className="kakao-btn shrink-0 rounded-lg px-3.5 py-3 text-sm inline-flex items-center justify-center gap-1.5" onClick={() => shareKakao(selected)} aria-label="카카오톡으로 보내기" title="카카오톡으로 보내기">
+              <KakaoIcon />
+              카카오톡
             </button>
           </div>
         )}
