@@ -55,7 +55,12 @@ export async function shareFileLink(opts: {
       content: {
         title: opts.title,
         description: opts.description,
-        imageUrl: "https://mathocr.ai.kr/og-image.jpg",
+        // 공유 전용 그림(마스코트 + 글자 로고, 2:1) — og-image.jpg 는 가로로 긴 홍보 문구가 있어
+        // 공유 창 미리보기(가운데 정사각형)와 채팅 카드에서 글자가 잘렸다. 크기를 함께 알려
+        // 카드가 2:1 그대로 나오게 한다(카카오 권장 800x400, 파일은 그 2배 해상도).
+        imageUrl: "https://mathocr.ai.kr/kakao-share-file.jpg",
+        imageWidth: 800,
+        imageHeight: 400,
         link,
       },
       buttons: [{ title: "파일 받기", link }],
