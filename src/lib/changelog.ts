@@ -45,6 +45,16 @@ export type ChangelogEntry = {
 /** 최신순. 접힌 상태에서 보이는 개수는 CHANGELOG_PREVIEW_COUNT */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "v2.6.0",
+    tag: "new",
+    title: "📁 내 파일함",
+    items: [
+      "변환한 한글 파일을 홈페이지 '내 파일함'에 30일 동안 보관해, 다른 컴퓨터·휴대폰에서도 다시 받을 수 있습니다.",
+      "파일을 누르면 첫 문제를 미리 보고, 여러 개를 골라 한 번에 받을 수 있습니다.",
+      "카카오톡으로 다운로드 링크를 공유할 수 있습니다.",
+    ],
+  },
+  {
     version: "v2.4.2 ~ v2.5.6",
     tag: "stable",
     title: "오류 수정",
