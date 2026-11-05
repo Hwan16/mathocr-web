@@ -447,8 +447,9 @@ export default function Home() {
                   내 파일함에 30일 보관
                 </h3>
                 <p className="text-zinc-600 leading-relaxed mb-4">
-                  변환이 끝나면 내 PC 저장은 그대로이고, 홈페이지{" "}
-                  <strong className="text-zinc-900 font-semibold">내 파일함</strong>에도 30일 동안 무료로 보관됩니다.
+                  변환이 끝나면 내 PC에 저장이 될 뿐만 아니라, 홈페이지{" "}
+                  <strong className="text-zinc-900 font-semibold">내 파일함</strong>에도{" "}
+                  <strong className="text-zinc-900 font-semibold">30일 동안 무료</strong>로 보관됩니다.
                   다른 컴퓨터에서도 로그인만 하면 다시 받을 수 있고, 여러 개를 골라 한 번에 받을 수도 있습니다.
                 </p>
                 <p className="text-zinc-600 leading-relaxed mb-5">
@@ -471,10 +472,13 @@ export default function Home() {
                       </span>
                     </span>
                   </div>
-                  <p className="mt-2 text-xs leading-relaxed text-zinc-500">
-                    프로그램에서는 변환 완료 창의 &lsquo;내 파일함에서 보기&rsquo;나 위쪽 [내 파일함] 버튼으로 바로 열립니다.
-                    자동 보관은 내 파일함에서 언제든 끌 수 있습니다.
-                  </p>
+                  {/* 두 문장을 각각 한 줄로(사용자 11-06) — 넓은 화면(xl)에선 줄바꿈 없이, 좁은 화면에선 문장 안에서만 줄바꿈 */}
+                  <div className="mt-2 text-xs leading-relaxed text-zinc-500">
+                    <p className="xl:whitespace-nowrap">
+                      프로그램에서는 변환 완료 창의 &lsquo;내 파일함에서 보기&rsquo;나 위쪽 [내 파일함] 버튼으로 바로 열립니다.
+                    </p>
+                    <p className="xl:whitespace-nowrap">자동 보관은 내 파일함에서 언제든 끌 수 있습니다.</p>
+                  </div>
                 </div>
               </div>
               <FileBoxShowcase />
