@@ -646,7 +646,8 @@ export default function FileBox({ email }: { email: string }) {
               onClick={toggleEnabled}
               className={`relative h-5 w-9 rounded-full transition-colors ${enabled ? "bg-[var(--accent)]" : "bg-zinc-300"}`}
             >
-              <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${enabled ? "translate-x-[18px]" : "translate-x-0.5"}`} />
+              {/* left-0 필수 — 없으면 버튼 가운데 정렬 때문에 손잡이가 가운데서 출발해 켜짐일 때 밖으로 밀려 안 보인다 */}
+              <span className={`absolute left-0 top-0.5 h-4 w-4 rounded-full bg-white shadow-[0_1px_2px_rgba(0,0,0,.25)] transition-transform ${enabled ? "translate-x-[18px]" : "translate-x-0.5"}`} />
             </button>
           </label>
         </div>
