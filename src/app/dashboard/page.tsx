@@ -9,6 +9,7 @@ import DownloadGuideModal from "@/components/DownloadGuideModal";
 import { trackEvent } from "@/lib/analytics";
 import { DOWNLOAD_URL, DOWNLOAD_LABEL } from "@/lib/download";
 import Wordmark from "@/components/Wordmark";
+import FolderIcon from "@/components/FolderIcon";
 
 interface Profile {
   credits: number;
@@ -161,10 +162,12 @@ export default function DashboardPage() {
             <Wordmark decorative className="h-[13px] shrink-0 w-auto text-zinc-900" />
           </a>
           <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+            {/* 새 기능이라 폴더 아이콘(보라)으로 눈에 띄게 — 글자는 다른 메뉴와 같은 회색 계열 */}
             <a
               href="/files"
-              className="shrink-0 whitespace-nowrap text-sm text-zinc-600 hover:text-zinc-900"
+              className="shrink-0 inline-flex items-center gap-1.5 whitespace-nowrap text-sm font-medium text-zinc-700 hover:text-zinc-900"
             >
+              <FolderIcon className="h-[17px] w-[17px] text-[var(--accent)]" />
               내 파일함
             </a>
             {/* 모바일에선 로고와 겹치므로 숨기고 제목 아래에 따로 표시 */}

@@ -10,6 +10,8 @@ import AutoDetectShowcase from "@/components/AutoDetectShowcase";
 import AnswerToolsShowcase, { AnswerPanelPreview, RootTwo } from "@/components/AnswerToolsShowcase";
 import RomanTypeShowcase from "@/components/RomanTypeShowcase";
 import RealSolutionShowcase from "@/components/RealSolutionShowcase";
+import FileBoxShowcase from "@/components/FileBoxShowcase";
+import FolderIcon from "@/components/FolderIcon";
 import RevealPair from "@/components/RevealPair";
 import AiSolutionPromoBanner from "@/components/AiSolutionPromoBanner";
 import AnnouncementBar from "@/components/AnnouncementBar";
@@ -428,6 +430,54 @@ export default function Home() {
               <div className="md:pt-2 md:pb-2">
                 <RealSolutionShowcase />
               </div>
+            </div>
+          </div>
+
+          {/* 내 파일함 (v2.6.0 신규, D-054) — 변환 결과 30일 보관·다시 받기·휴대폰 받기·카카오톡 공유.
+              찾아가는 길([마이페이지] → [내 파일함])을 꼭 보여 준다(사용자 11-06) */}
+          <div id="file-box" className="card rounded-xl p-6 sm:p-8 lg:p-10 mb-5 !border-[var(--accent-border)]">
+            <div className="grid md:grid-cols-2 gap-8 lg:gap-12 items-center">
+              <div className="min-w-0">
+                <span className="inline-block text-[11px] font-bold tracking-widest text-violet-700 bg-violet-100 rounded-full px-3 py-1 mb-4">
+                  NEW · v2.6.0
+                </span>
+                <h3 className="text-2xl lg:text-3xl font-bold mb-4 leading-snug">
+                  변환한 한글 파일은
+                  <br />
+                  내 파일함에 30일 보관
+                </h3>
+                <p className="text-zinc-600 leading-relaxed mb-4">
+                  변환이 끝나면 내 PC 저장은 그대로이고, 홈페이지{" "}
+                  <strong className="text-zinc-900 font-semibold">내 파일함</strong>에도 30일 동안 무료로 보관됩니다.
+                  다른 컴퓨터에서도 로그인만 하면 다시 받을 수 있고, 여러 개를 골라 한 번에 받을 수도 있습니다.
+                </p>
+                <p className="text-zinc-600 leading-relaxed mb-5">
+                  파일을 누르면 첫 문제가 보여 어떤 시험지인지 바로 알 수 있습니다.{" "}
+                  <strong className="text-zinc-900 font-semibold">휴대폰에서도</strong> [한글 파일 받기]로 받거나,
+                  [카카오톡]으로 다운로드 링크를 공유할 수 있습니다.
+                </p>
+                <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3">
+                  <div className="text-xs font-semibold text-zinc-500 mb-2">찾아가는 길</div>
+                  <div className="flex flex-wrap items-center gap-1.5 text-sm">
+                    <span className="text-zinc-600">홈페이지 로그인</span>
+                    <span className="text-zinc-400" aria-hidden="true">→</span>
+                    {/* 좁은 화면에서 줄이 바뀌어도 [마이페이지] → [내 파일함]은 한 줄로 */}
+                    <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                      <span className="rounded-md border border-zinc-200 bg-white px-2 py-0.5 font-semibold text-zinc-900">마이페이지</span>
+                      <span className="text-zinc-400" aria-hidden="true">→</span>
+                      <span className="inline-flex items-center gap-1 rounded-md border border-zinc-200 bg-white px-2 py-0.5 font-semibold text-zinc-900">
+                        <FolderIcon className="h-4 w-4 text-violet-600" />
+                        내 파일함
+                      </span>
+                    </span>
+                  </div>
+                  <p className="mt-2 text-xs leading-relaxed text-zinc-500">
+                    프로그램에서는 변환 완료 창의 &lsquo;내 파일함에서 보기&rsquo;나 위쪽 [내 파일함] 버튼으로 바로 열립니다.
+                    자동 보관은 내 파일함에서 언제든 끌 수 있습니다.
+                  </p>
+                </div>
+              </div>
+              <FileBoxShowcase />
             </div>
           </div>
 
