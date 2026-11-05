@@ -31,31 +31,51 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // 보호된 페이지: 로그인 안 되어 있으면 로그인 페이지로
-  const protectedPaths = ["/dashboard", "/admin"];
-  const isProtected = protectedPaths.some((p) =>
-    request.nextUrl.pathname.startsWith(p)
-  );
+  const protectedPaths = ["/dashboard", "/admin", "/files"];
+  // 경로 단위로 비교 — '/files' 는 막고 '/files-…' 같은 다른 페이지는 막지 않는다
+  const path = request.nextUrl.pathname;
+  const isProtected = protectedPaths.some((p) => path === p || path.startsWith(p + "/"));
 
   if (isProtected && !user) {
+    // 쿼리까지 보존 — 앱의 [내 파일함에서 보기]는 /files?f=<id> 로 연다
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
-    url.searchParams.set("redirect", request.nextUrl.pathname);
+    url.search = "";
+    url.searchParams.set("redirect", request.nextUrl.pathname + request.nextUrl.search);
     return NextResponse.redirect(url);
   }
 
-  // 로그인/회원가입 페이지: 이미 로그인되어 있으면 대시보드로
+  // 로그인/회원가입 페이지: 이미 로그인되어 있으면 가려던 곳(안전한 내부 경로) 또는 대시보드로
   const authPaths = ["/auth/login", "/auth/signup"];
   const isAuthPage = authPaths.some((p) =>
     request.nextUrl.pathname.startsWith(p)
   );
 
   if (isAuthPage && user) {
+    const target = safeInternalTarget(request.nextUrl.searchParams.get("redirect"));
     const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
+    url.pathname = target.pathname;
+    url.search = target.search;
     return NextResponse.redirect(url);
   }
 
   return supabaseResponse;
+}
+
+// login/page.tsx 의 safeInternalPath 와 같은 규칙 — 같은 사이트 안 경로만, 아니면 대시보드
+function safeInternalTarget(raw: string | null): { pathname: string; search: string } {
+  const fallback = { pathname: "/dashboard", search: "" };
+  if (!raw) return fallback;
+  try {
+    const base = "https://internal.invalid";
+    const u = new URL(raw, base);
+    if (u.origin === base && u.pathname.startsWith("/") && !u.pathname.startsWith("/auth/")) {
+      return { pathname: u.pathname, search: u.search };
+    }
+  } catch {
+    // 파싱 불가 → 안전 기본값
+  }
+  return fallback;
 }
 
 export const config = {

@@ -14,7 +14,8 @@ const PLUGIN_KEY = process.env.NEXT_PUBLIC_CHANNEL_PLUGIN_KEY;
 
 // 카드사 심사 기간에는 심사 대상 화면(충전·약관·방침)을 그대로 둔다.
 // 심사가 끝나면 앞의 세 줄을 빼서 충전 화면에서도 문의할 수 있게 한다.
-const HIDDEN_PATH_PREFIXES = ["/charge", "/terms", "/privacy", "/admin", "/internal"];
+// /s = 카카오톡 받기 링크 화면(주소가 비밀 — 채널톡에 페이지 주소를 넘기지 않는다, D-054)
+const HIDDEN_PATH_PREFIXES = ["/charge", "/terms", "/privacy", "/admin", "/internal", "/s"];
 
 type ChannelIOFn = {
   (...args: unknown[]): void;

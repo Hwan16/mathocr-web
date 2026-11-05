@@ -1,6 +1,14 @@
 import { getAuthUser } from "@/lib/supabase/auth-helper";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkRateLimit } from "@/lib/rate-limit";
+import {
+  FILE_BOX_BUCKET,
+  UPLOAD_URL_GRACE_MS,
+  filePath,
+  isMissingTableError,
+  previewImagePath,
+  removeInChunks,
+} from "@/lib/file-box";
 import { NextRequest, NextResponse } from "next/server";
 
 // 오입력·자동화 시도 방지: 계정당 10분에 5회
@@ -17,6 +25,7 @@ const DELETE_RATE_LIMIT_WINDOW_MS = 10 * 60_000;
  *      진행하지 않는다 → 보존 의무 기록이 유실되는 일이 없다.
  *   3) 오변환 신고 이미지(Storage 'reports' 버킷) 삭제 — DB cascade 로는
  *      Storage 객체가 지워지지 않으므로 명시적으로 제거
+ *   3-1) 내 파일함 보관 파일(Storage 'file-box' 버킷) 삭제 — 같은 이유(D-054)
  *   4) AI 해설 사용 기록(ai_usage_log)의 user_id 비우기 — 이 표는 외래키가 없어
  *      cascade 가 걸리지 않는다. 행은 원가 통계용으로 남기고 회원과의 연결만 끊는다
  *      (개인정보처리방침 제3조 — 2026-10-10 개정)
@@ -119,6 +128,62 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+  }
+
+  // 2-1) 내 파일함 보관 파일 삭제 (D-054) — 행은 profiles cascade 로 지워지지만
+  //      Storage 객체는 남으므로 먼저 지운다. 행은 1,000개씩 끝까지 읽고, 저장소도 1,000개씩
+  //      나눠 지운다(요청당 상한). 표가 아직 없을 때(0030 미적용)만 건너뛰고, 그 밖의 조회
+  //      오류는 탈퇴를 멈춘다 — 경로를 잃은 채 계정이 지워지면 파일이 영영 남는다.
+  const fileBoxPaths: string[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data: stored, error: storedError } = await admin
+      .from("stored_files")
+      .select("id")
+      .eq("user_id", user.id)
+      .order("id")
+      .range(from, from + 999);
+    if (storedError) {
+      if (isMissingTableError(storedError)) break;
+      console.error("[account/delete] file box lookup failed", {
+        user_id: user.id,
+        error: storedError.message,
+      });
+      return NextResponse.json(
+        { error: "탈퇴 처리에 실패했습니다. 잠시 후 다시 시도해주세요." },
+        { status: 500 }
+      );
+    }
+    for (const r of stored ?? []) {
+      fileBoxPaths.push(filePath(user.id, r.id), previewImagePath(user.id, r.id));
+    }
+    if (!stored || stored.length < 1000) break;
+  }
+  const fileBoxError = await removeInChunks(admin.storage.from(FILE_BOX_BUCKET), fileBoxPaths);
+  if (fileBoxError) {
+    console.error("[account/delete] file box removal failed", {
+      user_id: user.id,
+      error: fileBoxError,
+    });
+    return NextResponse.json(
+      { error: "탈퇴 처리에 실패했습니다. 잠시 후 다시 시도해주세요." },
+      { status: 500 }
+    );
+  }
+  // 탈퇴 직전에 발급된 업로드 주소(2시간 유효)로 파일이 다시 생길 수 있어, 3시간 뒤 cron 이
+  // 이 회원 폴더를 한 번 더 비우도록 남긴다(행은 계정과 함께 지워지므로 경로를 따로 기록).
+  const { error: purgeError } = await admin.from("file_box_purges").upsert({
+    user_id: user.id,
+    purge_after: new Date(Date.now() + UPLOAD_URL_GRACE_MS).toISOString(),
+  });
+  if (purgeError && !isMissingTableError(purgeError)) {
+    console.error("[account/delete] file box purge record failed", {
+      user_id: user.id,
+      error: purgeError.message,
+    });
+    return NextResponse.json(
+      { error: "탈퇴 처리에 실패했습니다. 잠시 후 다시 시도해주세요." },
+      { status: 500 }
+    );
   }
 
   // 3) AI 해설 사용 기록과 회원 연결 끊기 (FK 없음 → cascade 대상 아님)

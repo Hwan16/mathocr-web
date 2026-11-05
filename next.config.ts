@@ -32,6 +32,9 @@ import type { NextConfig } from "next";
 //  - 채널톡 채팅 버튼 — 공식 허용 목록 developers.channel.io/docs/content-security-policy
 //    기준. 공식 목록의 default-src 는 우리가 따로 지정한 font·frame 에 적용되지 않아
 //    그 둘에도 병기한다. 목록이 바뀔 수 있다고 안내돼 있으니 위반 보고를 볼 것.
+//  - 카카오톡 공유(내 파일함, D-054) — SDK 스크립트 t1.kakaocdn.net(SRI 고정, lib/kakao-share.ts).
+//    공유 창은 새 창(sharer.kakao.com)·카톡 앱 호출이라 frame/connect 허용이 필요 없다.
+//    배포 후 실제 브라우저로 공유 창이 뜨는지 재확인할 것(위 교훈).
 // 로컬 개발(next dev)에서만 완화한다 — 운영 빌드에는 절대 들어가지 않는다.
 //   · 'unsafe-eval': React 개발 모드가 콜스택 복원 등에 eval 을 쓴다(운영 모드는 안 씀)
 //   · ws://localhost: 핫 리로드(HMR) 웹소켓
@@ -48,7 +51,7 @@ const CSP_ENFORCED = [
   // 직후 프로덕션에서 실제 차단으로 발견했다.
   // ⚠️ 교훈: 서드파티 추적 스크립트는 자기가 또 다른 스크립트를 부른다.
   //    CSP 를 손댈 때는 배포 후 반드시 실제 브라우저로 재확인할 것.
-  `script-src 'self' 'unsafe-inline'${devScriptSrc} https://www.googletagmanager.com https://connect.facebook.net https://pay.nicepay.co.kr https://wcs.naver.net https://ssl.pstatic.net https://*.channel.io https://*.sentry-cdn.com`,
+  `script-src 'self' 'unsafe-inline'${devScriptSrc} https://www.googletagmanager.com https://connect.facebook.net https://pay.nicepay.co.kr https://wcs.naver.net https://ssl.pstatic.net https://*.channel.io https://*.sentry-cdn.com https://t1.kakaocdn.net`,
   "style-src 'self' 'unsafe-inline'",
   // analytics.google.com(GA4 수집 지역 변형)·www.google.com/co.kr(구글 애즈 전환
   // 링커 핑)은 프로덕션 Report-Only 실관찰(2026-07-18)에서 확인돼 추가 — 빠지면

@@ -17,10 +17,14 @@ export default function TermsPage() {
           <p className="text-zinc-500 text-sm mt-2">
             최종 수정일: 2026년 11월 5일
           </p>
+          <p className="text-amber-700 text-sm mt-1">
+            2026년 11월 13일 시행 예정 개정 안내 (아래 참조)
+          </p>
         </div>
 
         {/* Terms Content */}
         <div className="card rounded-xl p-8 md:p-10 shadow-sm">
+          <FileBoxAmendmentNotice />
           <TermsContent />
         </div>
 
@@ -33,6 +37,71 @@ export default function TermsPage() {
           </a>
         </div>
       </div>
+    </div>
+  );
+}
+
+// 약관 개정 사전 공지 (공지 2026-11-06 / 시행 2026-11-13) — 내 파일함(D-054).
+// 새 무료 부가 서비스(변환 결과물 30일 보관·받기 링크) 도입에 따른 정의·책임·데이터 보관 조항 추가.
+// 이용자에게 불리한 변경이 아니므로 제10조 제1항 본문의 7일 예고로 시행한다. 기존 회원은 앱 업데이트 후
+// 첫 변환 때 보관 여부를 직접 고르고(앱 완료 창), 언제든 내 파일함에서 끌 수 있다.
+// 시행일에: 아래 개정안을 본문 제2조·제4조·제7조·제8조에 반영하고, 이 박스·헤더 예고 줄·마이페이지
+// 공지를 지우고, lib/consent.ts 의 CONSENT_VERSION 을 "2026-11-13"으로 올린다
+// (설치 화면 약관은 D-056으로 없어져 LICENSE.txt 동기화는 필요 없다).
+function FileBoxAmendmentNotice() {
+  const articles: { title: string; body: string }[] = [
+    {
+      title: "제2조 (용어의 정의) — 항목 추가",
+      body:
+        "내 파일함: 이용자가 본 프로그램으로 변환한 결과물(HWP 파일)을 제공자의 저장소에 일정 기간 보관하여, 홈페이지에서 다시 받거나 받기 링크로 다른 사람에게 전달할 수 있게 하는 무료 부가 서비스를 의미합니다.",
+    },
+    {
+      title: "제4조 (이용자의 의무 및 저작권 준수) — 제4항 신설",
+      body:
+        "이용자가 내 파일함의 받기 링크를 다른 사람에게 전달하는 경우, 그 링크를 가진 누구나 보관 기간 동안 해당 결과물을 받을 수 있습니다. 링크를 전달하는 범위와 공유한 결과물(저작권 및 그 안에 포함된 개인정보 등)에 대한 책임은 이를 공유한 이용자에게 있으며, 제공자는 권리 침해 신고 등 정당한 사유가 있는 경우 해당 링크를 차단할 수 있습니다.",
+    },
+    {
+      title: "제7조 (개인정보 및 데이터 보호) — 제2항 단서 추가",
+      body:
+        "또한 다음 항에 따라 내 파일함에 보관되는 변환 결과물에는 원본에서 잘라 낸 그림 영역과, 인식에 실패해 이미지로 넣은 문제·해설 영역이 포함될 수 있습니다.",
+    },
+    {
+      title: "제7조 (개인정보 및 데이터 보호) — 제3항 신설 (현행 제3항은 제4항으로)",
+      body:
+        "이용자가 내 파일함 자동 보관을 끄지 않은 경우, 변환 결과물(HWP 파일)과 그 첫 문제의 인식 내용(문제 글·수식 및 그림 1장)은 변환일로부터 30일째 되는 날까지 제공자의 저장소에 보관되며, 첫 문제의 인식 내용은 내 파일함의 미리보기 표시 목적으로만 이용됩니다. 보관 기간이 지나거나 이용자가 삭제 또는 탈퇴하면 지체 없이 파기되며, 이용자는 내 파일함 화면에서 자동 보관을 끌 수 있습니다.",
+    },
+    {
+      title: "제8조 (책임의 제한 및 면책) — 항목 추가",
+      body:
+        "내 파일함 보관: 내 파일함은 이용 편의를 위한 보조 보관 수단이므로, 이용자는 필요한 결과물을 직접 저장하여야 합니다. 보관 기간이 지나 파기된 결과물은 복구할 수 없습니다.",
+    },
+  ];
+  return (
+    <div className="mb-10 rounded-xl border border-amber-200 bg-amber-50 p-5 md:p-6 text-sm text-amber-900 leading-relaxed">
+      <h2 className="text-base font-semibold text-amber-900 mb-1">
+        2026년 11월 13일 시행 예정 약관 개정 안내
+      </h2>
+      <p className="text-amber-800/80 text-xs mb-4">
+        공지일: 2026년 11월 6일 · 시행일: 2026년 11월 13일
+      </p>
+      <p className="mb-4">
+        변환 결과물을 30일 동안 보관해 홈페이지에서 다시 받고 받기 링크로 보낼 수 있는 무료
+        부가 서비스 &lsquo;내 파일함&rsquo;을 시작하면서, 관련 정의와 보관·공유에 관한 조항을
+        추가합니다. 크레딧·요금과 환불 기준은 바뀌지 않습니다.
+      </p>
+      <p className="font-semibold mb-2">개정될 조문 전문</p>
+      <div className="space-y-3">
+        {articles.map((a) => (
+          <div key={a.title} className="rounded-lg border border-amber-200 bg-white/70 px-4 py-3">
+            <p className="text-xs font-medium text-amber-800/80 mb-1.5">{a.title}</p>
+            <p>{a.body}</p>
+          </div>
+        ))}
+      </div>
+      <p className="mt-4 text-amber-800">
+        아래 본문은 현행 약관이며, 개정 내용은 2026년 11월 13일부터 적용됩니다. 개정에
+        동의하지 않으시는 경우 시행일 전까지 서비스 이용을 중단하고 탈퇴하실 수 있습니다.
+      </p>
     </div>
   );
 }

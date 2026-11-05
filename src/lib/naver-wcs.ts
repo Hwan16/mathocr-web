@@ -39,7 +39,8 @@ export function naverWcsInlineScript(wcsId: string, internalKey: string): string
   return [
     "if(!wcs_add) var wcs_add = {};",
     `wcs_add["wa"] = ${JSON.stringify(wcsId)};`,
-    `if(window.wcs && !(window.__mathocrInternal || (function(){try{return localStorage.getItem(${JSON.stringify(internalKey)})==="1"}catch(e){return false}})())) { wcs.inflow("mathocr.ai.kr"); wcs_do(); window.__naverWcsFirstPv = true; }`,
+    // 받기 링크(/s/<토큰>) 화면은 수집하지 않는다 — 주소가 곧 비밀(D-054, components/TrackingGate.tsx)
+    `if(window.wcs && location.pathname.indexOf("/s/")!==0 && !(window.__mathocrInternal || (function(){try{return localStorage.getItem(${JSON.stringify(internalKey)})==="1"}catch(e){return false}})())) { wcs.inflow("mathocr.ai.kr"); wcs_do(); window.__naverWcsFirstPv = true; }`,
   ].join("\n");
 }
 

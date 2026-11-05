@@ -353,7 +353,12 @@ export async function POST(request: NextRequest) {
 
         // (1.5) 가입 출처(M4)를 프로필에 기록.
         // user_metadata에 사본이 있으므로 실패해도 가입은 막지 않는다.
-        const profilePatch: Record<string, unknown> = {};
+        // 내 파일함(D-054): 이 코드로 가입하는 회원은 내 파일함 보관이 들어간 방침(2026-11-06~)에
+        // 동의했으므로 '보관 여부를 정함'으로 찍어 첫 변환 때 묻지 않고 바로 보관한다. 이 줄 이전
+        // 가입자(기존 회원)는 비어 있어 업데이트 후 첫 변환 때 앱이 묻는다. 기록이 실패해도 묻기로 돌 뿐이다.
+        const profilePatch: Record<string, unknown> = {
+          file_box_choice_at: new Date().toISOString(),
+        };
         if (utmSource) {
           profilePatch.utm_source = utmSource;
           profilePatch.utm_medium = utmMedium;

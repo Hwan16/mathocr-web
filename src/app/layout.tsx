@@ -6,6 +6,7 @@ import UtmTracker from "@/components/UtmTracker";
 import MetaPixel from "@/components/MetaPixel";
 import NaverWcs from "@/components/NaverWcs";
 import ChannelTalk from "@/components/ChannelTalk";
+import TrackingGate from "@/components/TrackingGate";
 import IconifyProvider from "@/components/IconifyProvider";
 import { SIGNUP_FREE_CREDITS } from "@/lib/plans";
 import { INTERNAL_VISITOR_KEY, internalVisitorBootstrap } from "@/lib/internal-visitor";
@@ -128,7 +129,10 @@ export default function RootLayout({
         {/* 가입 출처(UTM) 추적 — 광고 랜딩 페이지가 어디든 잡히도록 전역 마운트 */}
         <UtmTracker />
         {/* 메타 픽셀 — NEXT_PUBLIC_META_PIXEL_ID 설정 시에만 활성 (M6) */}
-        <MetaPixel />
+        {/* 받기 링크(/s/<토큰>) 화면에서는 추적을 싣지 않는다 — 주소가 곧 비밀(D-054) */}
+        <TrackingGate>
+          <MetaPixel />
+        </TrackingGate>
         {/* 네이버 프리미엄 로그분석 — NEXT_PUBLIC_NAVER_WCS_ID 설정 시에만 활성.
             공통 스크립트는 네이버 설치 안내대로 페이지 원본에 둔다(설치 확인 로봇이 찾도록, 10-15).
             페이지 이동·전환은 NaverWcs 컴포넌트가 맡는다. */}
@@ -142,13 +146,17 @@ export default function RootLayout({
             />
           </>
         )}
-        <NaverWcs />
+        <TrackingGate>
+          <NaverWcs />
+        </TrackingGate>
         {/* 채널톡 채팅 상담 — NEXT_PUBLIC_CHANNEL_PLUGIN_KEY 설정 시에만 활성 */}
         <ChannelTalk />
       </body>
       {/* GA4: 실제 배포(production)에서만 로드 — 로컬/개발 접속은 추적하지 않음 */}
       {process.env.NODE_ENV === "production" && (
-        <GoogleAnalytics gaId={GA_MEASUREMENT_ID} />
+        <TrackingGate>
+          <GoogleAnalytics gaId={GA_MEASUREMENT_ID} />
+        </TrackingGate>
       )}
     </html>
   );
