@@ -32,7 +32,7 @@ export default function FileBoxShowcase() {
     <div
       className="relative min-w-0 select-none"
       role="img"
-      aria-label="내 파일함 예시: 홈페이지 마이페이지에서 내 파일함으로 들어가면 변환한 한글 파일이 남은 보관 기간과 함께 보이고, 휴대폰에서도 한글 파일 받기와 카카오톡 공유 버튼으로 받을 수 있습니다."
+      aria-label="내 파일함 예시: 홈페이지 마이페이지에서 내 파일함으로 들어가면 변환한 한글 파일이 남은 보관 기간과 함께 보이고, PC와 휴대폰 모두 한글 파일 받기와 카카오톡 공유 버튼으로 받거나 보낼 수 있습니다."
     >
       {/* PC — 내 파일함 목록 */}
       {/* 휴대폰은 목록 아래 오른쪽에 살짝만 겹친다 — 목록의 '남은 기간' 칸을 가리지 않게 */}
@@ -69,10 +69,28 @@ export default function FileBoxShowcase() {
             </div>
           ))}
         </div>
+        {/* PC에서도 받기·카카오톡 공유가 된다는 걸 보여 준다(휴대폰 전용으로 오해하지 않게, 사용자 11-06).
+            오른쪽 아래는 휴대폰 그림이 겹치는 자리라 버튼은 왼쪽에 둔다 */}
+        <div className="flex items-center gap-1.5 border-t border-zinc-100 px-3 py-2.5 sm:px-4">
+          <span className="mr-0.5 hidden truncate text-[10px] text-zinc-500 min-[480px]:inline">선택한 파일</span>
+          <span className="flex items-center gap-1 whitespace-nowrap rounded-md bg-violet-600 px-2.5 py-1.5 text-[10px] font-semibold text-white">
+            <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M12 4v11" />
+              <path d="m7 10 5 5 5-5" />
+              <path d="M5 20h14" />
+            </svg>
+            한글 파일 받기
+          </span>
+          <span className="flex items-center gap-1 whitespace-nowrap rounded-md bg-[#FEE500] px-2.5 py-1.5 text-[10px] font-semibold text-black/85">
+            <KakaoBubble />
+            카카오톡
+          </span>
+        </div>
       </div>
 
       {/* 휴대폰 — 받기 화면 */}
-      <div className="relative z-10 mx-auto mt-5 w-[200px] sm:-mt-5 sm:mr-0 sm:w-[188px]">
+      {/* 목록이 좁아지는 md~lg(768~1279px)에선 겹치면 PC [카카오톡] 버튼을 가려 겹치지 않게 내린다 */}
+      <div className="relative z-10 mx-auto mt-5 w-[200px] sm:-mt-5 sm:mr-0 sm:w-[188px] md:mt-3 xl:-mt-5">
         <div className="overflow-hidden rounded-[22px] border-[5px] border-zinc-900 bg-white shadow-[0_20px_48px_-12px_rgba(24,24,27,0.35)]">
           <div className="border-b border-zinc-100 px-3 py-2 text-[9px] text-zinc-500">‹ 목록</div>
           <div className="px-3 pb-2.5 pt-2.5">

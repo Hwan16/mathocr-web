@@ -453,9 +453,9 @@ export default function Home() {
                   다른 컴퓨터에서도 로그인만 하면 다시 받을 수 있고, 여러 개를 골라 한 번에 받을 수도 있습니다.
                 </p>
                 <p className="text-zinc-600 leading-relaxed mb-5">
-                  파일을 누르면 첫 문제가 보여 어떤 시험지인지 바로 알 수 있습니다.{" "}
-                  <strong className="text-zinc-900 font-semibold">휴대폰에서도</strong> [한글 파일 받기]로 받거나,
-                  [카카오톡]으로 다운로드 링크를 공유할 수 있습니다.
+                  파일을 누르면 첫 문제가 보여 어떤 시험지인지 바로 알 수 있습니다. [한글 파일 받기]로 받거나
+                  [카카오톡]으로 다운로드 링크를 공유할 수 있고,{" "}
+                  <strong className="text-zinc-900 font-semibold">PC와 휴대폰 어디서나</strong> 똑같이 쓸 수 있습니다.
                 </p>
                 <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3">
                   <div className="text-xs font-semibold text-zinc-500 mb-2">찾아가는 길</div>
