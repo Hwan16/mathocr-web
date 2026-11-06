@@ -1,7 +1,12 @@
+// Next 16 의 요청 가로채기 — 이전 이름 middleware.ts(export middleware). Next 16 에서 proxy.ts(export proxy) 로
+// 이름이 바뀌었고 기본 실행 환경이 Edge → Node.js 로 바뀌었다(2026-11-06, Next 16.4.5 보안 패치와 함께 전환, 동작은 동일).
+// 하는 일: ① Supabase 세션 쿠키 갱신 ② 보호 경로(/dashboard·/admin·/files) 비로그인 → /auth/login?redirect=…
+// ③ 로그인 상태로 /auth/login·/auth/signup 에 오면 가려던 안전한 내부 경로(없으면 /dashboard)로.
+// CSP 등 보안 헤더는 여기가 아니라 next.config.ts headers() 에 있다.
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(

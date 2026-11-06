@@ -15,7 +15,7 @@
 | 2 | **GA4 분석** | ✅ 완료 (측정 ID: `G-N5B03EJ16V`, production 전용) |
 | 3 | **GEO** (AI 검색용 구조화 데이터 JSON-LD) | ✅ 완료 (`Organization`·`WebSite`·`SoftwareApplication`·`FAQPage`) |
 | 4 | **검색엔진 등록** (구글 서치콘솔 · 네이버 웹마스터) | ✅ 완료 (소유확인 + 사이트맵 제출, 양쪽 다) |
-| 5 | **마무리** (middleware→proxy 등) | ⬜ 예정 |
+| 5 | **마무리** (middleware→proxy 등) | 🟡 진행 중 — middleware→proxy 완료(2026-11-06, Next 16.4.5 보안 패치와 함께), 나머지는 아래 체크리스트 |
 
 > ✅ 1~4단계는 `master` 머지·실서비스(mathocr.ai.kr) 배포 완료. 남은 건 5번(마무리)과 OG 이미지 개선뿐.
 
@@ -128,5 +128,5 @@
 - [x] **GEO** (3번) — JSON-LD 구조화 데이터: `Organization`·`WebSite`·`SoftwareApplication`(가격·플랫폼) 전역 + `FAQPage`(홈 FAQ 5개, 단일 출처 `src/lib/faqs.ts`). 상세는 [3-2. GEO](#3-2-geo--구조화-데이터-json-ld-완료).
 - [x] **검색엔진 등록** (4번) — 구글 서치콘솔 + 네이버 웹마스터 양쪽 **소유확인 + 사이트맵(`sitemap.xml`) 제출 완료** (2026-06-20). 소유확인 메타태그는 `layout.tsx`의 `verification` 필드(`google` + `other["naver-site-verification"]`)에 있음. ⚠️ **삭제 금지**(재확인 시 필요).
 - [ ] **OG 이미지 개선** — 현재 공유 카드 이미지는 정사각 아이콘(`/mathocr-icon.png`, 600×600). 전용 **1200×630** 이미지를 만들면 카톡/SNS 카드가 더 보기 좋음.
-- [ ] **middleware→proxy** — Next.js 16 경고. `src/middleware.ts`를 `proxy` 규칙으로 정리 (기능엔 지장 없음).
+- [x] **middleware→proxy** — Next.js 16 경고. `src/middleware.ts`→`src/proxy.ts`(export `proxy`, Node.js 런타임)로 전환 완료(2026-11-06, Next 16.3.6→16.4.5 보안 패치와 함께. 동작 동일: 보호 경로 리다이렉트·세션 갱신·CSP 로컬 실측).
 - [ ] **SITE_URL 중복 제거** — 현재 3개 파일에 같은 상수. `src/lib/site.ts` 한 곳으로 모으면 도메인 변경 시 한 군데만 고치면 됨.
