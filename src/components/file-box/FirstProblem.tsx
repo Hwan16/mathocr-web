@@ -14,13 +14,39 @@ function math(latex: string, display: boolean): string {
   });
 }
 
+// 배점 '[3.3점]'은 한 덩어리로 둔다 — 줄 끝에 걸리면 통째로 다음 줄로 가고 '[3.' / '3점]'처럼
+// 쪼개지지 않게(아이폰 사파리에서 실제로 쪼개짐, 2026-11-07).
+const SCORE = /(\[\s*\d+(?:\.\d+)?\s*점\s*\])/;
+
+function Text({ v }: { v: string }) {
+  const parts = v.split(SCORE);
+  if (parts.length === 1) return v;
+  return parts.map((s, j) =>
+    j % 2 ? (
+      <span key={j} className="whitespace-nowrap">
+        {s}
+      </span>
+    ) : (
+      s
+    ),
+  );
+}
+
 function Blocks({ items, figureUrl }: { items: PreviewBlock[]; figureUrl: string | null }) {
   return (
     <>
       {items.map((b, i) => {
         switch (b.t) {
           case "text":
-            return b.b ? <strong key={i}>{b.v}</strong> : <span key={i}>{b.v}</span>;
+            return b.b ? (
+              <strong key={i}>
+                <Text v={b.v} />
+              </strong>
+            ) : (
+              <span key={i}>
+                <Text v={b.v} />
+              </span>
+            );
           case "math":
             return <span key={i} dangerouslySetInnerHTML={{ __html: math(b.v, false) }} />;
           case "mathd":
@@ -87,7 +113,9 @@ export default function FirstProblem({
     <div className="text-[14.5px] leading-[1.8] text-zinc-800">
       <div className="flex gap-2">
         <span className="font-semibold tabular-nums shrink-0">{preview.number || 1}.</span>
-        <div className="min-w-0 break-words">
+        {/* flex-1: 본문이 번호 옆 남은 폭을 다 쓴다. 없으면 본문 폭이 '글 길이만큼'으로 잡혀(짧은 문제)
+            사파리가 수식 폭을 몇 px 작게 재는 순간 줄 끝이 꺾이고 보기 칸도 왼쪽에 몰린다(2026-11-07). */}
+        <div className="min-w-0 flex-1 break-words">
           <Blocks items={preview.body} figureUrl={figureUrl} />
           {!hasImgBlock && figureUrl && (
             // eslint-disable-next-line @next/next/no-img-element
