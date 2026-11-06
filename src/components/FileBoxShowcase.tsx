@@ -1,6 +1,7 @@
-// 내 파일함(v2.6.0, D-054) 소개용 정적 예시 — PC 목록 + 휴대폰 받기 화면. 목업의 컨트롤은 클릭 대상이 아니다.
-// 실제 화면(components/file-box/FileBox.tsx)과 같은 요소만 쓴다: 경로(마이페이지 › 내 파일함), 파일 줄,
-// 남은 기간, 휴대폰 아래 줄의 [한글 파일 받기]·[카카오톡].
+// 내 파일함(v2.6.0, D-054) 소개용 정적 예시 — 목록 + 오른쪽 상세(첫 문제 미리보기). 목업의 컨트롤은 클릭 대상이 아니다.
+// 실제 화면(components/file-box/FileBox.tsx)과 같은 요소만 쓴다: 경로(마이페이지 › 내 파일함), 파일 줄, 남은 기간,
+// 상세의 변환·보관·내용, [한글 파일 받기]·[카카오톡], 첫 문제 미리보기.
+// 휴대폰 그림은 뺐다 — 휴대폰에서도 된다는 건 본문 글이 말한다(사용자 11-06).
 import FolderIcon from "@/components/FolderIcon";
 
 const MATH = { fontFamily: '"Times New Roman", Times, serif' } as const;
@@ -16,7 +17,7 @@ function HwpIcon({ className = "h-7 w-6" }: { className?: string }) {
 }
 
 const KakaoBubble = () => (
-  <svg viewBox="0 0 24 24" className="h-3 w-3" aria-hidden="true">
+  <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" aria-hidden="true">
     <path fill="#000" d="M12 3.5c-5.25 0-9.5 3.33-9.5 7.44 0 2.66 1.78 5 4.46 6.31l-.9 3.32c-.08.3.26.53.52.36l3.95-2.6c.48.05.97.08 1.47.08 5.25 0 9.5-3.33 9.5-7.47S17.25 3.5 12 3.5z" />
   </svg>
 );
@@ -27,16 +28,32 @@ const ROWS = [
   { name: "확률과 통계 3단원_변환.hwp", meta: "문제 18 · 해설 18", left: "6일 남음", until: "11.12 (목)까지", tone: "soon" },
 ] as const;
 
+function Frac({ n, d }: { n: number; d: number }) {
+  return (
+    <span className="inline-flex flex-col items-center align-middle text-[9px] leading-none" style={MATH}>
+      <span className="px-0.5">{n}</span>
+      <span className="w-full border-t border-current px-0.5 pt-px">{d}</span>
+    </span>
+  );
+}
+
+// 넓이 = ∫₁³|x²−4x+3|dx = 4/3 → ②
+const CHOICES = [
+  <span key="1" style={MATH}>1</span>,
+  <Frac key="2" n={4} d={3} />,
+  <Frac key="3" n={5} d={3} />,
+  <span key="4" style={MATH}>2</span>,
+  <Frac key="5" n={7} d={3} />,
+];
+
 export default function FileBoxShowcase() {
   return (
     <div
-      className="relative min-w-0 select-none"
+      className="@container min-w-0 select-none"
       role="img"
-      aria-label="내 파일함 예시: 홈페이지 마이페이지에서 내 파일함으로 들어가면 변환한 한글 파일이 남은 보관 기간과 함께 보이고, PC와 휴대폰 모두 한글 파일 받기와 카카오톡 공유 버튼으로 받거나 보낼 수 있습니다."
+      aria-label="내 파일함 예시: 홈페이지 마이페이지에서 내 파일함으로 들어가면 변환한 한글 파일이 남은 보관 기간과 함께 보이고, 파일을 누르면 첫 문제 미리보기와 함께 한글 파일 받기·카카오톡 공유 버튼이 나옵니다."
     >
-      {/* PC — 내 파일함 목록 */}
-      {/* 휴대폰은 목록 아래 오른쪽에 살짝만 겹친다 — 목록의 '남은 기간' 칸을 가리지 않게 */}
-      <div className="overflow-hidden rounded-xl border border-zinc-300 bg-white shadow-[0_24px_64px_-16px_rgba(24,24,27,0.18)] sm:mr-20 md:mr-8 lg:mr-20">
+      <div className="overflow-hidden rounded-xl border border-zinc-300 bg-white shadow-[0_24px_64px_-16px_rgba(24,24,27,0.18)]">
         <div className="flex items-center gap-1.5 border-b border-zinc-200 bg-zinc-50 px-4 py-3 text-xs text-zinc-500">
           <span>마이페이지</span>
           <span className="text-zinc-300" aria-hidden="true">›</span>
@@ -45,75 +62,90 @@ export default function FileBoxShowcase() {
             내 파일함
           </span>
         </div>
-        <div className="px-3 pb-2 pt-3 sm:px-4">
-          <div className="mb-1.5 flex items-center justify-between px-1 text-[10px] text-zinc-400">
-            <span>시험지명</span>
-            <span>보관 기한</span>
-          </div>
-          {ROWS.map((r) => (
-            <div
-              key={r.name}
-              className={
-                "flex items-center gap-2.5 border-t border-zinc-100 px-1 py-2.5 " + (r.tone === "selected" ? "bg-violet-50/70" : "")
-              }
-            >
-              <HwpIcon />
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-[12px] font-medium text-zinc-900 sm:text-[13px]">{r.name}</div>
-                <div className="text-[10px] text-zinc-500">{r.meta}</div>
-              </div>
-              <div className={"shrink-0 text-right " + (r.tone === "soon" ? "text-orange-600" : "text-zinc-700")}>
-                <div className="text-[11px] tabular-nums">{r.left}</div>
-                <div className={"text-[10px] tabular-nums " + (r.tone === "soon" ? "" : "text-zinc-400")}>{r.until}</div>
-              </div>
+        {/* 넓으면 목록 | 상세 나란히(실제 PC 화면과 같은 배치), 좁으면 목록 아래 상세 */}
+        <div className="grid @[540px]:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+          {/* 목록 */}
+          <div className="border-b border-zinc-200 px-3 pb-2 pt-3 @[540px]:border-b-0 @[540px]:border-r">
+            <div className="mb-1.5 flex items-center justify-between px-1 text-[10px] text-zinc-400">
+              <span>시험지명</span>
+              <span>보관 기한</span>
             </div>
-          ))}
-        </div>
-        {/* PC에서도 받기·카카오톡 공유가 된다는 걸 보여 준다(휴대폰 전용으로 오해하지 않게, 사용자 11-06).
-            오른쪽 아래는 휴대폰 그림이 겹치는 자리라 버튼은 왼쪽에 둔다 */}
-        <div className="flex items-center gap-1.5 border-t border-zinc-100 px-3 py-2.5 sm:px-4">
-          <span className="mr-0.5 hidden truncate text-[10px] text-zinc-500 min-[480px]:inline">선택한 파일</span>
-          <span className="flex items-center gap-1 whitespace-nowrap rounded-md bg-violet-600 px-2.5 py-1.5 text-[10px] font-semibold text-white">
-            <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M12 4v11" />
-              <path d="m7 10 5 5 5-5" />
-              <path d="M5 20h14" />
-            </svg>
-            한글 파일 받기
-          </span>
-          <span className="flex items-center gap-1 whitespace-nowrap rounded-md bg-[#FEE500] px-2.5 py-1.5 text-[10px] font-semibold text-black/85">
-            <KakaoBubble />
-            카카오톡
-          </span>
-        </div>
-      </div>
+            {ROWS.map((r) => (
+              <div
+                key={r.name}
+                className={
+                  "flex items-center gap-2 rounded-md border-t border-zinc-100 px-1.5 py-2.5 " +
+                  (r.tone === "selected" ? "border-transparent bg-violet-50 ring-1 ring-violet-200" : "")
+                }
+              >
+                <HwpIcon className="h-6 w-5" />
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-[12px] font-medium text-zinc-900">{r.name}</div>
+                  <div className="text-[10px] text-zinc-500">{r.meta}</div>
+                </div>
+                <div className={"shrink-0 text-right " + (r.tone === "soon" ? "text-orange-600" : "text-zinc-700")}>
+                  <div className="text-[11px] tabular-nums">{r.left}</div>
+                  <div className={"text-[10px] tabular-nums " + (r.tone === "soon" ? "" : "text-zinc-400")}>{r.until}</div>
+                </div>
+              </div>
+            ))}
+          </div>
 
-      {/* 휴대폰 — 받기 화면 */}
-      {/* 목록이 좁아지는 md~lg(768~1279px)에선 겹치면 PC [카카오톡] 버튼을 가려 겹치지 않게 내린다 */}
-      <div className="relative z-10 mx-auto mt-5 w-[200px] sm:-mt-5 sm:mr-0 sm:w-[188px] md:mt-3 xl:-mt-5">
-        <div className="overflow-hidden rounded-[22px] border-[5px] border-zinc-900 bg-white shadow-[0_20px_48px_-12px_rgba(24,24,27,0.35)]">
-          <div className="border-b border-zinc-100 px-3 py-2 text-[9px] text-zinc-500">‹ 목록</div>
-          <div className="px-3 pb-2.5 pt-2.5">
-            <div className="flex items-start gap-1.5">
-              <HwpIcon className="h-5 w-[18px]" />
-              <div className="min-w-0 text-[10px] font-semibold leading-snug text-zinc-900">정적분의 활용 변형_변환.hwp</div>
+          {/* 상세 — 고른 파일(정적분의 활용 변형) */}
+          <div className="min-w-0">
+            <div className="border-b border-zinc-100 px-4 pb-3.5 pt-4">
+              <div className="flex items-start gap-2">
+                <HwpIcon className="mt-0.5 h-6 w-5" />
+                <div className="min-w-0">
+                  <div className="text-[13px] font-semibold leading-snug text-zinc-900">정적분의 활용 변형_변환.hwp</div>
+                  <dl className="mt-1.5 grid grid-cols-[auto_1fr] gap-x-2.5 gap-y-0.5 text-[10px] tabular-nums">
+                    <dt className="text-zinc-400">변환</dt>
+                    <dd className="text-zinc-600">11.05 (목) 21:14</dd>
+                    <dt className="text-zinc-400">보관</dt>
+                    <dd className="text-zinc-600">12.05 (토)까지 · 29일 남음</dd>
+                    <dt className="text-zinc-400">내용</dt>
+                    <dd className="text-zinc-600">문제 12 · 해설 12 · 46KB</dd>
+                  </dl>
+                </div>
+              </div>
+              <div className="mt-3 flex gap-1.5">
+                <span className="flex flex-1 items-center justify-center gap-1 whitespace-nowrap rounded-md bg-violet-600 py-2 text-[11px] font-semibold text-white">
+                  <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M12 4v11" />
+                    <path d="m7 10 5 5 5-5" />
+                    <path d="M5 20h14" />
+                  </svg>
+                  한글 파일 받기
+                </span>
+                <span className="flex items-center justify-center gap-1 whitespace-nowrap rounded-md bg-[#FEE500] px-3 py-2 text-[11px] font-semibold text-black/85">
+                  <KakaoBubble />
+                  카카오톡
+                </span>
+              </div>
             </div>
-            <div className="mt-1 pl-[24px] text-[8.5px] text-zinc-500">12.05 (토)까지 · 29일 남음</div>
-            <div className="mt-2.5 border-t border-zinc-100 pt-2 text-[8.5px] font-semibold text-zinc-700">첫 문제 미리보기</div>
-            <div className="mt-1 text-[9px] leading-relaxed text-zinc-700">
-              1. 곡선 <span className="italic" style={MATH}>y</span> = <span className="italic" style={MATH}>x</span>
-              <sup className="text-[6px]">2</sup> − 4<span className="italic" style={MATH}>x</span> + 3과{" "}
-              <span className="italic" style={MATH}>x</span>축으로 둘러싸인 부분의 넓이는?
+            <div className="px-4 pb-4 pt-3">
+              <div className="flex items-baseline justify-between">
+                <span className="text-[11px] font-semibold text-zinc-900">첫 문제 미리보기</span>
+                <span className="text-[10px] tabular-nums text-zinc-400">전체 12문제</span>
+              </div>
+              <div className="mt-2 flex gap-1.5 text-[11.5px] leading-relaxed text-zinc-800">
+                <span className="font-semibold">1.</span>
+                <div className="min-w-0">
+                  곡선 <span className="italic" style={MATH}>y</span> = <span className="italic" style={MATH}>x</span>
+                  <sup className="text-[7px]">2</sup> − 4<span className="italic" style={MATH}>x</span> + 3과{" "}
+                  <span className="italic" style={MATH}>x</span>축으로 둘러싸인 부분의 넓이는?
+                  <div className="mt-1.5 grid grid-cols-3 gap-x-2 gap-y-1 tabular-nums">
+                    {CHOICES.map((c, i) => (
+                      <span key={i} className="inline-flex items-center gap-1">
+                        <span>{"①②③④⑤"[i]}</span>
+                        {c}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <p className="mt-3 text-[10px] text-zinc-500">나머지 11문제는 한글 파일에서 확인하세요.</p>
             </div>
-          </div>
-          <div className="flex gap-1.5 border-t border-zinc-100 px-2.5 py-2.5">
-            <span className="flex flex-1 items-center justify-center whitespace-nowrap rounded-md bg-violet-600 py-1.5 text-[8.5px] font-semibold text-white">
-              한글 파일 받기
-            </span>
-            <span className="flex items-center justify-center gap-1 whitespace-nowrap rounded-md bg-[#FEE500] px-2 py-1.5 text-[8.5px] font-semibold text-black/85">
-              <KakaoBubble />
-              카카오톡
-            </span>
           </div>
         </div>
       </div>
