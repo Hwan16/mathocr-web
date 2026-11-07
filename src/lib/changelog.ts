@@ -45,6 +45,14 @@ export type ChangelogEntry = {
 /** 최신순. 접힌 상태에서 보이는 개수는 CHANGELOG_PREVIEW_COUNT */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "v2.6.1",
+    tag: "improve",
+    title: "📐 점 좌표 표기",
+    items: [
+      "A(1, 2) 같은 점 좌표를 점 이름과 좌표까지 하나의 수식으로 넣어, 다른 양식에 붙여도 글꼴이 섞이지 않습니다.",
+    ],
+  },
+  {
     version: "v2.6.0",
     tag: "new",
     title: "📁 내 파일함",
