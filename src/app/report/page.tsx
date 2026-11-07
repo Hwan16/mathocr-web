@@ -205,7 +205,7 @@ export default function ReportPage() {
             <div className="text-2xl mb-3">🎁</div>
             <h3 className="font-semibold mb-2">채택되면 50크레딧 지급</h3>
             <p className="text-sm text-zinc-600 leading-relaxed">
-              신고해주신 내용이 실제 변환 개선에 반영되면{" "}
+              신고해주신 내용이 프로그램 오류로 확인되면{" "}
               <span className="font-semibold text-[var(--accent)]">
                 50크레딧(50문제분)
               </span>
@@ -247,7 +247,7 @@ export default function ReportPage() {
               <div className="text-3xl mb-3">✅</div>
               <h3 className="text-lg font-semibold mb-2">신고가 접수되었습니다</h3>
               <p className="text-zinc-600 mb-6">
-                소중한 제보 감사합니다. 검토 후 변환 개선에 반영되면 50크레딧을 지급해 드릴게요.
+                소중한 제보 감사합니다. 검토 후 프로그램 오류로 확인되면 50크레딧을 지급해 드릴게요.
               </p>
               <button
                 onClick={() => setState("idle")}
