@@ -18,6 +18,7 @@ import {
 import FirstProblem from "./FirstProblem";
 import Wordmark from "@/components/Wordmark";
 import FolderIcon from "@/components/FolderIcon";
+import { FileListSkeleton, PreviewSkeleton } from "@/components/Skeleton";
 
 // 내 파일함(D-054) — 시안 docs/mockups/my-files.html 을 옮긴 것.
 // 목록(위: 보관 중, 아래: 만료된 파일) + 오른쪽 첫 문제 미리보기(폰은 전체 화면).
@@ -585,7 +586,7 @@ export default function FileBox({ email }: { email: string }) {
           </div>
           <div className="mt-3">
             {p === undefined ? (
-              <p className="text-sm text-zinc-400">불러오는 중…</p>
+              <PreviewSkeleton />
             ) : p === "error" ? (
               <p className="text-sm text-zinc-500">미리보기를 불러오지 못했어요. 한글 파일을 받아서 확인해 주세요.</p>
             ) : p.preview ? (
@@ -764,7 +765,7 @@ export default function FileBox({ email }: { email: string }) {
             </div>
 
             {files === null ? (
-              <p className="py-16 text-center text-sm text-zinc-400">불러오는 중…</p>
+              <FileListSkeleton />
             ) : loadError && files.length === 0 ? (
               <div className="py-16 text-center">
                 <p className="text-sm text-zinc-600">{loadError}</p>

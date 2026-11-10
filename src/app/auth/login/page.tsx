@@ -8,6 +8,7 @@ import { metaPixelTrack } from "@/lib/meta-pixel";
 import { naverWcsTrans } from "@/lib/naver-wcs";
 import ResendConfirmationMail from "@/components/ResendConfirmationMail";
 import Wordmark from "@/components/Wordmark";
+import { LoginSkeleton } from "@/components/Skeleton";
 
 const SAVED_EMAIL_KEY = "mathocr_saved_email";
 
@@ -301,9 +302,7 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4 bg-zinc-50">
-      <Suspense
-        fallback={<div className="text-zinc-500">로딩 중...</div>}
-      >
+      <Suspense fallback={<LoginSkeleton />}>
         <LoginForm />
       </Suspense>
     </div>

@@ -184,6 +184,22 @@ html {
   }
 }
 
+/* ── 불러오는 동안의 윤곽 화면(components/Skeleton.tsx) — 회색 막대가 은은하게 깜빡인다 ──
+   로딩 표시라 반복 움직임 허용(디자인 규칙 4장). 움직임 줄이기 설정이면 아래 규칙이 멈춘 회색 막대로 만든다. */
+.skeleton {
+  background: #ededf0; /* zinc-100과 200 사이 — 흰 카드 위에서 보이되 튀지 않게 */
+  animation: skeleton-pulse 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
 /* ── 움직임 줄이기 설정을 켠 사람에겐 움직임을 끈다 ── */
 @media (prefers-reduced-motion: reduce) {
   html {

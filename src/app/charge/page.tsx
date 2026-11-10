@@ -10,6 +10,7 @@ import { PLANS, creditsAsProblems } from "@/lib/plans";
 import { buildOrderId, getPlan } from "@/lib/payments";
 import { trackEvent } from "@/lib/analytics";
 import Wordmark from "@/components/Wordmark";
+import { ChargeSkeleton } from "@/components/Skeleton";
 
 // PG 선택 — 기본은 나이스페이(포스타트). 토스 심사 통과 후 되돌리려면
 // NEXT_PUBLIC_PG_PROVIDER=toss 로 전환한다(토스 경로 보존).
@@ -170,9 +171,7 @@ function ChargeInner() {
         </p>
 
         {loadingUser ? (
-          <div className="card rounded-xl p-8 bg-white text-center text-zinc-500">
-            불러오는 중…
-          </div>
+          <ChargeSkeleton />
         ) : paused ? (
           <div className="card rounded-xl p-8 bg-white text-center">
             <p className="text-zinc-700 font-medium mb-1">

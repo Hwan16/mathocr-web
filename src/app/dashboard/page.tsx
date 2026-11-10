@@ -10,6 +10,7 @@ import { trackEvent } from "@/lib/analytics";
 import { DOWNLOAD_URL, DOWNLOAD_LABEL } from "@/lib/download";
 import Wordmark from "@/components/Wordmark";
 import FolderIcon from "@/components/FolderIcon";
+import { DashboardSkeleton, CreditHistorySkeleton } from "@/components/Skeleton";
 
 interface Profile {
   credits: number;
@@ -79,29 +80,34 @@ export default function DashboardPage() {
     // 진입하면 그 경로를 건너뛴다. 이 조회는 서버에서 지급을 청구하므로
     // (계정당 1회 멱등) 어느 경로로 들어와도 잔액이 반영된다.
     // 프로필 조회보다 먼저 기다려야 아래 잔액이 지급 후 값이 된다.
-    try {
-      await fetch("/api/credits");
-    } catch {
-      // 실패해도 화면은 계속 그린다 — 다음 방문·앱 로그인에서 다시 청구된다
-    }
+    // 변환 이력은 지급과 무관하니 그동안 같이 불러온다 — 화면이 뜨기까지 기다림을 줄인다(2026-11-10).
+    const profileTask = (async () => {
+      try {
+        await fetch("/api/credits");
+      } catch {
+        // 실패해도 화면은 계속 그린다 — 다음 방문·앱 로그인에서 다시 청구된다
+      }
+      return await supabase
+        .from("profiles")
+        .select("credits, expires_at, role, marketing_opt_in")
+        .eq("id", user.id)
+        .single();
+    })();
 
-    // 프로필
-    const { data: profileData } = await supabase
-      .from("profiles")
-      .select("credits, expires_at, role, marketing_opt_in")
-      .eq("id", user.id)
-      .single();
-    setProfile(profileData);
-
-    // 변환 이력
     const from = (page - 1) * limit;
     const to = from + limit - 1;
-    const { data: convData, count } = await supabase
+    const conversionsTask = supabase
       .from("conversions")
       .select("*", { count: "exact" })
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .range(from, to);
+
+    const [{ data: profileData }, { data: convData, count }] = await Promise.all([
+      profileTask,
+      conversionsTask,
+    ]);
+    setProfile(profileData);
     setConversions(convData ?? []);
     setTotalConversions(count ?? 0);
     setLoading(false);
@@ -145,11 +151,7 @@ export default function DashboardPage() {
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-zinc-500">로딩 중...</div>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   return (
@@ -922,9 +924,7 @@ function CreditHistoryCard() {
         </p>
       </div>
       {!loaded ? (
-        <div className="px-6 py-8 text-center text-zinc-400 text-sm">
-          불러오는 중…
-        </div>
+        <CreditHistorySkeleton />
       ) : events.length === 0 ? (
         <div className="px-6 py-8 text-center text-zinc-500 text-sm">
           지급 내역이 없습니다.
