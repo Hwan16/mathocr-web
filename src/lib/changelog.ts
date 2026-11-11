@@ -45,6 +45,16 @@ export type ChangelogEntry = {
 /** 최신순. 접힌 상태에서 보이는 개수는 CHANGELOG_PREVIEW_COUNT */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "v2.6.2",
+    tag: "improve",
+    title: "⏳ 기다리는 화면 개선",
+    items: [
+      "프로그램을 켜면 로그인 창보다 먼저 시작 화면이 떠서, 켜지는 중인지 바로 알 수 있습니다.",
+      "로그인하거나 [변환하기]·[자동 인식]을 누른 뒤 서버를 기다리는 동안에도 창이 멈추지 않습니다.",
+      "휴대폰 사진 여러 장을 열면 첫 장부터 바로 보이고, 나머지는 차례로 채워집니다.",
+    ],
+  },
+  {
     version: "v2.6.1",
     tag: "improve",
     title: "📐 점 좌표 표기",
