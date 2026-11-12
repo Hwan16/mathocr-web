@@ -32,7 +32,7 @@ const HREF = "/help/exam-paper-template";
 const LOC = "exam_tpl";
 
 export const metadata: Metadata = {
-  title: "수학 시험지 양식(한글 HWP) 무료 — 학원 로고 넣는 2단 시험지·답안지",
+  title: "수학 시험지 양식(한글 HWP) 다운로드 — 학원 로고 넣는 2단 시험지·답안지",
   description:
     "학원 로고·시험명·학원명 머리, 이름·점수 칸, 5지선다형·서답형 표지, 2단 본문을 갖춘 한글 수학 시험지 양식(A4·24×33cm)과 답안지·정답표를 가입 없이 무료로 받으세요. AI MathOCR로 옮긴 문제를 24×33cm판에 붙이면 줄 바꿈이 그대로 들어가고, 한글에서 2단 시험지를 직접 만드는 순서도 정리했습니다.",
   alternates: { canonical: HREF },

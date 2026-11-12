@@ -23,7 +23,7 @@
 - [자료실 — 강사용 안내 글과 무료 양식](https://mathocr.ai.kr/guides)
 - [수학 시험지 PDF를 한글(HWP)로 옮기는 3가지 방법](https://mathocr.ai.kr/help/math-exam-to-hwp)
 - [수학 오답노트 양식(한글 HWP) 무료 다운로드](https://mathocr.ai.kr/help/wrong-answer-note)
-- [수학 시험지 양식(한글 HWP) 무료 — 학원 로고 넣는 2단 시험지·답안지](https://mathocr.ai.kr/help/exam-paper-template)
+- [수학 시험지 양식(한글 HWP) 다운로드 — 학원 로고 넣는 2단 시험지·답안지](https://mathocr.ai.kr/help/exam-paper-template)
 - [한글(HWP) 수식 입력 방법 — 수식 편집기 명령어·단축키 총정리](https://mathocr.ai.kr/help/hwp-equation)
 - [ChatGPT 수식(LaTeX) → 한글 수식 무료 변환기](https://mathocr.ai.kr/help/latex-to-hwp)
 - [한글(한컴오피스) 연결 오류 해결](https://mathocr.ai.kr/help/hwp-repair)

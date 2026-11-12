@@ -31,7 +31,7 @@ export const ARTICLES: Article[] = [
     published: "2026-11-13",
     ogImage: "/articles/exam-paper-og.jpg",
     category: "exam",
-    title: "수학 시험지 양식(한글) 무료 — 학원 로고 넣는 2단 시험지·답안지",
+    title: "수학 시험지 양식(한글) 다운로드 — 학원 로고 넣는 2단 시험지·답안지",
     summary: "학원 로고·시험명 머리, 이름·점수 칸, 5지선다형·서답형 표지를 갖춘 한글 2단 시험지 양식(A4·24×33cm)과 답안지·정답표를 가입 없이 무료로. AI MathOCR로 옮긴 문제를 24×33cm판에 붙이면 줄 바꿈이 그대로입니다.",
     date: "2026-11-13",
     thumb: { img: "/articles/exam-paper-thumb.webp", alt: "2단 시험지 양식에 기출 문제를 채운 예시 — 학원 로고·시험명 머리와 가운데 구분선" },
