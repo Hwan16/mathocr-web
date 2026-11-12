@@ -98,7 +98,7 @@ export function EndBand({
   return (
     <section id={id} className="scroll-mt-6 mt-16 rounded-2xl bg-[var(--ink)] text-white p-6 md:p-9">
       <h2 className="text-[22px] md:text-[26px] font-bold tracking-tight mb-3 break-keep">{title}</h2>
-      <div className="text-[15.5px] text-blue-100/85 leading-relaxed break-keep [&_strong]:text-white">{children}</div>
+      <div className="text-[15.5px] text-blue-100/85 leading-relaxed break-keep [&>p_strong]:text-white">{children}</div>
       <div className="mt-6 flex flex-col sm:flex-row gap-3">
         <TrackedLink
           href="/auth/signup"
