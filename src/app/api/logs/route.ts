@@ -1,7 +1,8 @@
 import { getAuthUser } from "@/lib/supabase/auth-helper";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { NextRequest, NextResponse } from "next/server";
+import { notifyConversionStopped } from "@/lib/provider-outage-store";
+import { NextRequest, NextResponse, after } from "next/server";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -93,6 +94,23 @@ export async function POST(request: NextRequest) {
   if (error) {
     console.error("[logs:POST] insert failed", error);
     return NextResponse.json({ error: "로그 저장에 실패했습니다." }, { status: 500 });
+  }
+
+  // 앱이 AI 서비스 오류로 변환을 멈춤 → 관리자 메일(30분에 1통, D-059). 응답을 보낸 뒤에
+  // 처리해 앱의 실패 처리(환불 요청·안내창)를 늦추지 않는다.
+  const meta =
+    typeof safeMetadata === "object" && safeMetadata !== null && !Array.isArray(safeMetadata)
+      ? (safeMetadata as Record<string, unknown>)
+      : null;
+  if (error_type === "conversion_error" && meta?.category === "ai_service_down") {
+    after(() =>
+      notifyConversionStopped({
+        userId: user.id,
+        conversionId: ownedConversionId,
+        detail: typeof meta.service_detail === "string" ? meta.service_detail.slice(0, 300) : "",
+        providerOutage: meta.provider_outage === true,
+      }).catch((e) => console.error("[logs:POST] outage alert failed", e))
+    );
   }
 
   return NextResponse.json({ log_id: data.id });

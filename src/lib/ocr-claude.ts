@@ -252,6 +252,10 @@ export type ClaudeAttempt = {
   status: number;
   data: Record<string, unknown>;
   durationMs: number;
+  // 제공사 장애 판정용(D-059, provider-outage.ts isProviderOutageAttempt) —
+  // 제공사가 실제로 돌려준 HTTP 상태(응답을 받았을 때만)와, 응답을 못 받은 이유.
+  upstreamStatus?: number;
+  transport?: "timeout" | "network";
 };
 
 // 5.5 시도를 버리고 4.6으로 다시 해야 하는 이유. 쓸 수 있는 응답이면 null.

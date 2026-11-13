@@ -19,6 +19,8 @@ import {
   responsePayload,
   runClaudeCall,
 } from "@/lib/ocr-claude";
+import { isProviderOutageAttempt } from "@/lib/provider-outage";
+import { markProviderOutage } from "@/lib/provider-outage-store";
 import { NextRequest, NextResponse } from "next/server";
 
 const CLAUDE_API_URL = "https://api.anthropic.com/v1/messages";
@@ -54,13 +56,22 @@ function resolveClaudeModel(): ClaudeModel {
 
 // 데스크톱 앱은 60초를 기다린다(api_client._ocr_timeout). 5.5 시도가 그 시간을 다 쓰면
 // 4.6 폴백이 앱에 도달하지 못하므로 5.5 시도에만 상한을 둔다(실측 최장 약 17초).
-// 4.6 호출에는 전환 전처럼 상한을 두지 않는다.
 const SERVER_PROMPT_TIMEOUT_MS = 40_000;
+// 5.5 실패 뒤의 4.6 폴백은 앱이 기다리는 60초 안에 끝나게 남은 시간만 준다(D-059) —
+// 넘기면 앱은 원인 없는 '시간 초과'만 받아 제공사 장애 안내·복구 감시가 빠진다.
+// 요청 시작부터 57초(네트워크 여유 3초). 구세대 앱의 4.6 단독 호출은 전환 전처럼 상한 없음.
+const FALLBACK_DEADLINE_MS = 57_000;
+const FALLBACK_MIN_TIMEOUT_MS = 5_000;
 
-async function callAnthropic(apiKey: string, plan: ClaudeCallPlan): Promise<ClaudeAttempt> {
+async function callAnthropic(
+  apiKey: string,
+  plan: ClaudeCallPlan,
+  timeoutMs?: number
+): Promise<ClaudeAttempt> {
   const startedAt = Date.now();
+  let response: Response;
   try {
-    const response = await fetch(CLAUDE_API_URL, {
+    response = await fetch(CLAUDE_API_URL, {
       method: "POST",
       headers: {
         "x-api-key": apiKey,
@@ -68,19 +79,42 @@ async function callAnthropic(apiKey: string, plan: ClaudeCallPlan): Promise<Clau
         "Content-Type": "application/json",
       },
       body: JSON.stringify(plan.body),
-      signal: plan.serverPrompt ? AbortSignal.timeout(SERVER_PROMPT_TIMEOUT_MS) : undefined,
+      signal: timeoutMs ? AbortSignal.timeout(timeoutMs) : undefined,
     });
-    const data = (await response.json()) as Record<string, unknown>;
-    return { ok: response.ok, status: response.status, data, durationMs: Date.now() - startedAt };
   } catch (error) {
-    // 연결 실패·시간 초과·JSON 이 아닌 본문 — 전환 전과 같은 500 "프록시 오류" 로 나가되,
-    // "실패한 시도"로 돌려줘 5.5 → 4.6 폴백 판단을 한곳(runClaudeCall)에서 하게 한다.
+    // 연결 실패·시간 초과 — 전환 전과 같은 500 "프록시 오류" 로 나가되, "실패한 시도"로
+    // 돌려줘 5.5 → 4.6 폴백 판단을 한곳(runClaudeCall)에서 하게 한다.
+    const message = error instanceof Error ? error.message : "알 수 없는 오류";
+    const timedOut =
+      error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
+    return {
+      ok: false,
+      status: 500,
+      data: { error: { type: "proxy_error", message: `프록시 오류: ${message}` } },
+      durationMs: Date.now() - startedAt,
+      transport: timedOut ? "timeout" : "network",
+    };
+  }
+  try {
+    const data = (await response.json()) as Record<string, unknown>;
+    return {
+      ok: response.ok,
+      status: response.status,
+      data,
+      durationMs: Date.now() - startedAt,
+      upstreamStatus: response.status,
+    };
+  } catch (error) {
+    // JSON 이 아닌 본문(앞단 오류 페이지 등) — 앱에는 전처럼 500 "프록시 오류"로 보내되,
+    // 제공사가 실제로 돌려준 상태를 남겨 장애 판정이 401 같은 우리 쪽 오류를 장애로 오인하지
+    // 않게 한다(Codex 검토 반영).
     const message = error instanceof Error ? error.message : "알 수 없는 오류";
     return {
       ok: false,
       status: 500,
       data: { error: { type: "proxy_error", message: `프록시 오류: ${message}` } },
       durationMs: Date.now() - startedAt,
+      upstreamStatus: response.status,
     };
   }
 }
@@ -209,6 +243,7 @@ function validateClaudeBody(body: unknown):
 // Claude Vision 프록시
 // 데스크톱 앱 → 우리 서버 → Claude API (API 키는 서버에만)
 export async function POST(request: NextRequest) {
+  const requestStartedAt = Date.now();
   const user = await getAuthUser();
   if (!user) {
     return errorResponse("인증되지 않았습니다.", 401);
@@ -295,6 +330,7 @@ export async function POST(request: NextRequest) {
     // 5.5가 실패(과부하·오류·시간 초과)하거나 쓸 수 있는 답을 못 주면(거절·빈 응답·잘림)
     // 앱 프롬프트 + 4.6으로 한 번 더 — 사용자는 전환 전과 같은 결과를 받는다.
     const appVersion = parseAppVersion(request.headers.get("x-app-version"));
+    let callCount = 0;
     const run = await runClaudeCall(
       {
         configuredModel: model,
@@ -303,7 +339,15 @@ export async function POST(request: NextRequest) {
         messages: validated.value.messages,
         maxTokens: validated.value.max_tokens,
       },
-      (plan) => callAnthropic(apiKey, plan)
+      (plan) => {
+        const isFallback = callCount++ > 0;
+        const timeoutMs = plan.serverPrompt
+          ? SERVER_PROMPT_TIMEOUT_MS
+          : isFallback
+            ? Math.max(FALLBACK_MIN_TIMEOUT_MS, FALLBACK_DEADLINE_MS - (Date.now() - requestStartedAt))
+            : undefined;
+        return callAnthropic(apiKey, plan, timeoutMs);
+      }
     );
     const { plan, attempt } = run;
 
@@ -332,9 +376,27 @@ export async function POST(request: NextRequest) {
         status: attempt.status, duration_ms: attempt.durationMs, model: plan.model,
         app_version: appVersion,
       });
-      const upstreamError = attempt.data.error as { message?: string } | undefined;
+      const upstreamError = attempt.data.error as { message?: string; type?: string } | undefined;
+      // 끝내(5.5·4.6 모두) 제공사 5xx·시간 초과로 실패 = 제공사 장애. 앱(다음 버전부터)은 이
+      // 표시가 있는 실패로 멈췄을 때만 "정상화되면 메일로 알려드림" 안내를 띄우고, 서버는 장애
+      // 시작을 남겨 cron 이 복구를 확인하게 한다 (D-059, provider-outage.ts).
+      const providerOutage = isProviderOutageAttempt(attempt);
+      if (providerOutage) {
+        const last = attempt.transport ?? `http_${attempt.upstreamStatus ?? attempt.status}`;
+        await markProviderOutage(
+          [
+            run.failed ? `5.5 ${run.failed.reason}` : null,
+            `${plan.model} ${last}${upstreamError?.type ? `:${upstreamError.type}` : ""}`,
+          ]
+            .filter(Boolean)
+            .join(" → ")
+        );
+      }
       return NextResponse.json(
-        { error: upstreamError?.message ?? `Claude API 오류 (HTTP ${attempt.status})` },
+        {
+          error: upstreamError?.message ?? `Claude API 오류 (HTTP ${attempt.status})`,
+          ...(providerOutage ? { provider_outage: true } : {}),
+        },
         { status: attempt.status, headers: responseHeaders }
       );
     }
