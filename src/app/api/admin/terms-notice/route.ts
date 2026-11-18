@@ -4,7 +4,7 @@ import {
   TERMS_NOTICE_SUBJECT,
   TERMS_NOTICE_HTML,
   TERMS_NOTICE_BATCH,
-} from "@/lib/terms-notice-mail";
+} from "@/lib/terms-notice-mail-2026-12-19"; // 2026-12-19 시행분(HWPX 전환). 8-21분은 terms-notice-mail.ts(발송 증거 보존)
 import { REPLY_TO } from "@/lib/mail";
 
 // ── 약관 개정 개별 고지 발송 (2026-07-22 신설) ──
@@ -28,6 +28,8 @@ import { REPLY_TO } from "@/lib/mail";
 //   - 미인증 제외 (소유자 미확인 — 계약 당사자 아닌 제3자에게 가입 사실을 알리게 되고,
 //     오타·가짜 주소 반송으로 발신 도메인 평판이 깎이면 인증·결제 메일 도달률까지 떨어진다)
 //   - 탈퇴자는 profiles 삭제라 조회에서 자동 제외
+//   - 정지(banned_until 미래) 계정 제외 (2026-11-18 추가) — 8월 어뷰징 57계정은 일회용 메일·별칭이라
+//     반송으로 발신 평판만 깎이고, 서비스 이용이 막힌 계정이라 고지 실익도 없다
 //   - BLOCKED_DOMAINS: null MX 등 확정 반송 도메인
 //
 // 사용:
@@ -81,6 +83,8 @@ export async function GET(request: NextRequest) {
   // email_confirmed_at 은 auth.users 에만 있어 페이지 단위로 조회해 합친다.
   // 조회 실패 시 그 계정은 미인증으로 취급(fail-closed) — 기존 cron 3종과 같은 방침.
   const confirmedById = new Map<string, boolean>();
+  const bannedIds = new Set<string>();
+  const now = Date.now();
   let lookupFailures = 0;
   for (let page = 1; page <= 20; page++) {
     const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 200 });
@@ -88,7 +92,11 @@ export async function GET(request: NextRequest) {
       lookupFailures += 1;
       break;
     }
-    for (const u of data.users) confirmedById.set(u.id, !!u.email_confirmed_at);
+    for (const u of data.users) {
+      confirmedById.set(u.id, !!u.email_confirmed_at);
+      const until = (u as { banned_until?: string | null }).banned_until;
+      if (until && Date.parse(until) > now) bannedIds.add(u.id);
+    }
     if (data.users.length < 200) break;
   }
 
@@ -100,6 +108,8 @@ export async function GET(request: NextRequest) {
       excluded.push({ email: p.email, reason: "no_email" });
     } else if (!confirmedById.get(p.id)) {
       excluded.push({ email, reason: "unconfirmed_or_lookup_failed" });
+    } else if (bannedIds.has(p.id)) {
+      excluded.push({ email, reason: "banned" });
     } else if (BLOCKED_DOMAINS.some((d) => email.toLowerCase().endsWith(`@${d}`))) {
       excluded.push({ email, reason: "blocked_domain" });
     } else {

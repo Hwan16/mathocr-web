@@ -406,6 +406,19 @@ export default function DashboardPage() {
         {/* Promo Code */}
         <PromoRedeemCard onRedeemed={loadData} />
 
+        {/* 약관 개정 사전 공지 (약관 제10조의 서비스 내 공지, 공지 2026-11-18) — 이전 개정 때와 같은
+            한 줄 형식. 시행일(2026-12-19)이 지나면 삭제. */}
+        <p className="mb-10 text-sm text-zinc-600">
+          2026년 12월 19일부터 서비스 이용약관이 일부 개정됩니다(변환 결과물이 HWPX 형식의 한글
+          문서 파일로 바뀜) —{" "}
+          <a
+            href="/terms"
+            className="text-[var(--accent)] underline underline-offset-2 hover:opacity-80 transition-opacity"
+          >
+            개정 내용 보기
+          </a>
+        </p>
+
         {/* Conversion History */}
         <div className="bezel-card rounded-2xl overflow-hidden">
           <div className="px-6 py-4 border-b border-[var(--border-subtle)] flex items-baseline justify-between gap-3">
